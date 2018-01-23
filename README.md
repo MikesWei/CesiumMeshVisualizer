@@ -1,4 +1,4 @@
-#CesiumMeshVisualizer seed <a href='./document/index.html'> document</a><br/>
+#CesiumMeshVisualizer seed <a href='./Document/index.html'> document</a><br/>
 Example<br/>
 
 
