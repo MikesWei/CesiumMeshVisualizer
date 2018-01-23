@@ -1,4 +1,16 @@
-#CesiumMeshVisualizer seed <a href='https://mikeswei.github.io/CesiumMeshVisualizer/Document/index.html'> document</a> <a href="https://mikeswei.github.io/CesiumMeshVisualizer/build/index.html">demo</a><br/>
+#CesiumMeshVisualizer 
+ <a href="https://mikeswei.github.io/CesiumMeshVisualizer/Document/index.html">Document</a>
+    <hr />
+    demos:<br />
+    <a href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/CSG/index.html">CSG</a><br />
+    <a href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/LOD/index.html">LOD</a><br />
+    <a href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/MeshVisualizer/index.html">MeshVisualizer</a><br />
+    <a href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/helloworld.html">physics/helloworld</a><br />
+    <a href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/cloth.html">physics/cloth</a><br />
+    <a href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/vehicle.html">physics/vehicle</a><br />
+    <a href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/ReferenceMesh/index.html">ReferenceMesh</a><br />
+    <a href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html">VolumeRendering</a><br />
+
 Example<br/>
 
 
