@@ -25,7 +25,7 @@ function init() {
     look(homePosition[0], homePosition[1], homePosition[2]);
 
     var imageryProviderViewModels = viewer.baseLayerPicker.viewModel.imageryProviderViewModels;
-    viewer.baseLayerPicker.viewModel.selectedImagery = imageryProviderViewModels[imageryProviderViewModels.length - 1];
+    viewer.baseLayerPicker.viewModel.selectedImagery = imageryProviderViewModels[3];
     viewer.extend(Cesium.viewerCesiumInspectorMixin);
     viewer.cesiumInspector.container.style.display = "none";
     viewer.scene.debugShowFramesPerSecond = true;
