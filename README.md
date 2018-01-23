@@ -6,22 +6,16 @@
            <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/CSG/screenshot.jpg" /> 
     </a><br />
     <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/CSG/index.html">CSG</a><br />
-    
-    
     <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/LOD/index.html">
        <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/LOD/screenshot.jpg" /> 
     </a><br />
     <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/LOD/index.html">LOD</a><br />
-    
-    
- <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/MeshVisualizer/index.html">MeshVisualizer</a><br />
+   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/MeshVisualizer/index.html">MeshVisualizer</a><br />
  <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/helloworld.html">physics/helloworld</a><br />
-    
-     <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/cloth.html">
+  <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/cloth.html">
         <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/cloth.jpg" />
      </a><br /> 
     <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/cloth.html">physics/cloth</a><br />
-    
     <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/vehicle.html">
        <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/vehicle.jpg" />
     </a><br /> 
@@ -30,7 +24,6 @@
    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html">
      <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/screenshot.jpg" /> 
    </a><br />
-
  <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html">VolumeRendering</a><br />
 
 Example<br/>
