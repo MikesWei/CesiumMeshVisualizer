@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>MeteoLib参考文档: 类: FramebufferTexture</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">类: FramebufferTexture</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+            <span class="ancestors"><a href="Cesium.html">Cesium</a>.</span>
+        
+        FramebufferTexture
+        </h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+
+    <h4 class="name" id="FramebufferTexture"><span class="type-signature"></span>new FramebufferTexture<span class="signature">(mesh)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    帧缓存纹理类，可以将一个mesh渲染到帧缓存并作为纹理提供给其他mesh。<br/>需要配合<a href="Cesium.MeshVisualizer.html">Cesium.MeshVisualizer</a>、<a href="Cesium.Mesh.html">Cesium.Mesh</a>、<a href="Cesium.MeshMaterial.html">Cesium.MeshMaterial</a>使用。
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>mesh</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="Cesium.Mesh.html">Cesium.Mesh</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>mesh</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="Cesium.Mesh.html">Cesium.Mesh</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>texture</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Texture</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line3369">line 3369</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>MeshVisualizer = Cesium.MeshVisualizer;
+        Mesh = Cesium.Mesh;
+        MeshMaterial = Cesium.MeshMaterial; 
+        FramebufferTexture = Cesium.FramebufferTexture; 
+        Shaders = VolumeRendering.Shaders; 
+
+        var center2 = Cesium.Cartesian3.fromDegrees(homePosition[0]+3.5, homePosition[1] , 50000);
+        var modelMatrix2 = Cesium.Transforms.eastNorthUpToFixedFrame(center2);
+
+        var meshVisualizer = new MeshVisualizer({
+            modelMatrix: modelMatrix2,
+            up: { y: 1 },
+            scale: new Cesium.Cartesian3(2,2,2)
+        });
+        viewer.scene.primitives.add(meshVisualizer);
+
+        var guiControls = new function () {
+            this.model = 'bonsai';
+            this.steps = 256.0;
+            this.alphaCorrection = 1.0;
+            this.color1 = "#00FA58";
+            this.stepPos1 = 0.1;
+            this.color2 = "#CC6600";
+            this.stepPos2 = 0.7;
+            this.color3 = "#F2F200";
+            this.stepPos3 = 1.0;
+        };
+        function updateTransferFunction() {
+            var canvas = document.createElement('canvas');
+            canvas.height = 20;
+            canvas.width = 256;
+
+            var ctx = canvas.getContext('2d');
+
+            var grd = ctx.createLinearGradient(0, 0, canvas.width - 1, canvas.height - 1);
+            grd.addColorStop(guiControls.stepPos1, guiControls.color1);
+            grd.addColorStop(guiControls.stepPos2, guiControls.color2);
+            grd.addColorStop(guiControls.stepPos3, guiControls.color3);
+
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, canvas.width - 1, canvas.height - 1);
+
+            return canvas;
+        }
+
+        var dimensions = new Cesium.Cartesian3(50000, 50000, 50000);
+        var boxGeometry = Cesium.BoxGeometry.createGeometry(Cesium.BoxGeometry.fromDimensions({
+            dimensions: dimensions,
+            vertexFormat: Cesium.VertexFormat.POSITION_ONLY
+        }));
+
+        var materialFirstPass = new MeshMaterial({
+            vertexShader: Shaders.vertexShaderFirstPass,
+            fragmentShader: Shaders.fragmentShaderFirstPass,
+            side: MeshMaterial.Sides.BACK,
+            uniforms: {
+                dimensions: dimensions
+            }
+        });
+        var meshFirstPass = new Mesh(boxGeometry, materialFirstPass);
+        var rtTexture = new FramebufferTexture(meshFirstPass);//这里使用FramebufferTexture
+        var transferTexture = updateTransferFunction();
+        var materialSecondPass = new MeshMaterial({
+            vertexShader: Shaders.vertexShaderSecondPass,
+            fragmentShader: Shaders.fragmentShaderSecondPass,
+            side: MeshMaterial.Sides.FRONT,
+            uniforms: {
+                alpha: 1,
+                dimensions: dimensions,
+                tex: rtTexture,
+                cubeTex: "./teapot.raw.png",
+                transferTex: transferTexture,
+                steps: guiControls.steps,
+                alphaCorrection: guiControls.alphaCorrection
+            }
+        });
+
+        var meshSecondPass = new Mesh(boxGeometry, materialSecondPass);
+        meshVisualizer.add(meshSecondPass);</code></pre>
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">主页</a></h2><h3>命名空间</h3><ul><li><a href="Cesium.html">Cesium</a></li></ul><h3>类</h3><ul><li><h5><a href="Cesium.html">Cesium</a></h5></li><li><a href="Cesium.ArrowGeometry.html">ArrowGeometry</a></li><li><a href="Cesium.BasicGeometry.html">BasicGeometry</a></li><li><a href="Cesium.CSG.html">CSG</a></li><li><a href="Cesium.CSG.CSG.Node.html">CSG.Node</a></li><li><a href="Cesium.CSG.CSG.Plane.html">CSG.Plane</a></li><li><a href="Cesium.CSG.CSG.Polygon.html">CSG.Polygon</a></li><li><a href="Cesium.CSG.CSG.Vector.html">CSG.Vector</a></li><li><a href="Cesium.CSG.CSG.Vertex.html">CSG.Vertex</a></li><li><a href="Cesium.FramebufferTexture.html">FramebufferTexture</a></li><li><a href="Cesium.GeometryUtils.html">GeometryUtils</a></li><li><a href="Cesium.LOD.html">LOD</a></li><li><a href="Cesium.Mesh.html">Mesh</a></li><li><a href="Cesium.MeshMaterial.html">MeshMaterial</a></li><li><a href="Cesium.MeshVisualizer.html">MeshVisualizer</a></li><li><a href="Cesium.Path.html">Path</a></li><li><a href="Cesium.PlaneBufferGeometry.html">PlaneBufferGeometry</a></li><li><a href="Cesium.PlaneGeometry.html">PlaneGeometry</a></li><li><a href="Cesium.ReferenceMesh.html">ReferenceMesh</a></li><li><a href="Cesium.RendererUtils.html">RendererUtils</a></li><li><a href="Cesium.Rotation.html">Rotation</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Tue Jan 23 2018 23:09:03 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
