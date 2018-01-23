@@ -1,4 +1,7 @@
-﻿//准备
+﻿
+appConfig.BaseURL="../";
+window.CESIUM_BASE_URL = appConfig.BaseURL + "ThirdParty/Cesium/";
+//准备
 var homePosition = [109.88, 38.18, 300000];//初始位置
 var viewer = null;
 var home = Cesium.Cartesian3.fromDegrees(homePosition[0], homePosition[1], homePosition[2]);
