@@ -1,4 +1,4 @@
-#CesiumMeshVisualizer seed <a href='https://mikeswei.github.io/CesiumMeshVisualizer/Document/index.html'> document</a><br/>
+#CesiumMeshVisualizer seed <a href='https://mikeswei.github.io/CesiumMeshVisualizer/Document/index.html'> document</a> <a href="https://mikeswei.github.io/CesiumMeshVisualizer/build/index.html">demo</a><br/>
 Example<br/>
 
 
