@@ -1,5 +1,5 @@
 ﻿var appConfig = {  
-    BaseURL: "/" 
+    BaseURL: "./" 
 }
 window.CESIUM_BASE_URL = appConfig.BaseURL + "ThirdParty/Cesium/";
 if (typeof define === "function") {
