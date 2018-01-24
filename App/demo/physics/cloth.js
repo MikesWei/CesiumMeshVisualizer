@@ -13,379 +13,375 @@
 //       Cesium,
 //       common
 //       ) {
-    MeshVisualizer = Cesium.MeshVisualizer;
-    Mesh = Cesium.Mesh;
-    MeshMaterial = Cesium.MeshMaterial;
-    FramebufferTexture = Cesium.FramebufferTexture;
-    GeometryUtils = Cesium.GeometryUtils;
-    LOD = Cesium.LOD;
-    PlaneBufferGeometry = Cesium.PlaneBufferGeometry;
-    BasicMeshMaterial = Cesium.BasicMeshMaterial;
+MeshVisualizer = Cesium.MeshVisualizer;
+Mesh = Cesium.Mesh;
+MeshMaterial = Cesium.MeshMaterial;
+FramebufferTexture = Cesium.FramebufferTexture;
+GeometryUtils = Cesium.GeometryUtils;
+LOD = Cesium.LOD;
+PlaneBufferGeometry = Cesium.PlaneBufferGeometry;
+BasicMeshMaterial = Cesium.BasicMeshMaterial;
+MeshPhongMaterial = Cesium.MeshPhongMaterial;
 
-    homePosition[2] = 100;
-    init();
+homePosition[2] = 100;
+init();
 
-    var center = Cesium.Cartesian3.fromDegrees(homePosition[0], homePosition[1], 10);
-    var modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(center);
+var center = Cesium.Cartesian3.fromDegrees(homePosition[0], homePosition[1], 10);
+var modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(center);
 
-    var meshVisualizer = new MeshVisualizer({
-        modelMatrix: modelMatrix,
-        up: { y: 1 },
-        referenceAxisParameter: {
-            length: 100,
-            width: 0.05,
-            headLength: 2,
-            headWidth: 0.1
-        }
-    });
-    viewer.scene.primitives.add(meshVisualizer);
-    meshVisualizer.showReference = true;//显示坐标轴
-    Ammo().then(function () {
+var meshVisualizer = new MeshVisualizer({
+    modelMatrix: modelMatrix,
+    up: { y: 1 },
+    referenceAxisParameter: {
+        length: 100,
+        width: 0.05,
+        headLength: 2,
+        headWidth: 0.1
+    }
+});
+viewer.scene.primitives.add(meshVisualizer);
+meshVisualizer.showReference = true;//显示坐标轴
+Ammo().then(function () {
 
-        // Physics variables
-        var gravityConstant = -9.8;
-        var collisionConfiguration;
-        var dispatcher;
-        var broadphase;
-        var solver;
-        var physicsWorld;
-        var rigidBodies = [];
-        var margin = 0.05;
-        var hinge;
-        var cloth;
-        var transformAux1 = new Ammo.btTransform();
-        var armMovement = 0;
+    // Physics variables
+    var gravityConstant = -9.8;
+    var collisionConfiguration;
+    var dispatcher;
+    var broadphase;
+    var solver;
+    var physicsWorld;
+    var rigidBodies = [];
+    var margin = 0.05;
+    var hinge;
+    var cloth;
+    var transformAux1 = new Ammo.btTransform();
+    var armMovement = 0;
 
-        function initPhysics() {
+    function initPhysics() {
 
-            // Physics configuration
+        // Physics configuration
 
-            collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
-            dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
-            broadphase = new Ammo.btDbvtBroadphase();
-            solver = new Ammo.btSequentialImpulseConstraintSolver();
-            softBodySolver = new Ammo.btDefaultSoftBodySolver();
-            physicsWorld = new Ammo.btSoftRigidDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
-            physicsWorld.setGravity(new Ammo.btVector3(0, gravityConstant, 0));
-            physicsWorld.getWorldInfo().set_m_gravity(new Ammo.btVector3(0, gravityConstant, 0));
+        collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+        dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
+        broadphase = new Ammo.btDbvtBroadphase();
+        solver = new Ammo.btSequentialImpulseConstraintSolver();
+        softBodySolver = new Ammo.btDefaultSoftBodySolver();
+        physicsWorld = new Ammo.btSoftRigidDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
+        physicsWorld.setGravity(new Ammo.btVector3(0, gravityConstant, 0));
+        physicsWorld.getWorldInfo().set_m_gravity(new Ammo.btVector3(0, gravityConstant, 0));
 
-        }
+    }
 
-        function createRandomColor() {
-            return Cesium.Color.fromRandom({ alpha: 1 })//fromRgba(Math.floor(Math.random() * (1 << 24)));
-        }
-        function createMaterial() {
-            return new MeshMaterial({
-                defaultColor: createRandomColor(),
-                side: MeshMaterial.Sides.DOUBLE,
-                translucent: false
-            });
-        }
-        function createObjects() {
+    function createRandomColor() {
+        return Cesium.Color.fromRandom({ alpha: 1 })//fromRgba(Math.floor(Math.random() * (1 << 24)));
+    }
+    function createMaterial() {
+        return new MeshPhongMaterial({
+            defaultColor: createRandomColor(),
+            side: MeshMaterial.Sides.DOUBLE,
+            translucent: false
+        });
+    }
+    function createObjects() {
 
-            var pos = new Cesium.Cartesian3();
-            var quat = new Cesium.Quaternion();
+        var pos = new Cesium.Cartesian3();
+        var quat = new Cesium.Quaternion();
 
-            // Ground
-            pos.x = 0, pos.y = -0.5, pos.z = 0;
-            quat.x = 0, quat.y = 0, quat.z = 0, quat.w = 1;
-            var ground = createParalellepiped(40, 1, 40, 0, pos, quat, new MeshMaterial({
-                defaultColor: "rgb(125,125,125)",
-                side: MeshMaterial.Sides.DOUBLE,
-                translucent: false
-            }));
+        // Ground
+        pos.x = 0, pos.y = -0.5, pos.z = 0;
+        quat.x = 0, quat.y = 0, quat.z = 0, quat.w = 1;
+        var ground = createParalellepiped(40, 1, 40, 0, pos, quat, new MeshPhongMaterial({
+            defaultColor: "rgb(125,125,125)",
+            side: MeshMaterial.Sides.DOUBLE,
+            translucent: false
+        }));
 
-            // Wall
-            var brickMass = 0.5;
-            var brickLength = 1.2;
-            var brickDepth = 0.6;
-            var brickHeight = brickLength * 0.5;
-            var numBricksLength = 6;
-            var numBricksHeight = 8;
-            var z0 = -numBricksLength * brickLength * 0.5;
+        // Wall
+        var brickMass = 0.5;
+        var brickLength = 1.2;
+        var brickDepth = 0.6;
+        var brickHeight = brickLength * 0.5;
+        var numBricksLength = 6;
+        var numBricksHeight = 8;
+        var z0 = -numBricksLength * brickLength * 0.5;
 
-            pos.x = 0, pos.y = brickHeight * 0.5, pos.z = z0;
-            quat.x = 0, quat.y = 0, quat.z = 0, quat.w = 1;
-            for (var j = 0; j < numBricksHeight; j++) {
+        pos.x = 0, pos.y = brickHeight * 0.5, pos.z = z0;
+        quat.x = 0, quat.y = 0, quat.z = 0, quat.w = 1;
+        for (var j = 0; j < numBricksHeight; j++) {
 
-                var oddRow = (j % 2) == 1;
+            var oddRow = (j % 2) == 1;
 
-                pos.z = z0;
+            pos.z = z0;
 
-                if (oddRow) {
-                    pos.z -= 0.25 * brickLength;
-                }
-
-                var nRow = oddRow ? numBricksLength + 1 : numBricksLength;
-                for (var i = 0; i < nRow; i++) {
-
-                    var brickLengthCurrent = brickLength;
-                    var brickMassCurrent = brickMass;
-                    if (oddRow && (i == 0 || i == nRow - 1)) {
-                        brickLengthCurrent *= 0.5;
-                        brickMassCurrent *= 0.5;
-                    }
-
-                    var brick = createParalellepiped(brickDepth, brickHeight, brickLengthCurrent, brickMassCurrent, pos, quat, createMaterial());
-
-                    if (oddRow && (i == 0 || i == nRow - 2)) {
-                        pos.z += 0.75 * brickLength;
-                    }
-                    else {
-                        pos.z += brickLength;
-                    }
-
-                }
-                pos.y += brickHeight;
+            if (oddRow) {
+                pos.z -= 0.25 * brickLength;
             }
 
-            // The cloth
-            // Cloth graphic object
-            var clothWidth = 4;
-            var clothHeight = 3;
-            var clothNumSegmentsZ = clothWidth * 5;
-            var clothNumSegmentsY = clothHeight * 5;
-            var clothSegmentLengthZ = clothWidth / clothNumSegmentsZ;
-            var clothSegmentLengthY = clothHeight / clothNumSegmentsY;
-            var clothPos = new Cesium.Cartesian3(-3, 3, 2);
+            var nRow = oddRow ? numBricksLength + 1 : numBricksLength;
+            for (var i = 0; i < nRow; i++) {
 
-            var clothGeometry = new PlaneBufferGeometry(clothWidth, clothHeight, clothNumSegmentsZ, clothNumSegmentsY);
-            //clothGeometry.rotateY(Math.PI * 0.5)
-            //clothGeometry.translate(clothPos.x, clothPos.y + clothHeight * 0.5, clothPos.z - clothWidth * 0.5)
-
-            var clothMaterial = new BasicMeshMaterial({
-                defaultColor: "rgb(255,255,255)",
-                side: MeshMaterial.Sides.DOUBLE,
-                translucent: false,
-                uniforms: {
-                    diffuseColorMap: {
-                        value: "./textures/grid.png",
-                    }
+                var brickLengthCurrent = brickLength;
+                var brickMassCurrent = brickMass;
+                if (oddRow && (i == 0 || i == nRow - 1)) {
+                    brickLengthCurrent *= 0.5;
+                    brickMassCurrent *= 0.5;
                 }
-            });
 
-            cloth = new Mesh(clothGeometry, clothMaterial);
+                var brick = createParalellepiped(brickDepth, brickHeight, brickLengthCurrent, brickMassCurrent, pos, quat, createMaterial());
 
-            meshVisualizer.add(cloth);
+                if (oddRow && (i == 0 || i == nRow - 2)) {
+                    pos.z += 0.75 * brickLength;
+                }
+                else {
+                    pos.z += brickLength;
+                }
+
+            }
+            pos.y += brickHeight;
+        }
+
+        // The cloth
+        // Cloth graphic object
+        var clothWidth = 4;
+        var clothHeight = 3;
+        var clothNumSegmentsZ = clothWidth * 5;
+        var clothNumSegmentsY = clothHeight * 5;
+        var clothSegmentLengthZ = clothWidth / clothNumSegmentsZ;
+        var clothSegmentLengthY = clothHeight / clothNumSegmentsY;
+        var clothPos = new Cesium.Cartesian3(-3, 3, 2);
+
+        var clothGeometry = new PlaneBufferGeometry(clothWidth, clothHeight, clothNumSegmentsZ, clothNumSegmentsY);
+
+        var clothMaterial = new MeshPhongMaterial({
+            defaultColor: "rgb(255,255,255)",
+            side: MeshMaterial.Sides.DOUBLE,
+            translucent: false
+        });
+
+        cloth = new Mesh(clothGeometry, clothMaterial);
+        GeometryUtils.rotateY(cloth.geometry, Math.PI * 0.5)
+        GeometryUtils.translate(cloth.geometry, clothPos.x, clothPos.y + clothHeight * 0.5, clothPos.z - clothWidth * 0.5)
+        GeometryUtils.computeVertexNormals(cloth.geometry);
+        meshVisualizer.add(cloth);
 
 
-            // Cloth physic object
-            var softBodyHelpers = new Ammo.btSoftBodyHelpers();
-            var clothCorner00 = new Ammo.btVector3(clothPos.x, clothPos.y + clothHeight, clothPos.z);
-            var clothCorner01 = new Ammo.btVector3(clothPos.x, clothPos.y + clothHeight, clothPos.z - clothWidth);
-            var clothCorner10 = new Ammo.btVector3(clothPos.x, clothPos.y, clothPos.z);
-            var clothCorner11 = new Ammo.btVector3(clothPos.x, clothPos.y, clothPos.z - clothWidth);
-            var clothSoftBody = softBodyHelpers.CreatePatch(physicsWorld.getWorldInfo(), clothCorner00, clothCorner01, clothCorner10, clothCorner11, clothNumSegmentsZ + 1, clothNumSegmentsY + 1, 0, true);
-            var sbConfig = clothSoftBody.get_m_cfg();
-            sbConfig.set_viterations(10);
-            sbConfig.set_piterations(10);
+        // Cloth physic object
+        var softBodyHelpers = new Ammo.btSoftBodyHelpers();
+        var clothCorner00 = new Ammo.btVector3(clothPos.x, clothPos.y + clothHeight, clothPos.z);
+        var clothCorner01 = new Ammo.btVector3(clothPos.x, clothPos.y + clothHeight, clothPos.z - clothWidth);
+        var clothCorner10 = new Ammo.btVector3(clothPos.x, clothPos.y, clothPos.z);
+        var clothCorner11 = new Ammo.btVector3(clothPos.x, clothPos.y, clothPos.z - clothWidth);
+        var clothSoftBody = softBodyHelpers.CreatePatch(physicsWorld.getWorldInfo(), clothCorner00, clothCorner01, clothCorner10, clothCorner11, clothNumSegmentsZ + 1, clothNumSegmentsY + 1, 0, true);
+        var sbConfig = clothSoftBody.get_m_cfg();
+        sbConfig.set_viterations(10);
+        sbConfig.set_piterations(10);
 
-            clothSoftBody.setTotalMass(0.9, false)
-            Ammo.castObject(clothSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(margin * 3);
-            physicsWorld.addSoftBody(clothSoftBody, 1, -1);
-            cloth.physicsBody = clothSoftBody;
+        clothSoftBody.setTotalMass(0.9, false)
+        Ammo.castObject(clothSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(margin * 3);
+        physicsWorld.addSoftBody(clothSoftBody, 1, -1);
+        cloth.physicsBody = clothSoftBody;
+        // Disable deactivation
+        clothSoftBody.setActivationState(4);
+
+        // The base
+        var armMass = 2;
+        var armLength = 3 + clothWidth;
+        var pylonHeight = clothPos.y + clothHeight;
+        var baseMaterial = new MeshPhongMaterial({
+            defaultColor: "rgb(255,255,0)",
+            side: MeshMaterial.Sides.DOUBLE,
+            translucent: false
+        });
+        pos.x = clothPos.x, pos.y = 0.1, pos.z = clothPos.z - armLength;
+        quat.x = 0, quat.y = 0, quat.z = 0, quat.w = 1;
+        var base = createParalellepiped(1, 0.2, 1, 0, pos, quat, baseMaterial);
+
+        pos.x = clothPos.x, pos.y = 0.5 * pylonHeight, pos.z = clothPos.z - armLength;
+        var pylon = createParalellepiped(0.4, pylonHeight, 0.4, 0, pos, quat, baseMaterial);
+
+        pos.x = clothPos.x, pos.y = pylonHeight + 0.2, pos.z = clothPos.z - 0.5 * armLength;
+        var arm = createParalellepiped(0.4, 0.4, armLength + 0.4, armMass, pos, quat, baseMaterial);
+
+
+        // Glue the cloth to the arm
+        var influence = 0.5;
+        clothSoftBody.appendAnchor(0, arm.physicsBody, false, influence);
+        clothSoftBody.appendAnchor(clothNumSegmentsZ, arm.physicsBody, false, influence);
+
+        // Hinge constraint to move the arm
+        var pivotA = new Ammo.btVector3(0, pylonHeight * 0.5, 0);
+        var pivotB = new Ammo.btVector3(0, -0.2, -armLength * 0.5);
+        var axis = new Ammo.btVector3(0, 1, 0);
+        hinge = new Ammo.btHingeConstraint(pylon.physicsBody, arm.physicsBody, pivotA, pivotB, axis, axis, true);
+        physicsWorld.addConstraint(hinge, true);
+
+    }
+
+    function createParalellepiped(sx, sy, sz, mass, pos, quat, material) {
+
+        var threeObject = new Mesh(Cesium.BoxGeometry.fromDimensions({
+            dimensions: new Cesium.Cartesian3(sx, sy, sz),
+            vertexFormat: new Cesium.VertexFormat({
+                position: true,
+                st: true,
+                normal: true
+            })
+        }), material);
+
+        threeObject.quaternion = new Cesium.Quaternion();
+        threeObject.geometry.attributes.uv = threeObject.geometry.attributes.st;
+        threeObject.geometry.attributes.st = undefined;
+        var shape = new Ammo.btBoxShape(new Ammo.btVector3(sx * 0.5, sy * 0.5, sz * 0.5));
+        shape.setMargin(margin);
+
+        createRigidBody(threeObject, shape, mass, pos, quat);
+
+        return threeObject;
+
+    }
+
+    function createRigidBody(threeObject, physicsShape, mass, pos, quat) {
+
+        Cesium.Cartesian3.clone(pos, threeObject.position);
+        Cesium.Quaternion.clone(quat, threeObject.quaternion);
+
+        var transform = new Ammo.btTransform();
+        transform.setIdentity();
+        transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
+        transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
+        var motionState = new Ammo.btDefaultMotionState(transform);
+
+        var localInertia = new Ammo.btVector3(0, 0, 0);
+        physicsShape.calculateLocalInertia(mass, localInertia);
+
+        var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, physicsShape, localInertia);
+        var body = new Ammo.btRigidBody(rbInfo);
+
+        threeObject.physicsBody = body;
+
+        meshVisualizer.add(threeObject);
+
+        if (mass > 0) {
+            rigidBodies.push(threeObject);
+
             // Disable deactivation
-            clothSoftBody.setActivationState(4);
+            body.setActivationState(4);
+        }
 
-            // The base
-            var armMass = 2;
-            var armLength = 3 + clothWidth;
-            var pylonHeight = clothPos.y + clothHeight;
-            var baseMaterial = new MeshMaterial({
-                defaultColor: "rgb(255,255,0)",
-                side: MeshMaterial.Sides.DOUBLE,
-                translucent: false
-            });
-            pos.x = clothPos.x, pos.y = 0.1, pos.z = clothPos.z - armLength;
-            quat.x = 0, quat.y = 0, quat.z = 0, quat.w = 1;
-            var base = createParalellepiped(1, 0.2, 1, 0, pos, quat, baseMaterial);
+        physicsWorld.addRigidBody(body);
 
-            pos.x = clothPos.x, pos.y = 0.5 * pylonHeight, pos.z = clothPos.z - armLength;
-            var pylon = createParalellepiped(0.4, pylonHeight, 0.4, 0, pos, quat, baseMaterial);
+    }
 
-            pos.x = clothPos.x, pos.y = pylonHeight + 0.2, pos.z = clothPos.z - 0.5 * armLength;
-            var arm = createParalellepiped(0.4, 0.4, armLength + 0.4, armMass, pos, quat, baseMaterial);
+    //deltaTime单位是：秒/s
+    function updatePhysics(deltaTime) {
 
+        // Hinge control
+        hinge.enableAngularMotor(true, 0.8 * armMovement, 50);
 
-            // Glue the cloth to the arm
-            var influence = 0.5;
-            clothSoftBody.appendAnchor(0, arm.physicsBody, false, influence);
-            clothSoftBody.appendAnchor(clothNumSegmentsZ, arm.physicsBody, false, influence);
+        // Step world
+        physicsWorld.stepSimulation(deltaTime, 10);
 
-            // Hinge constraint to move the arm
-            var pivotA = new Ammo.btVector3(0, pylonHeight * 0.5, 0);
-            var pivotB = new Ammo.btVector3(0, -0.2, -armLength * 0.5);
-            var axis = new Ammo.btVector3(0, 1, 0);
-            hinge = new Ammo.btHingeConstraint(pylon.physicsBody, arm.physicsBody, pivotA, pivotB, axis, axis, true);
-            physicsWorld.addConstraint(hinge, true);
+        // Update cloth
+        var softBody = cloth.physicsBody;
+        var clothPositions = cloth.geometry.attributes.position.values;
+        var numVerts = clothPositions.length / 3;
+        var nodes = softBody.get_m_nodes();
+        var indexFloat = 0;
+        for (var i = 0; i < numVerts; i++) {
+
+            var node = nodes.at(i);
+            var nodePos = node.get_m_x();
+            clothPositions[indexFloat++] = nodePos.x();
+            clothPositions[indexFloat++] = nodePos.y();
+            clothPositions[indexFloat++] = nodePos.z();
 
         }
 
-        function createParalellepiped(sx, sy, sz, mass, pos, quat, material) {
-
-            var threeObject = new Mesh(Cesium.BoxGeometry.fromDimensions({
-                dimensions: new Cesium.Cartesian3(sx, sy, sz),
-                vertexFormat: new Cesium.VertexFormat({
-                    position: true,
-                    st: true,
-                    normal: true
-                })
-            }), material);
-
-            threeObject.quaternion = new Cesium.Quaternion();
-            threeObject.geometry.attributes.uv = threeObject.geometry.attributes.st;
-            threeObject.geometry.attributes.st = undefined;
-            var shape = new Ammo.btBoxShape(new Ammo.btVector3(sx * 0.5, sy * 0.5, sz * 0.5));
-            shape.setMargin(margin);
-
-            createRigidBody(threeObject, shape, mass, pos, quat);
-
-            return threeObject;
-
+        cloth.geometry.attributes.position.needsUpdate = true;
+        if (cloth.geometry.primitiveType == Cesium.PrimitiveType.TRIANGLES) {
+            // Cesium.GeometryPipeline.computeNormal(cloth.geometry);
+            GeometryUtils.computeVertexNormals(cloth.geometry);
         }
 
-        function createRigidBody(threeObject, physicsShape, mass, pos, quat) {
+        // Update rigid bodies
+        for (var i = 0, il = rigidBodies.length; i < il; i++) {
+            var objGraph = rigidBodies[i];
+            var objPhys = objGraph.physicsBody;
+            var ms = objPhys.getMotionState();
+            if (ms) {
 
-            Cesium.Cartesian3.clone(pos, threeObject.position);
-            Cesium.Quaternion.clone(quat, threeObject.quaternion);
-
-            var transform = new Ammo.btTransform();
-            transform.setIdentity();
-            transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
-            transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
-            var motionState = new Ammo.btDefaultMotionState(transform);
-
-            var localInertia = new Ammo.btVector3(0, 0, 0);
-            physicsShape.calculateLocalInertia(mass, localInertia);
-
-            var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, physicsShape, localInertia);
-            var body = new Ammo.btRigidBody(rbInfo);
-
-            threeObject.physicsBody = body;
-
-            meshVisualizer.add(threeObject);
-
-            if (mass > 0) {
-                rigidBodies.push(threeObject);
-
-                // Disable deactivation
-                body.setActivationState(4);
+                ms.getWorldTransform(transformAux1);
+                var p = transformAux1.getOrigin();
+                var q = transformAux1.getRotation();
+                objGraph.position.x = p.x();
+                objGraph.position.y = p.y();
+                objGraph.position.z = p.z();
+                objGraph.quaternion.x = q.x();
+                objGraph.quaternion.y = q.y();
+                objGraph.quaternion.z = q.z();
+                objGraph.quaternion.w = q.w();
+                //objGraph.needsUpdate = true;
+                objGraph.modelMatrixNeedsUpdate = true;
             }
-
-            physicsWorld.addRigidBody(body);
-
         }
 
-        //deltaTime单位是：秒/s
-        function updatePhysics(deltaTime) {
+    }
 
-            // Hinge control
-            hinge.enableAngularMotor(true, 0.8 * armMovement, 50);
+    var start = false;
+    function initInput() {
 
-            // Step world
-            physicsWorld.stepSimulation(deltaTime, 10);
-
-            // Update cloth
-            var softBody = cloth.physicsBody;
-            var clothPositions = cloth.geometry.attributes.position.values;
-            var numVerts = clothPositions.length / 3;
-            var nodes = softBody.get_m_nodes();
-            var indexFloat = 0;
-            for (var i = 0; i < numVerts; i++) {
-
-                var node = nodes.at(i);
-                var nodePos = node.get_m_x();
-                clothPositions[indexFloat++] = nodePos.x();
-                clothPositions[indexFloat++] = nodePos.y();
-                clothPositions[indexFloat++] = nodePos.z();
-
-            }
-
-            cloth.geometry.attributes.position.needsUpdate = true;
-            if (cloth.geometry.primitiveType == Cesium.PrimitiveType.TRIANGLES) {
-                Cesium.GeometryPipeline.computeNormal(cloth.geometry);
-            }
-
-            // Update rigid bodies
-            for (var i = 0, il = rigidBodies.length; i < il; i++) {
-                var objGraph = rigidBodies[i];
-                var objPhys = objGraph.physicsBody;
-                var ms = objPhys.getMotionState();
-                if (ms) {
-
-                    ms.getWorldTransform(transformAux1);
-                    var p = transformAux1.getOrigin();
-                    var q = transformAux1.getRotation();
-                    objGraph.position.x = p.x();
-                    objGraph.position.y = p.y();
-                    objGraph.position.z = p.z();
-                    objGraph.quaternion.x = q.x();
-                    objGraph.quaternion.y = q.y();
-                    objGraph.quaternion.z = q.z();
-                    objGraph.quaternion.w = q.w();
-                    //objGraph.needsUpdate = true;
-                    objGraph.modelMatrixNeedsUpdate = true;
-                }
-            }
-
-        }
-
-        var start = false;
-        function initInput() {
-
-            window.addEventListener('keydown', function (event) {
-                if (!start) {
-                    return;
-                }
-                switch (event.keyCode) {
-                    // Q
-                    case 81:
-                        armMovement = 1;
-                        break;
-
-                        // A
-                    case 65:
-                        armMovement = -1;
-                        break;
-                }
-
-            }, false);
-
-            window.addEventListener('keyup', function (event) {
-
-                armMovement = 0;
-
-            }, false);
-
-        }
-
-        var startTime = new Date();
-        function update(frameState) {
-            var deltaTime = (new Date() - startTime) / 1000.0;
-            updatePhysics(deltaTime);
-            startTime = new Date();
-        }
-
-        var init = false;
-        setTimeout(function () {
-            if (!init) {
-                initPhysics();
-
-                createObjects();
-
-                initInput();
-                init = true;
-            }
+        window.addEventListener('keydown', function (event) {
             if (!start) {
-                meshVisualizer.beforeUpate.addEventListener(update);
-                start = true;
-            } else {
-                meshVisualizer.beforeUpate.removeEventListener(update);
-                start = false;
-
+                return;
             }
-        }, 1000 * 3);
-    });
+            switch (event.keyCode) {
+                // Q
+                case 81:
+                    armMovement = 1;
+                    break;
+
+                    // A
+                case 65:
+                    armMovement = -1;
+                    break;
+            }
+
+        }, false);
+
+        window.addEventListener('keyup', function (event) {
+
+            armMovement = 0;
+
+        }, false);
+
+    }
+
+    var startTime = new Date();
+    function update(frameState) {
+        var deltaTime = (new Date() - startTime) / 1000.0;
+        updatePhysics(deltaTime);
+        startTime = new Date();
+    }
+
+    var init = false;
+    setTimeout(function () {
+        if (!init) {
+            initPhysics();
+
+            createObjects();
+
+            initInput();
+            init = true;
+        }
+        if (!start) {
+            meshVisualizer.beforeUpate.addEventListener(update);
+            start = true;
+        } else {
+            meshVisualizer.beforeUpate.removeEventListener(update);
+            start = false;
+
+        }
+    }, 1000 * 3);
+});
 
 //});
- 
