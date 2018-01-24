@@ -1,4 +1,4 @@
-﻿define([
+define([
     'Core/Mesh',
     'Core/RendererUtils',
     'Core/MeshMaterial',
@@ -217,7 +217,7 @@
         this._modelMatrix = defaultValue(options.modelMatrix, Matrix4.IDENTITY);
         this._actualModelMatrix = Matrix4.clone(this._modelMatrix);
         this._ready = true;
-        this._modelMatrixNeedUpdate = true;
+        this._modelMatrixNeedsUpdate = true;
 
         this._isWireframe = false;
         this._up = defaultValue(options.up, new Cartesian3(0, 0, 1));
@@ -245,12 +245,80 @@
         this.add(this.referenceMesh);
         this._pickIds = [];
         this.beforeUpate = new Cesium.Event();
+        this._scene = null;
     }
+    var world2localMatrix = new Cesium.Matrix4();
+    var surfacePointLocal = new Cesium.Cartesian3();
+    var rayDir = new Cesium.Cartesian3();
+    var pos = new Cesium.Cartesian3();
+    var rayOriginLocal = new Cesium.Cartesian3();
+    var scratchRay = new Cesium.Ray();
 
     MeshVisualizer.prototype = {
+        /**
+        *
+        *创建一条射线，用局部坐标系表达
+        *@param {Cesium.Cartesian2}windowPosition
+        *@param {Cesium.Ray}result
+        *@return {Cesium.Ray}
+        */
+        getPickRay: function (windowPosition, result) {
+            if (!this._scene) {
+                return undefined;
+            }
+            if (!result) {
+                result = Cesium.Ray();
+            }
+            this._scene.camera.getPickRay(windowPosition, scratchRay);//ray用于计算小球发射点位置，这里射线的起始点是世界坐标，不能像Threejs那样直接拿来计算，需要转成局部坐标
+            this._scene.pickPosition(windowPosition, surfacePointLocal);//射线和局部场景的交点
 
+            if (!surfacePointLocal) {
+                return undefined;
+            }
+
+            Cesium.Cartesian3.clone(scratchRay.direction, rayDir);
+
+            //世界坐标转局部坐标
+            this.worldCoordinatesToLocal(scratchRay.origin, rayOriginLocal);
+            this.worldCoordinatesToLocal(surfacePointLocal, surfacePointLocal);
+
+            Cesium.Cartesian3.add(rayOriginLocal, rayDir, pos);
+            //计算发射方向
+            Cesium.Cartesian3.subtract(surfacePointLocal, pos, rayDir);
+            Cesium.Cartesian3.normalize(rayDir, rayDir);
+            Cesium.Cartesian3.clone(pos, result.origin);
+            Cesium.Cartesian3.clone(rayDir, result.direction);
+            return result;
+        },
+        /**
+        *世界坐标到局部坐标
+        *@param {Cesium.Cartesian3}worldCoordinates
+        *@param {Cesium.Cartesian3}result
+        *@return {Cesium.Cartesian3}
+        */
+        worldCoordinatesToLocal: function (worldCoordinates, result) {
+            if (!result) {
+                result = new Cartesian3();
+            }
+            Cesium.Matrix4.inverseTransformation(this._actualModelMatrix, world2localMatrix)
+            Cesium.Matrix4.multiplyByPoint(world2localMatrix, worldCoordinates, result);
+            return result;
+        },
+        /**
+       *局部坐标到世界坐标
+       *@param {Cesium.Cartesian3}localCoordinates
+       *@param {Cesium.Cartesian3}result
+       *@return {Cesium.Cartesian3}
+       */
+        localToWorldCoordinates: function (localCoordinates, result) {
+            if (!result) {
+                result = new Cartesian3();
+            }
+            Cesium.Matrix4.multiplyByPoint(this._actualModelMatrix, localCoordinates, result);
+            return result;
+        },
         onModelMatrixNeedUpdate: function () {
-            this._modelMatrixNeedUpdate = true;
+            this._modelMatrixNeedsUpdate = true;
         },
         /**
          *
@@ -285,7 +353,7 @@
                 this._position.z = z;
             }
             if (changed) {
-                this._modelMatrixNeedUpdate = true;
+                this._modelMatrixNeedsUpdate = true;
             }
         },
         /**
@@ -321,7 +389,7 @@
                 this._scale.z = z;
             }
             if (changed) {
-                this._modelMatrixNeedUpdate = true;
+                this._modelMatrixNeedsUpdate = true;
             }
         },
 
@@ -1050,6 +1118,9 @@
     *@param {Cesium.FrameState}frameState
     */
     MeshVisualizer.prototype.update = function (frameState) {
+        if (!this._scene) {
+            this._scene = frameState.camera._scene;
+        }
         if (!this._ready || !this.show && this._chidren.length > 0) {//如果未准备好则不加入渲染队列
             return;
         }
@@ -1065,7 +1136,7 @@
         if (sysWireframe != this._isWireframe) {
             wireframeChanged = true;
         }
-        if (this._modelMatrixNeedUpdate) {
+        if (this._modelMatrixNeedsUpdate) {
             this._actualModelMatrix = RendererUtils.computeModelMatrix(
                     this._modelMatrix,
                     this._position,
@@ -1078,7 +1149,7 @@
             }
             Cesium.Cartesian3.clone(this._scale, this._oldScale);
             Cesium.Cartesian3.clone(this._position, this._oldPosition);
-            this._modelMatrixNeedUpdate = false;
+            this._modelMatrixNeedsUpdate = false;
         }
 
         MeshVisualizer.traverse(this, function (mesh) {
@@ -1216,7 +1287,7 @@
 
         this._isWireframe = sysWireframe;
         wireframeChanged = false;
-        this._modelMatrixNeedUpdate = false;
+        this._modelMatrixNeedsUpdate = false;
         this._geometryChanged = false;
 
     }
@@ -1299,6 +1370,19 @@
     },
 
     Cesium.defineProperties(MeshVisualizer.prototype, {
+        modelMatrixNeedsUpdate: {
+            get: function () {
+                return this._modelMatrixNeedsUpdate;
+            },
+            set: function (val) {
+                this._modelMatrixNeedsUpdate = val;
+                if (val) {
+                    MeshVisualizer.traverse(this, function (child) {
+                        child._modelMatrixNeedsUpdate = val;
+                    }, false);
+                }
+            }
+        },
         showReference: {
             get: function () {
                 return this.referenceMesh.show;
@@ -1342,7 +1426,7 @@
             },
             set: function (val) {
                 this._modelMatrix = val;
-                this._modelMatrixNeedUpdate = true;
+                this._modelMatrixNeedsUpdate = true;
             }
         },
         rotation: {
@@ -1366,7 +1450,7 @@
             set: function (val) {
                 if (val.x != this._position.x || val.y != this._position.y || val.z != this._position.z) {
                     this._position = val;
-                    this._modelMatrixNeedUpdate = true;
+                    this._modelMatrixNeedsUpdate = true;
                 }
                 this._position = val;
             }
@@ -1378,7 +1462,7 @@
             set: function (val) {
                 if (val.x != this._scale.x || val.y != this._scale.y || val.z != this._scale.z) {
                     this._scale = val;
-                    this._modelMatrixNeedUpdate = true;
+                    this._modelMatrixNeedsUpdate = true;
                 }
                 this._scale = val;
             }
