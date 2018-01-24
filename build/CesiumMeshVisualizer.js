@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     
     var requirejs, require, define;
     (function (undef) {
@@ -1839,7 +1839,9 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
     }
     return MeshMaterial;
 });
-define('Core/GeometryUtils',['Util/CSG'], function (CSG) {
+define('Core/GeometryUtils',[
+    'Util/CSG' 
+], function (CSG, Vector3) {
 
     /**
     *
@@ -1860,6 +1862,179 @@ define('Core/GeometryUtils',['Util/CSG'], function (CSG) {
         }
         return attrNames
     }
+
+    var scratchPosition = new Cesium.Cartesian3();
+    var scratchQuaternion = new Cesium.Quaternion();
+    var scratchMatrix4 = new Cesium.Matrix4();
+    var scratchRotation = new Cesium.Matrix3();
+
+    /**
+    *绕x轴旋转，修改顶点坐标
+    *@param {Cesium.Geometry}geometry
+    *@param {Number}angle 弧度
+    */
+    GeometryUtils.rotateX = function (geometry, angle) {
+
+        var positions = geometry.attributes.position.values;
+
+        Cesium.Matrix3.fromRotationX(angle, scratchRotation);
+        Cesium.Matrix4.fromRotationTranslation(scratchRotation, Cesium.Cartesian3.ZERO, scratchMatrix4);
+
+        for (var i = 0; i < positions.length; i += 3) {
+            scratchPosition.x = positions[i];
+            scratchPosition.y = positions[i + 1];
+            scratchPosition.z = positions[i + 2];
+            Cesium.Matrix4.multiplyByPoint(scratchMatrix4, scratchPosition, scratchPosition);
+            positions[i] = scratchPosition.x;
+            positions[i + 1] = scratchPosition.y;
+            positions[i + 2] = scratchPosition.z;
+        }
+
+    }
+    /**
+    *绕y轴旋转，修改顶点坐标
+    *@param {Cesium.Geometry}geometry
+    *@param {Number}angle 弧度
+    */
+    GeometryUtils.rotateY = function (geometry, angle) {
+
+        var positions = geometry.attributes.position.values;
+
+        Cesium.Matrix3.fromRotationY(angle, scratchRotation);
+        Cesium.Matrix4.fromRotationTranslation(scratchRotation, Cesium.Cartesian3.ZERO, scratchMatrix4);
+
+        for (var i = 0; i < positions.length; i += 3) {
+            scratchPosition.x = positions[i];
+            scratchPosition.y = positions[i + 1];
+            scratchPosition.z = positions[i + 2];
+            Cesium.Matrix4.multiplyByPoint(scratchMatrix4, scratchPosition, scratchPosition);
+            positions[i] = scratchPosition.x;
+            positions[i + 1] = scratchPosition.y;
+            positions[i + 2] = scratchPosition.z;
+        }
+
+    }
+    /**
+    *绕z轴旋转，修改顶点坐标
+    *@param {Cesium.Geometry}geometry
+    *@param {Number}angle 弧度
+    */
+    GeometryUtils.rotateZ = function (geometry, angle) {
+
+        var positions = geometry.attributes.position.values;
+
+        Cesium.Matrix3.fromRotationZ(angle, scratchRotation);
+        Cesium.Matrix4.fromRotationTranslation(scratchRotation, Cesium.Cartesian3.ZERO, scratchMatrix4);
+
+        for (var i = 0; i < positions.length; i += 3) {
+            scratchPosition.x = positions[i];
+            scratchPosition.y = positions[i + 1];
+            scratchPosition.z = positions[i + 2];
+            Cesium.Matrix4.multiplyByPoint(scratchMatrix4, scratchPosition, scratchPosition);
+            positions[i] = scratchPosition.x;
+            positions[i + 1] = scratchPosition.y;
+            positions[i + 2] = scratchPosition.z;
+        }
+
+    }
+    /**
+    *
+    *@param {Cesium.Geometry}geometry
+    */
+    GeometryUtils.computeVertexNormals = function (geometry) {
+
+        var indices = geometry.indices;
+        var attributes = geometry.attributes;
+        var il = indices.length;
+        if (attributes.position) {
+
+            var positions = attributes.position.values;
+
+            if (attributes.normal === undefined) {
+                attributes.normal = new Cesium.GeometryAttribute({
+                    componentDatatype: Cesium.ComponentDatatype.FLOAT,
+                    componentsPerAttribute: 3,
+                    values: new Float32Array(positions.length)
+                })
+
+            } else {
+
+                // reset existing normals to zero
+
+                var array = attributes.normal.values;
+
+                for (var i = 0; i < il; i++) {
+
+                    array[i] = 0;
+
+                }
+
+            }
+
+            var normals = attributes.normal.values;
+
+            var vA, vB, vC;
+          
+            var pA = new Cesium.Cartesian3(), pB = new Cesium.Cartesian3(), pC = new Cesium.Cartesian3();
+            var cb = new Cesium.Cartesian3(), ab = new Cesium.Cartesian3();
+
+            for (var i = 0; i < il; i += 3) {
+
+                vA = indices[i + 0] * 3;
+                vB = indices[i + 1] * 3;
+                vC = indices[i + 2] * 3;
+
+                Cesium.Cartesian3.fromArray(positions, vA, pA);
+                Cesium.Cartesian3.fromArray(positions, vB, pB);
+                Cesium.Cartesian3.fromArray(positions, vC, pC);
+                  
+                Cesium.Cartesian3.subtract(pC, pB, cb);
+                Cesium.Cartesian3.subtract(pA, pB, ab);
+                Cesium.Cartesian3.cross(cb, ab, cb);
+                 
+                normals[vA] += cb.x;
+                normals[vA + 1] += cb.y;
+                normals[vA + 2] += cb.z;
+
+                normals[vB] += cb.x;
+                normals[vB + 1] += cb.y;
+                normals[vB + 2] += cb.z;
+
+                normals[vC] += cb.x;
+                normals[vC + 1] += cb.y;
+                normals[vC + 2] += cb.z;
+
+            }
+
+            normalizeNormals(geometry);
+
+            attributes.normal.needsUpdate = true;
+
+        }
+
+        return geometry;
+    }
+    function normalizeNormals(geometry) {
+
+        var normals = geometry.attributes.normal.values;
+
+        var x, y, z, n;
+
+        for (var i = 0; i < normals.length; i += 3) {
+
+            x = normals[i];
+            y = normals[i + 1];
+            z = normals[i + 2];
+
+            n = 1.0 / Math.sqrt(x * x + y * y + z * z);
+
+            normals[i] = x * n;
+            normals[i + 1] = y * n;
+            normals[i + 2] = z * n;
+        }
+
+    }
+
     /**
     *合并两个或两个以上图形类型（primitiveType），属性数量、名称以及属性值的类型（GeometryAttribute的componentDatatype、componentsPerAttribute等）都一致的几何体
     *@param {Array<Cesium.Geometry>}geometries 
@@ -2365,16 +2540,91 @@ define('Core/GeometryUtils',['Util/CSG'], function (CSG) {
 
     return GeometryUtils;
 });
+define('Core/Shaders/phong_frag',[],function () {
+    var phong_frag = '\n\
+varying vec3 v_position;\n\
+varying vec3 v_normal;\n\
+uniform float picked;\n\
+uniform vec4  pickedColor;\n\
+uniform vec4  defaultColor;\n\
+void main() {\n\
+    vec3 positionToEyeEC = -v_position; \n\
+    vec3 normalEC =normalize(v_normal);\n\
+    vec4 color=defaultColor;\n\
+    if(picked!=0.0){\n\
+        gl_FragColor = pickedColor;\n\
+    }\n\
+    czm_material material;\n\
+    material.specular = 0.0;\n\
+    material.shininess = 1.0;\n\
+    material.normal =  normalEC;\n\
+    material.emission =vec3(0.2,0.2,0.2);\n\
+    material.diffuse = color.rgb ;\n\
+    material.alpha =  color.a;\n\
+    gl_FragColor =  czm_phong(normalize(positionToEyeEC), material);\n\
+}';
+
+    return phong_frag;
+});
+define('Core/Shaders/phong_vert',[],function () {
+    var phong_vert = "\n\
+#ifdef GL_ES\n\
+    precision highp float;\n\
+#endif\n\
+\n\
+\n\
+\n\
+varying vec3 v_position;\n\
+varying vec3 v_normal;\n\
+\n\
+varying vec3 v_light0Direction;\n\
+\n\
+void main(void) \n\
+{\n\
+    vec4 pos =  modelViewMatrix * vec4( position,1.0);\n\
+    v_normal =  normalMatrix *  normal;\n\
+    v_position = pos.xyz;\n\
+    v_light0Direction = mat3( modelViewMatrix) * vec3(1.0,1.0,1.0);\n\
+    gl_Position =  projectionMatrix * pos;\n\
+}";
+
+    return phong_vert;
+});
+define('Core/MeshPhongMaterial',[
+    'Core/MeshMaterial',
+    'Core/Shaders/phong_frag',
+    'Core/Shaders/phong_vert' 
+], function (
+    MeshMaterial,
+    phong_frag,
+    phong_vert 
+    ) {
+    /**
+    * 
+    *@constructor
+    *@memberof Cesium
+    *@extends Cesium.MeshMaterial
+    */
+    function MeshPhongMaterial(options) {
+        MeshMaterial.apply(this, arguments);
+        this.vertexShader = phong_vert;
+        this.fragmentShader = phong_frag;
+    }
+    MeshPhongMaterial.prototype = new MeshMaterial();
+    return MeshPhongMaterial;
+});
 define('Core/Mesh',[
     'Core/Rotation',
     'Util/CSG',
     'Core/MeshMaterial',
-    'Core/GeometryUtils'
+    'Core/GeometryUtils',
+    'Core/MeshPhongMaterial'
 ], function (
     Rotation,
     CSG,
     MeshMaterial,
-    GeometryUtils
+    GeometryUtils,
+    MeshPhongMaterial
     ) {
     var defaultValue = Cesium.defaultValue;
     /**
@@ -2463,6 +2713,12 @@ define('Core/Mesh',[
         this._children = [];
         this._parent = null;
 
+        if (!this._geometry.attributes.normal
+            && this.material instanceof MeshPhongMaterial
+            && this._geometry.primitiveType == Cesium.PrimitiveType.TRIANGLES
+            ) {
+            GeometryUtils.computeVertexNormals(this._geometry);
+        }
     }
 
     Mesh.isGeometrySupported = function (geometry) {
@@ -6859,6 +7115,12 @@ define('Core/BasicMeshMaterial',[
     Path
     ) {
     var WebGLConstants = Cesium.WebGLConstants;
+    /**
+    * 
+    *@consotructor
+    *@memberof Cesium
+    *@extends Cesium.MeshMaterial
+    */
     function BasicMeshMaterial(options) {
         options = options ? options : {};
 
@@ -7149,7 +7411,8 @@ define('Main',[
     'Core/BasicGeometry',
     'Core/Shaders/ShaderLib',
     'Core/PlaneBufferGeometry',
-    'Util/CSG'
+    'Util/CSG',
+    'Core/MeshPhongMaterial' 
 ], function (
     RendererUtils,
     Mesh,
@@ -7166,7 +7429,8 @@ define('Main',[
     BasicGeometry,
     ShaderLib,
     PlaneBufferGeometry,
-    CSG
+    CSG,
+    MeshPhongMaterial 
   ) {
     if (typeof Cesium==='undefined') {
         Cesium = {};
@@ -7187,6 +7451,7 @@ define('Main',[
     Cesium.BasicGeometry = BasicGeometry;
     Cesium.PlaneBufferGeometry = PlaneBufferGeometry;
     Cesium.CSG = CSG;
+    Cesium.MeshPhongMaterial = MeshPhongMaterial; 
     return Cesium;
 });
     require([
