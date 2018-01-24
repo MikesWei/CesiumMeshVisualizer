@@ -1,6 +1,6 @@
 define([
     'Util/CSG' 
-], function (CSG, Vector3) {
+], function (CSG) {
 
     /**
     *
