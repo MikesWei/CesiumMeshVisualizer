@@ -23,7 +23,11 @@
    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/terrain.html">
        <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/terrain.jpg" />
     </a><br /> 
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/terrain.html">physics/vehicle</a><br /><br />
+   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/terrain.html">physics/terrain</a><br /><br />  
+   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/terrain.html">
+       <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/soft_volume.jpg" />
+    </a><br /> 
+   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/soft_volume.html">physics/soft_volume</a><br /><br />
    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/ReferenceMesh/index.html">ReferenceMesh</a><br /><br />
    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html">
      <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/screenshot.jpg" /> 
