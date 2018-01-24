@@ -1841,7 +1841,7 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
 });
 define('Core/GeometryUtils',[
     'Util/CSG' 
-], function (CSG, Vector3) {
+], function (CSG) {
 
     /**
     *
@@ -1914,6 +1914,7 @@ define('Core/GeometryUtils',[
         }
 
     }
+
     /**
     *绕z轴旋转，修改顶点坐标
     *@param {Cesium.Geometry}geometry
@@ -2200,6 +2201,7 @@ define('Core/GeometryUtils',[
             || (geometry.attributes && geometry.attributes.position && geometry.index)
             || (geometry.vertices && geometry.faces);
     }
+    
     /**
      *
      *@param {THREE.BufferGeometry}geometry 
@@ -2229,10 +2231,20 @@ define('Core/GeometryUtils',[
 
             }
         }
-
+        var indices=[];
+        if (!geometry.index&&geometry.groups) {
+            geometry.groups.forEach(function (group) {
+                for (var i = 0; i < group.count; i++) {
+                    indices.push(i+group.start);
+                }
+            })
+            indices = new Int32Array(indices);
+        }else{
+            indices=geometry.index.array;
+        }
         var cesGeometry = new Cesium.Geometry({
             attributes: attributes,
-            indices: geometry.index.array,
+            indices: indices,
             primitiveType: Cesium.PrimitiveType.TRIANGLES
         });
 
@@ -2245,7 +2257,7 @@ define('Core/GeometryUtils',[
     *@return {Cesium.Geometry} 
     */
     GeometryUtils.fromGeometrt3js = function (geometry3js) {
-        if (geometry3js.attributes && geometry3js.index) {
+        if (geometry3js.attributes && (geometry3js.index||geometry3js.groups.length)) {
             return GeometryUtils.parseBufferGeometry3js(geometry3js);
         }
         var positions = new Float32Array(geometry3js.vertices.length * 3);
@@ -2547,6 +2559,9 @@ varying vec3 v_normal;\n\
 uniform float picked;\n\
 uniform vec4  pickedColor;\n\
 uniform vec4  defaultColor;\n\
+uniform float specular;\n\
+uniform float shininess;\n\
+uniform vec3  emission;\n\
 void main() {\n\
     vec3 positionToEyeEC = -v_position; \n\
     vec3 normalEC =normalize(v_normal);\n\
@@ -2555,10 +2570,10 @@ void main() {\n\
         gl_FragColor = pickedColor;\n\
     }\n\
     czm_material material;\n\
-    material.specular = 0.0;\n\
-    material.shininess = 1.0;\n\
+    material.specular = specular;\n\
+    material.shininess = shininess;\n\
     material.normal =  normalEC;\n\
-    material.emission =vec3(0.2,0.2,0.2);\n\
+    material.emission =emission;//vec3(0.2,0.2,0.2);\n\
     material.diffuse = color.rgb ;\n\
     material.alpha =  color.a;\n\
     gl_FragColor =  czm_phong(normalize(positionToEyeEC), material);\n\
@@ -2593,11 +2608,11 @@ void main(void) \n\
 define('Core/MeshPhongMaterial',[
     'Core/MeshMaterial',
     'Core/Shaders/phong_frag',
-    'Core/Shaders/phong_vert' 
+    'Core/Shaders/phong_vert'
 ], function (
     MeshMaterial,
     phong_frag,
-    phong_vert 
+    phong_vert
     ) {
     /**
     * 
@@ -2606,6 +2621,17 @@ define('Core/MeshPhongMaterial',[
     *@extends Cesium.MeshMaterial
     */
     function MeshPhongMaterial(options) {
+        options = options ? options : {};
+
+        options.uniforms = options.uniforms ? options.uniforms : {
+            shininess: -1,
+            emission: [0, 0, 0],
+            specular: 0
+        };
+        options.uniforms.shininess = Cesium.defaultValue(options.uniforms.shininess, 0);
+        options.uniforms.emission = Cesium.defaultValue(options.uniforms.emission, [0.2, 0.2, 0.2]);
+        options.uniforms.specular = Cesium.defaultValue(options.uniforms.specular, 0);
+
         MeshMaterial.apply(this, arguments);
         this.vertexShader = phong_vert;
         this.fragmentShader = phong_frag;
@@ -5460,7 +5486,7 @@ define('Core/MeshVisualizer',[
         this._modelMatrix = defaultValue(options.modelMatrix, Matrix4.IDENTITY);
         this._actualModelMatrix = Matrix4.clone(this._modelMatrix);
         this._ready = true;
-        this._modelMatrixNeedUpdate = true;
+        this._modelMatrixNeedsUpdate = true;
 
         this._isWireframe = false;
         this._up = defaultValue(options.up, new Cartesian3(0, 0, 1));
@@ -5488,12 +5514,80 @@ define('Core/MeshVisualizer',[
         this.add(this.referenceMesh);
         this._pickIds = [];
         this.beforeUpate = new Cesium.Event();
+        this._scene = null;
     }
+    var world2localMatrix = new Cesium.Matrix4();
+    var surfacePointLocal = new Cesium.Cartesian3();
+    var rayDir = new Cesium.Cartesian3();
+    var pos = new Cesium.Cartesian3();
+    var rayOriginLocal = new Cesium.Cartesian3();
+    var scratchRay = new Cesium.Ray();
 
     MeshVisualizer.prototype = {
+        /**
+        *
+        *创建一条射线，用局部坐标系表达
+        *@param {Cesium.Cartesian2}windowPosition
+        *@param {Cesium.Ray}result
+        *@return {Cesium.Ray}
+        */
+        getPickRay: function (windowPosition, result) {
+            if (!this._scene) {
+                return undefined;
+            }
+            if (!result) {
+                result = Cesium.Ray();
+            }
+            this._scene.camera.getPickRay(windowPosition, scratchRay);//ray用于计算小球发射点位置，这里射线的起始点是世界坐标，不能像Threejs那样直接拿来计算，需要转成局部坐标
+            this._scene.pickPosition(windowPosition, surfacePointLocal);//射线和局部场景的交点
 
+            if (!surfacePointLocal) {
+                return undefined;
+            }
+
+            Cesium.Cartesian3.clone(scratchRay.direction, rayDir);
+
+            //世界坐标转局部坐标
+            this.worldCoordinatesToLocal(scratchRay.origin, rayOriginLocal);
+            this.worldCoordinatesToLocal(surfacePointLocal, surfacePointLocal);
+
+            Cesium.Cartesian3.add(rayOriginLocal, rayDir, pos);
+            //计算发射方向
+            Cesium.Cartesian3.subtract(surfacePointLocal, pos, rayDir);
+            Cesium.Cartesian3.normalize(rayDir, rayDir);
+            Cesium.Cartesian3.clone(pos, result.origin);
+            Cesium.Cartesian3.clone(rayDir, result.direction);
+            return result;
+        },
+        /**
+        *世界坐标到局部坐标
+        *@param {Cesium.Cartesian3}worldCoordinates
+        *@param {Cesium.Cartesian3}result
+        *@return {Cesium.Cartesian3}
+        */
+        worldCoordinatesToLocal: function (worldCoordinates, result) {
+            if (!result) {
+                result = new Cartesian3();
+            }
+            Cesium.Matrix4.inverseTransformation(this._actualModelMatrix, world2localMatrix)
+            Cesium.Matrix4.multiplyByPoint(world2localMatrix, worldCoordinates, result);
+            return result;
+        },
+        /**
+       *局部坐标到世界坐标
+       *@param {Cesium.Cartesian3}localCoordinates
+       *@param {Cesium.Cartesian3}result
+       *@return {Cesium.Cartesian3}
+       */
+        localToWorldCoordinates: function (localCoordinates, result) {
+            if (!result) {
+                result = new Cartesian3();
+            }
+            Cesium.Matrix4.multiplyByPoint(this._actualModelMatrix, localCoordinates, result);
+            return result;
+        },
         onModelMatrixNeedUpdate: function () {
-            this._modelMatrixNeedUpdate = true;
+            this._modelMatrixNeedsUpdate = true;
         },
         /**
          *
@@ -5528,7 +5622,7 @@ define('Core/MeshVisualizer',[
                 this._position.z = z;
             }
             if (changed) {
-                this._modelMatrixNeedUpdate = true;
+                this._modelMatrixNeedsUpdate = true;
             }
         },
         /**
@@ -5564,7 +5658,7 @@ define('Core/MeshVisualizer',[
                 this._scale.z = z;
             }
             if (changed) {
-                this._modelMatrixNeedUpdate = true;
+                this._modelMatrixNeedsUpdate = true;
             }
         },
 
@@ -6293,6 +6387,9 @@ define('Core/MeshVisualizer',[
     *@param {Cesium.FrameState}frameState
     */
     MeshVisualizer.prototype.update = function (frameState) {
+        if (!this._scene) {
+            this._scene = frameState.camera._scene;
+        }
         if (!this._ready || !this.show && this._chidren.length > 0) {//如果未准备好则不加入渲染队列
             return;
         }
@@ -6308,7 +6405,7 @@ define('Core/MeshVisualizer',[
         if (sysWireframe != this._isWireframe) {
             wireframeChanged = true;
         }
-        if (this._modelMatrixNeedUpdate) {
+        if (this._modelMatrixNeedsUpdate) {
             this._actualModelMatrix = RendererUtils.computeModelMatrix(
                     this._modelMatrix,
                     this._position,
@@ -6321,7 +6418,7 @@ define('Core/MeshVisualizer',[
             }
             Cesium.Cartesian3.clone(this._scale, this._oldScale);
             Cesium.Cartesian3.clone(this._position, this._oldPosition);
-            this._modelMatrixNeedUpdate = false;
+            this._modelMatrixNeedsUpdate = false;
         }
 
         MeshVisualizer.traverse(this, function (mesh) {
@@ -6459,7 +6556,7 @@ define('Core/MeshVisualizer',[
 
         this._isWireframe = sysWireframe;
         wireframeChanged = false;
-        this._modelMatrixNeedUpdate = false;
+        this._modelMatrixNeedsUpdate = false;
         this._geometryChanged = false;
 
     }
@@ -6542,6 +6639,19 @@ define('Core/MeshVisualizer',[
     },
 
     Cesium.defineProperties(MeshVisualizer.prototype, {
+        modelMatrixNeedsUpdate: {
+            get: function () {
+                return this._modelMatrixNeedsUpdate;
+            },
+            set: function (val) {
+                this._modelMatrixNeedsUpdate = val;
+                if (val) {
+                    MeshVisualizer.traverse(this, function (child) {
+                        child._modelMatrixNeedsUpdate = val;
+                    }, false);
+                }
+            }
+        },
         showReference: {
             get: function () {
                 return this.referenceMesh.show;
@@ -6585,7 +6695,7 @@ define('Core/MeshVisualizer',[
             },
             set: function (val) {
                 this._modelMatrix = val;
-                this._modelMatrixNeedUpdate = true;
+                this._modelMatrixNeedsUpdate = true;
             }
         },
         rotation: {
@@ -6609,7 +6719,7 @@ define('Core/MeshVisualizer',[
             set: function (val) {
                 if (val.x != this._position.x || val.y != this._position.y || val.z != this._position.z) {
                     this._position = val;
-                    this._modelMatrixNeedUpdate = true;
+                    this._modelMatrixNeedsUpdate = true;
                 }
                 this._position = val;
             }
@@ -6621,7 +6731,7 @@ define('Core/MeshVisualizer',[
             set: function (val) {
                 if (val.x != this._scale.x || val.y != this._scale.y || val.z != this._scale.z) {
                     this._scale = val;
-                    this._modelMatrixNeedUpdate = true;
+                    this._modelMatrixNeedsUpdate = true;
                 }
                 this._scale = val;
             }
@@ -7172,7 +7282,7 @@ define('Core/BasicMeshMaterial',[
                 this.translucent = true;
             }
             withTexture = true;
-            if (!Cesium.defined(this.uniforms.diffuseColorMap.flipY)) { 
+            if (!Cesium.defined(this.uniforms.diffuseColorMap.flipY)) {
                 this.uniforms.diffuseColorMap.flipY = false;
             }
 
@@ -7189,7 +7299,9 @@ define('Core/BasicMeshMaterial',[
         } else {
             withTexture = false;
         }
-
+        if (Cesium.defined(options.translucent)) {
+            this.translucent = options.translucent;
+        }
         var vertexShaderUri = null;// "texture_normals.vert"; 
         var fragmentShaderUri = null;  //"texture_normals.frag";
         if (withTexture && withNormals) {
