@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Cesium+物理引擎ammo.js(js版bullet)(四)softbody volume demo </title>
+    <meta charset="utf-8" />
+    <link href="../../../ThirdParty/Cesium/Widgets/widgets.css" rel="stylesheet" /> 
+    <style>
+        html, body, #cesiumContainer {
+            width: calc(100%);
+            height: calc(100%);
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="cesiumContainer">
+    </div>
+    <div id="creditContainer" style="display: none;">
+    </div>
+
+    <script src="../../../Source/ThirdParty/ammo.js-master/builds/ammo.js"></script>
+    <script src="../../../ThirdParty/Cesium/Cesium.js" type="text/javascript"></script> 
+    <script src="../../../Source/ThirdParty/ammo.js-master/examples/js/three/three.min.js"></script>
+    <!--<script src="../../../appconfig.js"></script>
+    <script src="../../../build/CesiumMeshVisualizer.js"></script>
+    <script src="../common.js"></script>
+    <script src="softbody_volume.js"></script>-->
+    <!--使用requirejs模块管理库进行加载-->
+    <script src="../../../ThirdParty/require.js" type="text/javascript" data-main="./softbody_volume"></script>
+
+</body>
+</html>
