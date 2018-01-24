@@ -1,13 +1,15 @@
-﻿define([
+define([
     'Core/Rotation',
     'Util/CSG',
     'Core/MeshMaterial',
-    'Core/GeometryUtils'
+    'Core/GeometryUtils',
+    'Core/MeshPhongMaterial'
 ], function (
     Rotation,
     CSG,
     MeshMaterial,
-    GeometryUtils
+    GeometryUtils,
+    MeshPhongMaterial
     ) {
     var defaultValue = Cesium.defaultValue;
     /**
@@ -96,6 +98,12 @@
         this._children = [];
         this._parent = null;
 
+        if (!this._geometry.attributes.normal
+            && this.material instanceof MeshPhongMaterial
+            && this._geometry.primitiveType == Cesium.PrimitiveType.TRIANGLES
+            ) {
+            GeometryUtils.computeVertexNormals(this._geometry);
+        }
     }
 
     Mesh.isGeometrySupported = function (geometry) {
