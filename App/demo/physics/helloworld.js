@@ -18,6 +18,7 @@
     MeshMaterial = Cesium.MeshMaterial;
     FramebufferTexture = Cesium.FramebufferTexture;
     GeometryUtils = Cesium.GeometryUtils;
+    MeshPhongMaterial = Cesium.MeshPhongMaterial;
     LOD = Cesium.LOD;
     homePosition[2] = 100;
     init();
@@ -45,9 +46,9 @@
             var dimensions = new Cesium.Cartesian3(dmX, dmY, dmZ);
             var boxGeometry = Cesium.BoxGeometry.fromDimensions({
                 dimensions: dimensions,
-                vertexFormat: Cesium.VertexFormat.POSITION_ONLY
+                vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL
             });
-            var material = new MeshMaterial({
+            var material = new MeshPhongMaterial({
                 defaultColor: "rgb(125,125,125)"
             });
 
@@ -66,7 +67,7 @@
                 radius: r,
                 vertexFormat: Cesium.VertexFormat.POSITION_ONLY
             });
-            var material = new MeshMaterial({
+            var material = new MeshPhongMaterial({
                 defaultColor: "rgb( 0," + 125 * (Math.random() + 0.5) + " ,0)"
             });
             var mesh = new Mesh(sphere, material);
@@ -123,7 +124,7 @@
                     var myMotionState = new Ammo.btDefaultMotionState(groundTransform),
                         rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia),
                         body = new Ammo.btRigidBody(rbInfo);
-
+                  
                     dynamicsWorld.addRigidBody(body);
                     bodies.push(body);
                     groundMesh.physicsObj = body;
