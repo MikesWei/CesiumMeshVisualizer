@@ -167,7 +167,7 @@ Example<br/>
 你渲染一个立方体，想要旋转，竟然还需要自己去算新的ModelMatrix；再比如画个波动的水面竟然不能只修改顶点位置属性，修改完顶点位置后竟然需要移除旧的
 Primitive再创建一个。。。也许我没找到接口，但是真心难找啊！还好，稍微扒过Cesium Primitive的都知道，再往稍微底层一点的还有DrawCommand可以灵活使用，
 但是也太灵活，代码量大，还容易出错，所以决定自己模仿Threejs的Mesh、Geometry、Material并实现一个负责渲染和管理它们的更支持动态管理可渲染对象的
-Primitive；之前的思路是直接转换Threejs的Mesh，产物就是Cesium3js，但是名字太大，误以为是要完全整合Cesium和Threejs，这与我本意不符,遂重新整理优化：
+Primitive；之前的思路是直接转换Threejs的Mesh，产物就是[Cesium3js](https://github.com/MikesWei/cesium3js)，但是名字太大，误以为是要完全整合Cesium和Threejs，这与我本意不符,遂重新整理优化：
 <br/>
 * 1、不直接支持threejs的mesh，但是支持Threejs的Geometry和BufferGeometry来构建几何体。内置了Threejs Geometry、BufferGeometry到Cesium.Geometry的转换接口，同时提供Cesium.Geometry到Threejs BufferGeometry的转换接口。这些接口由[GeometryUtils](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.GeometryUtils.html)类提供。
 * 2、定义Mesh，支持Cesium.Geometry、THREE.Geometry、THREE.BufferGeometry以及[CSG](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.CSG.html)运算结果模型。
