@@ -91,7 +91,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line1849">line 1849</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line1851">line 1851</a>
     </li></ul></dd>
     
 
@@ -134,6 +134,133 @@
 
     
         <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id=".computeVertexNormals"><span class="type-signature">(static) </span>computeVertexNormals<span class="signature">(geometry)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>geometry</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Geometry</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line1944">line 1944</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         
             
@@ -291,7 +418,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2204">line 2204</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2379">line 2379</a>
     </li></ul></dd>
     
 
@@ -439,7 +566,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2072">line 2072</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2247">line 2247</a>
     </li></ul></dd>
     
 
@@ -584,7 +711,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line1985">line 1985</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2160">line 2160</a>
     </li></ul></dd>
     
 
@@ -729,7 +856,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2023">line 2023</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2198">line 2198</a>
     </li></ul></dd>
     
 
@@ -878,7 +1005,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line1868">line 1868</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2043">line 2043</a>
     </li></ul></dd>
     
 
@@ -919,6 +1046,468 @@
 </dl>
 
     
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".rotateX"><span class="type-signature">(static) </span>rotateX<span class="signature">(geometry, angle)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    绕x轴旋转，修改顶点坐标
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>geometry</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Geometry</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>angle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">弧度</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line1876">line 1876</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".rotateY"><span class="type-signature">(static) </span>rotateY<span class="signature">(geometry, angle)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    绕y轴旋转，修改顶点坐标
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>geometry</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Geometry</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>angle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">弧度</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line1899">line 1899</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".rotateZ"><span class="type-signature">(static) </span>rotateZ<span class="signature">(geometry, angle)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    绕z轴旋转，修改顶点坐标
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>geometry</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Geometry</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>angle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">弧度</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line1922">line 1922</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1069,7 +1658,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2143">line 2143</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2318">line 2318</a>
     </li></ul></dd>
     
 
@@ -1214,7 +1803,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2111">line 2111</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2286">line 2286</a>
     </li></ul></dd>
     
 
@@ -1382,7 +1971,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line1961">line 1961</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line2136">line 2136</a>
     </li></ul></dd>
     
 
@@ -1424,13 +2013,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">主页</a></h2><h3>命名空间</h3><ul><li><a href="Cesium.html">Cesium</a></li></ul><h3>类</h3><ul><li><h5><a href="Cesium.html">Cesium</a></h5></li><li><a href="Cesium.ArrowGeometry.html">ArrowGeometry</a></li><li><a href="Cesium.BasicGeometry.html">BasicGeometry</a></li><li><a href="Cesium.CSG.html">CSG</a></li><li><a href="Cesium.CSG.CSG.Node.html">CSG.Node</a></li><li><a href="Cesium.CSG.CSG.Plane.html">CSG.Plane</a></li><li><a href="Cesium.CSG.CSG.Polygon.html">CSG.Polygon</a></li><li><a href="Cesium.CSG.CSG.Vector.html">CSG.Vector</a></li><li><a href="Cesium.CSG.CSG.Vertex.html">CSG.Vertex</a></li><li><a href="Cesium.FramebufferTexture.html">FramebufferTexture</a></li><li><a href="Cesium.GeometryUtils.html">GeometryUtils</a></li><li><a href="Cesium.LOD.html">LOD</a></li><li><a href="Cesium.Mesh.html">Mesh</a></li><li><a href="Cesium.MeshMaterial.html">MeshMaterial</a></li><li><a href="Cesium.MeshVisualizer.html">MeshVisualizer</a></li><li><a href="Cesium.Path.html">Path</a></li><li><a href="Cesium.PlaneBufferGeometry.html">PlaneBufferGeometry</a></li><li><a href="Cesium.PlaneGeometry.html">PlaneGeometry</a></li><li><a href="Cesium.ReferenceMesh.html">ReferenceMesh</a></li><li><a href="Cesium.RendererUtils.html">RendererUtils</a></li><li><a href="Cesium.Rotation.html">Rotation</a></li></ul>
+    <h2><a href="index.html">主页</a></h2><h3>命名空间</h3><ul><li><a href="Cesium.html">Cesium</a></li></ul><h3>类</h3><ul><li><h5><a href="Cesium.html">Cesium</a></h5></li><li><a href="Cesium.ArrowGeometry.html">ArrowGeometry</a></li><li><a href="Cesium.BasicGeometry.html">BasicGeometry</a></li><li><a href="Cesium.CSG.html">CSG</a></li><li><a href="Cesium.CSG.CSG.Node.html">CSG.Node</a></li><li><a href="Cesium.CSG.CSG.Plane.html">CSG.Plane</a></li><li><a href="Cesium.CSG.CSG.Polygon.html">CSG.Polygon</a></li><li><a href="Cesium.CSG.CSG.Vector.html">CSG.Vector</a></li><li><a href="Cesium.CSG.CSG.Vertex.html">CSG.Vertex</a></li><li><a href="Cesium.FramebufferTexture.html">FramebufferTexture</a></li><li><a href="Cesium.GeometryUtils.html">GeometryUtils</a></li><li><a href="Cesium.LOD.html">LOD</a></li><li><a href="Cesium.Mesh.html">Mesh</a></li><li><a href="Cesium.MeshMaterial.html">MeshMaterial</a></li><li><a href="Cesium.MeshPhongMaterial.html">MeshPhongMaterial</a></li><li><a href="Cesium.MeshVisualizer.html">MeshVisualizer</a></li><li><a href="Cesium.Path.html">Path</a></li><li><a href="Cesium.PlaneBufferGeometry.html">PlaneBufferGeometry</a></li><li><a href="Cesium.PlaneGeometry.html">PlaneGeometry</a></li><li><a href="Cesium.ReferenceMesh.html">ReferenceMesh</a></li><li><a href="Cesium.RendererUtils.html">RendererUtils</a></li><li><a href="Cesium.Rotation.html">Rotation</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Tue Jan 23 2018 23:09:03 GMT+0800 (中国标准时间)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Wed Jan 24 2018 21:18:53 GMT+0800 (中国标准时间)
 </footer>
 
 <script> prettyPrint(); </script>
