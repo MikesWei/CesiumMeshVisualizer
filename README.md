@@ -175,7 +175,7 @@ Primitive；之前的思路是直接转换Threejs的Mesh，产物就是[Cesium3j
 geometry和material；同一个geometry可以单独修改各个属性和索引。方便管理，且减少对象的局部变化带来的整个drawCommand重新构建次数，以期在更多动态渲染
 对象同时改变的情况下（比如结合物理引擎做模拟），仍然保持较高的帧率，当然也牺牲了一定的内存。
 * 4、定义[MeshMaterial](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.MeshMaterial.html)，目的是更方便的引用Threejs圈的那些炫酷特效Shader，减少整合所需的代码量。尤其是Cesium的Appearance从fragmentShader中分离出Material部分的Shader，并且作用域不一样之后，带来好多不便，引入网上那些炫酷特效Shader的时候真是头疼死了，谁做过谁才解其中味~   [MeshMaterial](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.MeshMaterial.html)区别于Cesium的Material，更像Threejs的Material,但不完全是。。。好像有点四不像~  
-* 5、定义[FramebufferTexture](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.FramebufferTexture.html)，启发与Threejs的RenderTarget，暂且叫帧缓存纹理类吧，反正名字不重要~ MeshVisualizer和MeshMaterial一起支持此类纹
+* 5、定义[FramebufferTexture](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.FramebufferTexture.html)，启发于Threejs的RenderTarget，暂且叫帧缓存纹理类吧，反正名字不重要~ MeshVisualizer和MeshMaterial一起支持此类纹
 理，就当是普通的一张图片纹理就好了。它的用处就是，把Mesh渲染到帧缓存中，作为纹理参与其他Mesh的渲染。可以参考[VolumeRendering示例](https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html)。另外RendererUtils
 提供了一个单次执行渲染到纹理的接口[RendererUtils](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.RendererUtils.html).renderToTexture。在不使用[MeshVisualizer](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.MeshVisualizer.html)的时候，也就是自己基于drawCommand自定义一个Primitive的时
 候也可以用得上。
