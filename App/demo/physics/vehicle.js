@@ -196,15 +196,16 @@ Ammo().then(function () {
     }
 
     function createWheelMesh(radius, width) {
-        //var t = new THREE.CylinderGeometry({
-        //    length: width,
-        //    topRadius: radius,
-        //    bottomRadius: radius,
-        //   // slices: 24
-        //});
-        var t = new THREE.CylinderGeometry(radius, radius, width, 24, 1);
-        t.rotateZ(Math.PI / 2);
+      var t = new Cesium.CylinderGeometry({
+            length: width,
+            topRadius: radius,
+            bottomRadius: radius,
+            slices: 24
+        });
+        //var t = new THREE.CylinderGeometry(radius, radius, width, 24, 1);
+       
         var mesh = new Mesh(t, materialInteractive);
+        GeometryUtils.rotateY(mesh.geometry, Math.PI / 2); 
         mesh.quaternion = new Cesium.Quaternion();// Cesium.Quaternion.fromAxisAngle(new Cesium.Cartesian3(0, 0, 1), Math.PI / 2);
           
         var shape = Cesium.BoxGeometry.fromDimensions({
