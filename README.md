@@ -160,14 +160,10 @@ Example<br/>
         customMesh.position = new Cesium.Cartesian3(100000, 0, 0);
         meshVisualizer.add(customMesh);
 
-
-
-
-
+ 
     
-        携源码示例和文档，诚意奉献，https://github.com/MikesWei/CesiumMeshVisualizer，名字不重要。
-	
-	个人觉得Threejs里的Mesh、Geometry、Material极好，尤其是各个属性可以独立地、动态地编辑的特点，是目前在Cesium的Primitive中没有充分体现的。比如你渲染一个立方体，想要旋转，竟然还需要自己去算新的ModelMatrix；再比如画个波动的水面竟然不能只修改顶点位置属性，修改完顶点位置后竟然需要移除旧的Primitive再创建一个。。。也许我没找到接口，但是真心难找啊！还好，稍微扒过Cesium Primitive的都知道，再往稍微底层一点的还有DrawCommand可以灵活使用，但是也太灵活，代码量大，还容易出错，所以决定自己模仿Threejs的Mesh、Geometry、Material并实现一个负责渲染和管理它们的更支持动态管理可渲染对象的Primitive；之前的思路是直接转换Threejs的Mesh，产物就是Cesium3js，但是名字太大，误以为是要完全整合Cesium和Threejs，这与我本意不符,遂重新整理优化：
+携源码示例和文档，诚意奉献，https://github.com/MikesWei/CesiumMeshVisualizer，名字不重要。
+    个人觉得Threejs里的Mesh、Geometry、Material极好，尤其是各个属性可以独立地、动态地编辑的特点，是目前在Cesium的Primitive中没有充分体现的。比如你渲染一个立方体，想要旋转，竟然还需要自己去算新的ModelMatrix；再比如画个波动的水面竟然不能只修改顶点位置属性，修改完顶点位置后竟然需要移除旧的Primitive再创建一个。。。也许我没找到接口，但是真心难找啊！还好，稍微扒过Cesium Primitive的都知道，再往稍微底层一点的还有DrawCommand可以灵活使用，但是也太灵活，代码量大，还容易出错，所以决定自己模仿Threejs的Mesh、Geometry、Material并实现一个负责渲染和管理它们的更支持动态管理可渲染对象的Primitive；之前的思路是直接转换Threejs的Mesh，产物就是Cesium3js，但是名字太大，误以为是要完全整合Cesium和Threejs，这与我本意不符,遂重新整理优化：
     *1、不直接支持threejs的mesh，但是支持Threejs的Geometry和BufferGeometry来构建几何体。内置了Threejs Geometry、BufferGeometry到Cesium.Geometry的转换接口，同时提供Cesium.Geometry到Threejs BufferGeometry的转换接口。这些接口由GeometryUtils类提供。
      *2、定义Mesh，支持Cesium.Geometry、THREE.Geometry、THREE.BufferGeometry以及CSG运算结果模型。
      *3、更方便的动态渲染和管理。同一个mesh，可以单独修改mesh的位置(position)、缩放(scale)、旋转角度(rotation/Quaternion)等属性；也可以单独修改geometry和material；同一个geometry可以单独修改各个属性和索引。方便管理，且减少对象的局部变化带来的整个drawCommand重新构建次数，以期在更多动态渲染对象同时改变的情况下（比如结合物理引擎做模拟），仍然保持较高的帧率，当然也牺牲了一定的内存。
