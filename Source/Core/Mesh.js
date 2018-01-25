@@ -64,7 +64,7 @@ define([
         }
 
         if (GeometryUtils.isGeometry3js(options.geometry)) {
-            options.geometry = GeometryUtils.fromGeometrt3js(options.geometry);
+            options.geometry = GeometryUtils.fromGeometry3js(options.geometry);
         } else if (options.geometry instanceof CSG) {
             if (options.geometry.polygons.length == 0) {
                 options.show = false;
@@ -97,12 +97,13 @@ define([
         this._drawCommand = null;
         this._children = [];
         this._parent = null;
-
+        this.userData = {};
         if (!this._geometry.attributes.normal
             && this.material instanceof MeshPhongMaterial
             && this._geometry.primitiveType == Cesium.PrimitiveType.TRIANGLES
             ) {
-            GeometryUtils.computeVertexNormals(this._geometry);
+            Cesium.GeometryPipeline.computeNormal(this._geometry);
+            //GeometryUtils.computeVertexNormals(this._geometry);
         }
     }
 
