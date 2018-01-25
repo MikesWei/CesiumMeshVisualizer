@@ -254,7 +254,27 @@ define([
     var rayOriginLocal = new Cesium.Cartesian3();
     var scratchRay = new Cesium.Ray();
 
-    MeshVisualizer.prototype = {
+    MeshVisualizer.prototype = { /**
+        *
+        *拾取点，用局部坐标系表达。内部使用Cesium.Scene.pickPosition和MeshVisualizer.worldCoordinatesToLocal实现。
+        *@param {Cesium.Cartesian2}windowPosition
+        *@param {Cesium.Ray}result
+        *@return {Cesium.Cartesian3}
+        */
+        pickPosition: function (windowPosition, result) {
+            if (!this._scene) {
+                return undefined;
+            }
+            this._scene.pickPosition(windowPosition, surfacePointLocal);
+
+            if (!surfacePointLocal) {
+                return undefined;
+            }
+
+            this.worldCoordinatesToLocal(surfacePointLocal, surfacePointLocal);
+            Cesium.Cartesian3.clone(surfacePointLocal, result);
+            return result;
+        },
         /**
         *
         *创建一条射线，用局部坐标系表达
@@ -285,8 +305,7 @@ define([
             Cesium.Cartesian3.add(rayOriginLocal, rayDir, pos);
             //计算发射方向
             Cesium.Cartesian3.subtract(surfacePointLocal, pos, rayDir);
-            Cesium.Cartesian3.normalize(rayDir, rayDir);
-            Cesium.Cartesian3.clone(pos, result.origin);
+            Cesium.Cartesian3.clone(surfacePointLocal, result.origin); 
             Cesium.Cartesian3.clone(rayDir, result.direction);
             return result;
         },
