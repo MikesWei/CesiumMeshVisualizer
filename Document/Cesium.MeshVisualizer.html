@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>CesiumMeshVisualizer参考文档: 类: MeshVisualizer</title>
+    <title>MeshVisualizer参考文档: 类: MeshVisualizer</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -668,7 +668,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5203">line 5203</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5495">line 5495</a>
     </li></ul></dd>
     
 
@@ -1011,7 +1011,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line6267">line 6267</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line6649">line 6649</a>
     </li></ul></dd>
     
 
@@ -1138,7 +1138,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line6215">line 6215</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line6597">line 6597</a>
     </li></ul></dd>
     
 
@@ -1216,7 +1216,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line6222">line 6222</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line6604">line 6604</a>
     </li></ul></dd>
     
 
@@ -1239,6 +1239,522 @@
 
 
 
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getPickRay"><span class="type-signature"></span>getPickRay<span class="signature">(windowPosition, result)</span><span class="type-signature"> &rarr; {Cesium.Ray}</span></h4>
+
+    
+
+
+
+<div class="description">
+    创建一条射线，用局部坐标系表达
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>windowPosition</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Cartesian2</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>result</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Ray</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5564">line 5564</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Cesium.Ray</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="localToWorldCoordinates"><span class="type-signature"></span>localToWorldCoordinates<span class="signature">(localCoordinates, result)</span><span class="type-signature"> &rarr; {Cesium.Cartesian3}</span></h4>
+
+    
+
+
+
+<div class="description">
+    局部坐标到世界坐标
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>localCoordinates</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Cartesian3</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>result</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Cartesian3</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5611">line 5611</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Cesium.Cartesian3</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="pickPosition"><span class="type-signature"></span>pickPosition<span class="signature">(windowPosition, result)</span><span class="type-signature"> &rarr; {Cesium.Cartesian3}</span></h4>
+
+    
+
+
+
+<div class="description">
+    拾取点，用局部坐标系表达。内部使用Cesium.Scene.pickPosition和MeshVisualizer.worldCoordinatesToLocal实现。
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>windowPosition</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Cartesian2</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>result</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Ray</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5543">line 5543</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Cesium.Cartesian3</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -1389,7 +1905,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5248">line 5248</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5627">line 5627</a>
     </li></ul></dd>
     
 
@@ -1562,7 +2078,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5284">line 5284</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5663">line 5663</a>
     </li></ul></dd>
     
 
@@ -1689,7 +2205,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line6039">line 6039</a>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line6418">line 6418</a>
     </li></ul></dd>
     
 
@@ -1716,6 +2232,178 @@
 
 
         
+            
+
+    
+
+    <h4 class="name" id="worldCoordinatesToLocal"><span class="type-signature"></span>worldCoordinatesToLocal<span class="signature">(worldCoordinates, result)</span><span class="type-signature"> &rarr; {Cesium.Cartesian3}</span></h4>
+
+    
+
+
+
+<div class="description">
+    世界坐标到局部坐标
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>worldCoordinates</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Cartesian3</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>result</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Cesium.Cartesian3</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CesiumMeshVisualizer.js.html">CesiumMeshVisualizer.js</a>, <a href="CesiumMeshVisualizer.js.html#line5597">line 5597</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Cesium.Cartesian3</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
     
 
     
@@ -1731,13 +2419,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">主页</a></h2><h3>命名空间</h3><ul><li><a href="Cesium.html">Cesium</a></li></ul><h3>类</h3><ul><li><h5><a href="Cesium.html">Cesium</a></h5></li><li><a href="Cesium.ArrowGeometry.html">ArrowGeometry</a></li><li><a href="Cesium.BasicGeometry.html">BasicGeometry</a></li><li><a href="Cesium.CSG.html">CSG</a></li><li><a href="Cesium.CSG.CSG.Node.html">CSG.Node</a></li><li><a href="Cesium.CSG.CSG.Plane.html">CSG.Plane</a></li><li><a href="Cesium.CSG.CSG.Polygon.html">CSG.Polygon</a></li><li><a href="Cesium.CSG.CSG.Vector.html">CSG.Vector</a></li><li><a href="Cesium.CSG.CSG.Vertex.html">CSG.Vertex</a></li><li><a href="Cesium.FramebufferTexture.html">FramebufferTexture</a></li><li><a href="Cesium.GeometryUtils.html">GeometryUtils</a></li><li><a href="Cesium.LOD.html">LOD</a></li><li><a href="Cesium.Mesh.html">Mesh</a></li><li><a href="Cesium.MeshMaterial.html">MeshMaterial</a></li><li><a href="Cesium.MeshVisualizer.html">MeshVisualizer</a></li><li><a href="Cesium.Path.html">Path</a></li><li><a href="Cesium.PlaneBufferGeometry.html">PlaneBufferGeometry</a></li><li><a href="Cesium.PlaneGeometry.html">PlaneGeometry</a></li><li><a href="Cesium.ReferenceMesh.html">ReferenceMesh</a></li><li><a href="Cesium.RendererUtils.html">RendererUtils</a></li><li><a href="Cesium.Rotation.html">Rotation</a></li></ul>
+    <h2><a href="index.html">主页</a></h2><h3>命名空间</h3><ul><li><a href="Cesium.html">Cesium</a></li></ul><h3>类</h3><ul><li><h5><a href="Cesium.html">Cesium</a></h5></li><li><a href="Cesium.ArrowGeometry.html">ArrowGeometry</a></li><li><a href="Cesium.BasicGeometry.html">BasicGeometry</a></li><li><a href="Cesium.CSG.html">CSG</a></li><li><a href="Cesium.CSG.CSG.Node.html">CSG.Node</a></li><li><a href="Cesium.CSG.CSG.Plane.html">CSG.Plane</a></li><li><a href="Cesium.CSG.CSG.Polygon.html">CSG.Polygon</a></li><li><a href="Cesium.CSG.CSG.Vector.html">CSG.Vector</a></li><li><a href="Cesium.CSG.CSG.Vertex.html">CSG.Vertex</a></li><li><a href="Cesium.FramebufferTexture.html">FramebufferTexture</a></li><li><a href="Cesium.GeometryUtils.html">GeometryUtils</a></li><li><a href="Cesium.LOD.html">LOD</a></li><li><a href="Cesium.Mesh.html">Mesh</a></li><li><a href="Cesium.MeshMaterial.html">MeshMaterial</a></li><li><a href="Cesium.MeshPhongMaterial.html">MeshPhongMaterial</a></li><li><a href="Cesium.MeshVisualizer.html">MeshVisualizer</a></li><li><a href="Cesium.Path.html">Path</a></li><li><a href="Cesium.PlaneBufferGeometry.html">PlaneBufferGeometry</a></li><li><a href="Cesium.PlaneGeometry.html">PlaneGeometry</a></li><li><a href="Cesium.ReferenceMesh.html">ReferenceMesh</a></li><li><a href="Cesium.RendererUtils.html">RendererUtils</a></li><li><a href="Cesium.Rotation.html">Rotation</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Tue Jan 23 2018 23:09:03 GMT+0800 (中国标准时间)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Thu Jan 25 2018 13:32:50 GMT+0800 (中国标准时间)
 </footer>
 
 <script> prettyPrint(); </script>
