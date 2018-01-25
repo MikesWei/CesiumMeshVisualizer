@@ -2256,7 +2256,8 @@ define('Core/GeometryUtils',[
     *@param {THREE.Geometry}geometry3js
     *@return {Cesium.Geometry} 
     */
-    GeometryUtils.fromGeometrt3js = function (geometry3js) {
+    GeometryUtils.fromGeometry3js = function (geometry3js) {
+        
         if (geometry3js.attributes && (geometry3js.index||geometry3js.groups.length)) {
             return GeometryUtils.parseBufferGeometry3js(geometry3js);
         }
@@ -2295,7 +2296,7 @@ define('Core/GeometryUtils',[
     *@param {Cesium.Geometry}geometry
     *@return {THREE.Geometry} 
     */
-    GeometryUtils.toGeometrt3js = function (geometry) {
+    GeometryUtils.toGeometry3js = function (geometry) {
         if (typeof THREE === 'undefined') {
             throw new Error("THREE 未加载");
         }
@@ -2705,7 +2706,7 @@ define('Core/Mesh',[
         }
 
         if (GeometryUtils.isGeometry3js(options.geometry)) {
-            options.geometry = GeometryUtils.fromGeometrt3js(options.geometry);
+            options.geometry = GeometryUtils.fromGeometry3js(options.geometry);
         } else if (options.geometry instanceof CSG) {
             if (options.geometry.polygons.length == 0) {
                 options.show = false;
@@ -2738,12 +2739,13 @@ define('Core/Mesh',[
         this._drawCommand = null;
         this._children = [];
         this._parent = null;
-
+        this.userData = {};
         if (!this._geometry.attributes.normal
             && this.material instanceof MeshPhongMaterial
             && this._geometry.primitiveType == Cesium.PrimitiveType.TRIANGLES
             ) {
-            GeometryUtils.computeVertexNormals(this._geometry);
+            Cesium.GeometryPipeline.computeNormal(this._geometry);
+            //GeometryUtils.computeVertexNormals(this._geometry);
         }
     }
 
@@ -5287,7 +5289,8 @@ define('Core/MeshVisualizer',[
     'Core/LOD',
     'Core/ReferenceMesh',
     'ThirdParty/tiff-js/tiff',
-    'Util/Path'
+    'Util/Path',
+    'Core/GeometryUtils'
 ], function (
     Mesh,
     RendererUtils,
@@ -5298,7 +5301,8 @@ define('Core/MeshVisualizer',[
     LOD,
     ReferenceMesh,
     TIFFParser,
-    Path
+    Path,
+    GeometryUtils
     ) {
 
     var Matrix4 = Cesium.Matrix4;
@@ -5333,7 +5337,25 @@ define('Core/MeshVisualizer',[
     var scratchTraverseArgs = {
         cancelCurrent: false //停止遍历当前节点的所有子节点 
     };
+    Cesium.Cartesian3.prototype.set = function (x, y, z) {
+        this.x = x; this.y = y; this.z = z;
+    }
+    Cesium.Cartesian3.prototype.copy = function (src) {
+        this.x = src.x; this.y = src.y; this.z = src.z;
+    }
 
+    Cesium.Cartesian2.prototype.set = function (x, y) {
+        this.x = x; this.y = y;
+    }
+    Cesium.Cartesian2.prototype.copy = function (src) {
+        this.x = src.x; this.y = src.y;
+    }
+    Cesium.Quaternion.prototype.set = function (x, y, z, w) {
+        this.x = x; this.y = y; this.z = z; this.w = w;
+    }
+    Cesium.Quaternion.prototype.copy = function (src) {
+        this.x = src.x; this.y = src.y; this.z = src.z; this.w = src.w;
+    }
     /**
     *
     *
@@ -5537,6 +5559,29 @@ define('Core/MeshVisualizer',[
 
     MeshVisualizer.prototype = {
         /**
+        *@param {Cesium.Mesh}mesh
+        */
+        remove: function (mesh) {
+
+            for (var i = 0; i < this._chidren.length; i++) {
+                if (this._chidren[i] == mesh) {
+
+                    this._chidren.splice(i, 1);
+                }
+            }
+            MeshVisualizer.traverse(mesh, function () {
+                if (mesh._drawCommand) {
+                    mesh._drawCommand.destroy && mesh._drawCommand.destroy();
+                }
+                if (mesh._actualMesh && mesh._actualMesh._drawCommand) {
+                    Cesium.destroyObject(mesh._actualMesh._drawCommand);
+                    Cesium.destroyObject(mesh._actualMesh.geometry);
+                    Cesium.destroyObject(mesh._actualMesh);
+                    Cesium.destroyObject(mesh);
+                }
+            }, false);
+        },
+        /**
         *
         *拾取点，用局部坐标系表达。内部使用Cesium.Scene.pickPosition和MeshVisualizer.worldCoordinatesToLocal实现。
         *@param {Cesium.Cartesian2}windowPosition
@@ -5587,7 +5632,7 @@ define('Core/MeshVisualizer',[
             Cesium.Cartesian3.add(rayOriginLocal, rayDir, pos);
             //计算发射方向
             Cesium.Cartesian3.subtract(surfacePointLocal, pos, rayDir);
-            Cesium.Cartesian3.clone(surfacePointLocal, result.origin); 
+            Cesium.Cartesian3.clone(surfacePointLocal, result.origin);
             Cesium.Cartesian3.clone(rayDir, result.direction);
             return result;
         },
@@ -5730,7 +5775,6 @@ define('Core/MeshVisualizer',[
         createDrawCommand: function (mesh, frameState) {
             var that = this;
             var context = frameState.context;
-
             var geometry = mesh.geometry;
             var material = mesh.material;
 
@@ -6367,6 +6411,9 @@ define('Core/MeshVisualizer',[
     }
 
     MeshVisualizer.prototype._computeModelMatrix = function (mesh, frameState) {
+        if (mesh._actualMesh) {
+            mesh = mesh._actualMesh;
+        }
         var that = this;
         if (mesh instanceof LOD || mesh instanceof ReferenceMesh || typeof mesh.update === 'function') {
             if (mesh.parent) {
@@ -6454,8 +6501,34 @@ define('Core/MeshVisualizer',[
         }
 
         MeshVisualizer.traverse(this, function (mesh) {
+            if (typeof THREE !== 'undefined' && mesh instanceof THREE.Mesh) {
+                var needsUpdate = !mesh._actualMesh
+                    || mesh.needsUpdate
+                    || mesh.geometry.needsUpdate;
+                if (!needsUpdate) {
+                    for (var pn in mesh.geometry.attributes) {
+                        if (mesh.geometry.attributes.hasOwnProperty(pn)) {
+                            if (mesh.geometry.attributes[pn].needsUpdate) {
+                                needsUpdate = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (needsUpdate) {
+                    mesh._actualMesh = new Mesh(mesh.geometry, mesh.material);
+                }
+                mesh._actualMesh.quaternion = Cesium.Quaternion.clone(mesh.quaternion);
+                mesh._actualMesh.position = mesh.position;
+                mesh._actualMesh.scale = mesh.scale;
+                mesh._actualMesh.modelMatrixNeedsUpdate = mesh.modelMatrixNeedsUpdate;
+                mesh = mesh._actualMesh;
+            }
+
 
             that._computeModelMatrix(mesh, frameState);
+
             if (typeof mesh.update !== 'function') {
                 if (!mesh._drawCommand
                         || mesh.needsUpdate
@@ -6521,7 +6594,30 @@ define('Core/MeshVisualizer',[
 
                     item.drawCommands = [];
                     MeshVisualizer.traverse(item.mesh, function (mesh) {
+                        if (typeof THREE !== 'undefined' && mesh instanceof THREE.Mesh) {
+                            var needsUpdate = !mesh._actualMesh
+                                || mesh.needsUpdate
+                                || mesh.geometry.needsUpdate;
+                            if (!needsUpdate) {
+                                for (var pn in mesh.geometry.attributes) {
+                                    if (mesh.geometry.attributes.hasOwnProperty(pn)) {
+                                        if (mesh.geometry.attributes[pn].needsUpdate) {
+                                            needsUpdate = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
 
+                            if (needsUpdate) {
+                                mesh._actualMesh = new Mesh(mesh.geometry, mesh.material);
+                            }
+                            mesh._actualMesh.quaternion = Cesium.Quaternion.clone(mesh.quaternion);
+                            mesh._actualMesh.position = mesh.position;
+                            mesh._actualMesh.scale = mesh.scale;
+                            mesh._actualMesh.modelMatrixNeedsUpdate = mesh.modelMatrixNeedsUpdate;
+                            mesh = mesh._actualMesh;
+                        }
                         that._computeModelMatrix(mesh, frameState);
 
                         if (!mesh._textureCommand
@@ -6654,7 +6750,7 @@ define('Core/MeshVisualizer',[
             return;
         }
         scratchTraverseArgs.cancelCurrent = false;
-        if (visibleOnly && !node.show) {
+        if (visibleOnly && (!node.show && !node.visible)) {
             return;
         }
         if ((node.geometry && node.material) || node instanceof LOD || node instanceof ReferenceMesh) {
