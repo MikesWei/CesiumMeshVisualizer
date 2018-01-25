@@ -28,6 +28,10 @@
        <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/soft_volume.jpg" />
     </a><br /> 
    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/softbody_volume.html">physics/softbody_volume</a><br /><br />
+      <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/softbody_volume2.html">
+       <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/soft_volume2.jpg" />
+    </a><br /> 
+   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/softbody_volume2.html">physics/softbody_volum2e</a><br /><br />
    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/ReferenceMesh/index.html">ReferenceMesh</a><br /><br />
    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html">
      <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/screenshot.jpg" /> 
