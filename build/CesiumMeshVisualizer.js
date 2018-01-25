@@ -3107,6 +3107,8 @@ varying vec3 v_light0Direction;\n\
 \n\
 void main(void) \n\
 {\n\
+    vec3 positionToEyeEC = -v_position; \n\
+    vec3 normalEC =normalize(v_normal);\n\
     vec3 normal = normalize(v_normal);\n\
     vec4 color = vec4(0.0, 0.0, 0.0, 0.0);\n\
     vec3 diffuseLight = vec3(0.0, 0.0, 0.0);\n\
@@ -3132,10 +3134,18 @@ void main(void) \n\
     color.xyz += diffuse.xyz;\n\
     color.xyz += specular.xyz;\n\
     color = vec4(diffuse.rgb * diffuse.a, diffuse.a);\n\
-    gl_FragColor = color;\n\
+    //gl_FragColor = color;\n\
     if(picked!=0.0){\n\
-        gl_FragColor = pickedColor*color;\n\
+        color = pickedColor*color;\n\
     }\n\
+    czm_material material;\n\
+    material.specular = 0.0;\n\
+    material.shininess = 1.0;\n\
+    material.normal =  normalEC;\n\
+    material.emission =vec3(0.2,0.2,0.2);\n\
+    material.diffuse = color.rgb ;\n\
+    material.alpha =  color.a;\n\
+    gl_FragColor =  czm_phong(normalize(positionToEyeEC), material);\n\
 }";
 
     return texture_normals_frag;
@@ -5343,7 +5353,9 @@ define('Core/MeshVisualizer',[
     *@property {Cesium.Cartesian3}scale 
     *@property {Cesium.Rotation}rotation 
     *@property {Boolean}show 
-    *@property {Boolean}showReference 
+    *@property {Boolean}showReference
+    *@property {Boolean}modelMatrixNeedsUpdate
+    *@property {Cesium.Event}beforeUpate  
     *
     *@constructor
     *@memberof Cesium
@@ -5526,6 +5538,27 @@ define('Core/MeshVisualizer',[
     MeshVisualizer.prototype = {
         /**
         *
+        *拾取点，用局部坐标系表达。内部使用Cesium.Scene.pickPosition和MeshVisualizer.worldCoordinatesToLocal实现。
+        *@param {Cesium.Cartesian2}windowPosition
+        *@param {Cesium.Ray}result
+        *@return {Cesium.Cartesian3}
+        */
+        pickPosition: function (windowPosition, result) {
+            if (!this._scene) {
+                return undefined;
+            }
+            this._scene.pickPosition(windowPosition, surfacePointLocal);
+
+            if (!surfacePointLocal) {
+                return undefined;
+            }
+
+            this.worldCoordinatesToLocal(surfacePointLocal, surfacePointLocal);
+            Cesium.Cartesian3.clone(surfacePointLocal, result);
+            return result;
+        },
+        /**
+        *
         *创建一条射线，用局部坐标系表达
         *@param {Cesium.Cartesian2}windowPosition
         *@param {Cesium.Ray}result
@@ -5554,8 +5587,7 @@ define('Core/MeshVisualizer',[
             Cesium.Cartesian3.add(rayOriginLocal, rayDir, pos);
             //计算发射方向
             Cesium.Cartesian3.subtract(surfacePointLocal, pos, rayDir);
-            Cesium.Cartesian3.normalize(rayDir, rayDir);
-            Cesium.Cartesian3.clone(pos, result.origin);
+            Cesium.Cartesian3.clone(surfacePointLocal, result.origin); 
             Cesium.Cartesian3.clone(rayDir, result.direction);
             return result;
         },
