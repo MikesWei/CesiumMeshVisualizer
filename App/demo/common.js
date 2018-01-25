@@ -13,6 +13,11 @@ function init() {
         return;
     }
     viewer = new Cesium.Viewer("cesiumContainer");
+    if (navigator.userAgent.match(/(iPhone|iPod|Android|ios)/i)) {//移动设备上禁掉以下几个选项，可以相对更加流畅
+        viewer.scene.fog.enable = false;
+        viewer.scene.skyAtmosphere.show = false;
+        viewer.scene.fxaa = false;
+    }
     viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function (evt) {
         look(homePosition[0], homePosition[1], homePosition[2]);
         evt.cancel = true;
