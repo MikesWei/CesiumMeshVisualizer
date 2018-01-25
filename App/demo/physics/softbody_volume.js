@@ -1,9 +1,9 @@
-﻿
+
 /// <reference path="../../../Source/ThirdParty/ammo.js-master/builds/ammo.js" />
 
 /// <reference path="../common.js" />
 
-/*requirejs([
+requirejs([
        "../../../requirejs.config.js",
        "../../../appconfig.js",
        '../../../Source/Main',
@@ -13,7 +13,7 @@
        appconfig,
        Cesium,
        common
-       ) {*/
+       ) {
     MeshVisualizer = Cesium.MeshVisualizer;
     Mesh = Cesium.Mesh;
     MeshMaterial = Cesium.MeshMaterial;
@@ -343,7 +343,7 @@
 
             return body;
         }
-         
+
 
         function updatePhysics(deltaTime) {
             try {
@@ -453,12 +453,16 @@
 
                 var ballShape = new Ammo.btSphereShape(ballRadius);
                 ballShape.setMargin(margin);
+                  
+                Cesium.Cartesian3.clone(ray.direction, rayDir);
+                Cesium.Cartesian3.subtract(ray.origin, ray.direction, pos); 
 
                 quat.set(0, 0, 0, 1);
-                var ballBody = createRigidBody(ball, ballShape, ballMass, ray.origin, quat);
+                var ballBody = createRigidBody(ball, ballShape, ballMass, pos, quat);
                 ballBody.setFriction(0.5);
-                Cesium.Cartesian3.clone(ray.direction, rayDir);
-                Cesium.Cartesian3.multiplyByScalar(rayDir, 25, rayDir);
+
+                Cesium.Cartesian3.normalize(rayDir, rayDir);
+                Cesium.Cartesian3.multiplyByScalar(rayDir, 30, rayDir);
                 console.log(rayDir);
                 ballBody.setLinearVelocity(new Ammo.btVector3(rayDir.x, rayDir.y, rayDir.z));
 
@@ -497,4 +501,4 @@
         }, 1000 * 3);
     });
 
-//});
+});
