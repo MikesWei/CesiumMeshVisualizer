@@ -1,7 +1,7 @@
 #CesiumMeshVisualizer 
 <a href="https://mikeswei.github.io/CesiumMeshVisualizer/Document/index.html" target="_blank">Document</a>
     <hr />
-    demos:<br />
+    demos（示例中常用操作有：左击发射、QA左右、wsad前后左右）:<br />
     <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/CSG/index.html">
            <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/CSG/screenshot.jpg" /> 
     </a><br />
