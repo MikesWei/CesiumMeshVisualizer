@@ -73,6 +73,7 @@ define([
         }
 
     }
+
     /**
     *绕z轴旋转，修改顶点坐标
     *@param {Cesium.Geometry}geometry
@@ -359,6 +360,7 @@ define([
             || (geometry.attributes && geometry.attributes.position && geometry.index)
             || (geometry.vertices && geometry.faces);
     }
+    
     /**
      *
      *@param {THREE.BufferGeometry}geometry 
@@ -388,10 +390,20 @@ define([
 
             }
         }
-
+        var indices=[];
+        if (!geometry.index&&geometry.groups) {
+            geometry.groups.forEach(function (group) {
+                for (var i = 0; i < group.count; i++) {
+                    indices.push(i+group.start);
+                }
+            })
+            indices = new Int32Array(indices);
+        }else{
+            indices=geometry.index.array;
+        }
         var cesGeometry = new Cesium.Geometry({
             attributes: attributes,
-            indices: geometry.index.array,
+            indices: indices,
             primitiveType: Cesium.PrimitiveType.TRIANGLES
         });
 
@@ -403,8 +415,9 @@ define([
     *@param {THREE.Geometry}geometry3js
     *@return {Cesium.Geometry} 
     */
-    GeometryUtils.fromGeometrt3js = function (geometry3js) {
-        if (geometry3js.attributes && geometry3js.index) {
+    GeometryUtils.fromGeometry3js = function (geometry3js) {
+        
+        if (geometry3js.attributes && (geometry3js.index||geometry3js.groups.length)) {
             return GeometryUtils.parseBufferGeometry3js(geometry3js);
         }
         var positions = new Float32Array(geometry3js.vertices.length * 3);
@@ -442,7 +455,7 @@ define([
     *@param {Cesium.Geometry}geometry
     *@return {THREE.Geometry} 
     */
-    GeometryUtils.toGeometrt3js = function (geometry) {
+    GeometryUtils.toGeometry3js = function (geometry) {
         if (typeof THREE === 'undefined') {
             throw new Error("THREE 未加载");
         }
