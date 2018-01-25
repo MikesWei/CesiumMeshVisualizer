@@ -3,7 +3,7 @@
 
 /// <reference path="../common.js" />
 
-requirejs([
+/*requirejs([
        "../../../requirejs.config.js",
        "../../../appconfig.js",
        '../../../Source/Main',
@@ -13,7 +13,7 @@ requirejs([
        appconfig,
        Cesium,
        common
-       ) {
+       ) {*/
     MeshVisualizer = Cesium.MeshVisualizer;
     Mesh = Cesium.Mesh;
     MeshMaterial = Cesium.MeshMaterial;
@@ -501,4 +501,4 @@ requirejs([
         }, 1000 * 3);
     });
 
-});
+//});
