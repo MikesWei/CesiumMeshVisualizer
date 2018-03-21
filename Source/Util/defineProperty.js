@@ -16,7 +16,7 @@
             },
             set: function (val) {
                 var changed = val != this["_" + name];
-                if (this["_" + name].equals) {
+                if (this["_" + name] && this["_" + name].equals && val) {
                     changed = this["_" + name].equals(val);
                 }
                 this["_" + name] = val;

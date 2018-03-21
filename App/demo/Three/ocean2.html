@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>MeshVisualizer</title>
+    <meta charset="utf-8" />
+    <link href="../../../ThirdParty/Cesium/Widgets/widgets.css" rel="stylesheet" />
+    <style>
+        html, body, #cesiumContainer {
+            width: calc(100%);
+            height: calc(100%);
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body> 
+
+    <div id="cesiumContainer">
+    </div>
+    <div id="creditContainer" style="display: none;">
+    </div>
+    <script src="../../../ThirdParty/Cesium/Cesium.js" type="text/javascript"></script>
+    <script src="../../../Source/ThirdParty/ammo.js-master/examples/js/three/three.js"></script>
+
+    <script src="../../../appconfig.js"></script>
+    <script src="../../../build/CesiumMeshVisualizer.js"></script> 
+    <script src="../common.js"></script>
+    <script src="three_common.js"></script>
+    <script> 
+        var geometry = new THREE.PlaneBufferGeometry(1, 1);
+
+        uniforms = {
+            time: { value: 1.0 },
+            resolution: { value: new THREE.Vector2(viewer.scene.canvas.width, viewer.scene.canvas.height) }
+        };
+
+        var material = new THREE.ShaderMaterial({
+
+            uniforms: uniforms,
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('fragmentShader').textContent
+
+        });
+
+        var mesh = new THREE.Mesh(geometry, material);
+
+        scene.add(mesh);
+        scene.beforeUpdate.addEventListener(function () {
+            mesh.material.uniforms.time.value += 0.05;
+        })
+
+    </script>
+
+
+</body>
+</html>
