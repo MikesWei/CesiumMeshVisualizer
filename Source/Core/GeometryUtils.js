@@ -1,5 +1,5 @@
-define([
-    'Util/CSG' 
+﻿define([
+    'Util/CSG'
 ], function (CSG) {
 
     /**
@@ -134,7 +134,7 @@ define([
             var normals = attributes.normal.values;
 
             var vA, vB, vC;
-          
+
             var pA = new Cesium.Cartesian3(), pB = new Cesium.Cartesian3(), pC = new Cesium.Cartesian3();
             var cb = new Cesium.Cartesian3(), ab = new Cesium.Cartesian3();
 
@@ -147,11 +147,11 @@ define([
                 Cesium.Cartesian3.fromArray(positions, vA, pA);
                 Cesium.Cartesian3.fromArray(positions, vB, pB);
                 Cesium.Cartesian3.fromArray(positions, vC, pC);
-                  
+
                 Cesium.Cartesian3.subtract(pC, pB, cb);
                 Cesium.Cartesian3.subtract(pA, pB, ab);
                 Cesium.Cartesian3.cross(cb, ab, cb);
-                 
+
                 normals[vA] += cb.x;
                 normals[vA + 1] += cb.y;
                 normals[vA + 2] += cb.z;
@@ -360,7 +360,7 @@ define([
             || (geometry.attributes && geometry.attributes.position && geometry.index)
             || (geometry.vertices && geometry.faces);
     }
-    
+
     /**
      *
      *@param {THREE.BufferGeometry}geometry 
@@ -390,16 +390,16 @@ define([
 
             }
         }
-        var indices=[];
-        if (!geometry.index&&geometry.groups) {
+        var indices = [];
+        if (!geometry.index && geometry.groups) {
             geometry.groups.forEach(function (group) {
                 for (var i = 0; i < group.count; i++) {
-                    indices.push(i+group.start);
+                    indices.push(i + group.start);
                 }
             })
             indices = new Int32Array(indices);
-        }else{
-            indices=geometry.index.array;
+        } else {
+            indices = geometry.index.array;
         }
         var cesGeometry = new Cesium.Geometry({
             attributes: attributes,
@@ -416,10 +416,16 @@ define([
     *@return {Cesium.Geometry} 
     */
     GeometryUtils.fromGeometry3js = function (geometry3js) {
-        
-        if (geometry3js.attributes && (geometry3js.index||geometry3js.groups.length)) {
-            return GeometryUtils.parseBufferGeometry3js(geometry3js);
+
+        if (geometry3js.attributes && (geometry3js.index || geometry3js.groups.length)) {
+
+        } else {
+            geometry3js = new THREE.BufferGeometry().fromGeometry(geometry3js);
         }
+        var geometry = GeometryUtils.parseBufferGeometry3js(geometry3js);
+        //GeometryUtils.computeVertexNormals(geometry);
+        Cesium.GeometryPipeline.computeNormal(geometry);
+        return geometry;
         var positions = new Float32Array(geometry3js.vertices.length * 3);
         for (var i = 0; i < geometry3js.vertices.length; i++) {
             positions[i * 3] = geometry3js.vertices[i].x;

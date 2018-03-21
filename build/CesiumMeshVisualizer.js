@@ -1840,7 +1840,7 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
     return MeshMaterial;
 });
 define('Core/GeometryUtils',[
-    'Util/CSG' 
+    'Util/CSG'
 ], function (CSG) {
 
     /**
@@ -1975,7 +1975,7 @@ define('Core/GeometryUtils',[
             var normals = attributes.normal.values;
 
             var vA, vB, vC;
-          
+
             var pA = new Cesium.Cartesian3(), pB = new Cesium.Cartesian3(), pC = new Cesium.Cartesian3();
             var cb = new Cesium.Cartesian3(), ab = new Cesium.Cartesian3();
 
@@ -1988,11 +1988,11 @@ define('Core/GeometryUtils',[
                 Cesium.Cartesian3.fromArray(positions, vA, pA);
                 Cesium.Cartesian3.fromArray(positions, vB, pB);
                 Cesium.Cartesian3.fromArray(positions, vC, pC);
-                  
+
                 Cesium.Cartesian3.subtract(pC, pB, cb);
                 Cesium.Cartesian3.subtract(pA, pB, ab);
                 Cesium.Cartesian3.cross(cb, ab, cb);
-                 
+
                 normals[vA] += cb.x;
                 normals[vA + 1] += cb.y;
                 normals[vA + 2] += cb.z;
@@ -2201,7 +2201,7 @@ define('Core/GeometryUtils',[
             || (geometry.attributes && geometry.attributes.position && geometry.index)
             || (geometry.vertices && geometry.faces);
     }
-    
+
     /**
      *
      *@param {THREE.BufferGeometry}geometry 
@@ -2231,16 +2231,16 @@ define('Core/GeometryUtils',[
 
             }
         }
-        var indices=[];
-        if (!geometry.index&&geometry.groups) {
+        var indices = [];
+        if (!geometry.index && geometry.groups) {
             geometry.groups.forEach(function (group) {
                 for (var i = 0; i < group.count; i++) {
-                    indices.push(i+group.start);
+                    indices.push(i + group.start);
                 }
             })
             indices = new Int32Array(indices);
-        }else{
-            indices=geometry.index.array;
+        } else {
+            indices = geometry.index.array;
         }
         var cesGeometry = new Cesium.Geometry({
             attributes: attributes,
@@ -2257,10 +2257,16 @@ define('Core/GeometryUtils',[
     *@return {Cesium.Geometry} 
     */
     GeometryUtils.fromGeometry3js = function (geometry3js) {
-        
-        if (geometry3js.attributes && (geometry3js.index||geometry3js.groups.length)) {
-            return GeometryUtils.parseBufferGeometry3js(geometry3js);
+
+        if (geometry3js.attributes && (geometry3js.index || geometry3js.groups.length)) {
+
+        } else {
+            geometry3js = new THREE.BufferGeometry().fromGeometry(geometry3js);
         }
+        var geometry = GeometryUtils.parseBufferGeometry3js(geometry3js);
+        //GeometryUtils.computeVertexNormals(geometry);
+        Cesium.GeometryPipeline.computeNormal(geometry);
+        return geometry;
         var positions = new Float32Array(geometry3js.vertices.length * 3);
         for (var i = 0; i < geometry3js.vertices.length; i++) {
             positions[i * 3] = geometry3js.vertices[i].x;
@@ -2552,8 +2558,7 @@ define('Core/GeometryUtils',[
     }
 
     return GeometryUtils;
-})
-;
+});
 define('Core/Shaders/phong_frag',[],function () {
     var phong_frag = '\n\
 varying vec3 v_position;\n\
@@ -5275,1595 +5280,6 @@ if (typeof define === "function") {
     define('Util/Path',[],function () { return Path; });
 }
 ;
-define('Core/MeshVisualizer',[
-    'Core/Mesh',
-    'Core/RendererUtils',
-    'Core/MeshMaterial',
-    'Core/Shaders/ShaderChunk',
-    'Core/Rotation',
-    'Core/FramebufferTexture',
-    'Core/LOD',
-    'Core/ReferenceMesh',
-    'ThirdParty/tiff-js/tiff',
-    'Util/Path',
-    'Core/GeometryUtils'
-], function (
-    Mesh,
-    RendererUtils,
-    MeshMaterial,
-    ShaderChunk,
-    Rotation,
-    FramebufferTexture,
-    LOD,
-    ReferenceMesh,
-    TIFFParser,
-    Path,
-    GeometryUtils
-    ) {
-
-    var Matrix4 = Cesium.Matrix4;
-    var DrawCommand = Cesium.DrawCommand;
-    var defined = Cesium.defined;
-    var GeometryPipeline = Cesium.GeometryPipeline;
-    var BufferUsage = Cesium.BufferUsage;
-    var BlendingState = Cesium.BlendingState;
-    var VertexArray = Cesium.VertexArray;
-    var ShaderProgram = Cesium.ShaderProgram;
-    var DepthFunction = Cesium.DepthFunction;
-    var CullFace = Cesium.CullFace;
-    var RenderState = Cesium.RenderState;
-    var defaultValue = Cesium.defaultValue;
-    var Texture = Cesium.Texture;
-    var PixelFormat = Cesium.PixelFormat;
-    var BoxGeometry = Cesium.BoxGeometry;
-    var Cartesian3 = Cesium.Cartesian3;
-    var VertexFormat = Cesium.VertexFormat;
-    var CubeMap = Cesium.CubeMap;
-    var loadCubeMap = Cesium.loadCubeMap;
-    var Matrix3 = Cesium.Matrix3;
-    var CesiumMath = Cesium.Math;
-    var Color = Cesium.Color;
-
-    var scratchTranslation = new Cartesian3();
-    var scratchQuaternion = new Cesium.Quaternion();
-    var scratchScale = new Cartesian3();
-    var scratchTranslationQuaternionRotationScale = new Matrix4();
-    var computeModelMatrix = new Matrix4();
-    var scratchPosition = new Cartesian3();
-    var scratchTraverseArgs = {
-        cancelCurrent: false //停止遍历当前节点的所有子节点 
-    };
-    Cesium.Cartesian3.prototype.set = function (x, y, z) {
-        this.x = x; this.y = y; this.z = z;
-    }
-    Cesium.Cartesian3.prototype.copy = function (src) {
-        this.x = src.x; this.y = src.y; this.z = src.z;
-    }
-
-    Cesium.Cartesian2.prototype.set = function (x, y) {
-        this.x = x; this.y = y;
-    }
-    Cesium.Cartesian2.prototype.copy = function (src) {
-        this.x = src.x; this.y = src.y;
-    }
-    Cesium.Quaternion.prototype.set = function (x, y, z, w) {
-        this.x = x; this.y = y; this.z = z; this.w = w;
-    }
-    Cesium.Quaternion.prototype.copy = function (src) {
-        this.x = src.x; this.y = src.y; this.z = src.z; this.w = src.w;
-    }
-    /**
-    *
-    *
-    *@param {Object}options
-    *@param {Cesium.Matrix4}[options.modelMatrix=Cesium.Matrix4.IDENTITY]
-    *@param {Cesium.Cartesian3}[options.up=Cesium.Cartesian3.UNIT_Z]
-    *@param {Cesium.Cartesian3}[options.position=Cesium.Cartesian3.ZERO]
-    *@param {Cesium.Cartesian3}[options.scale=new Cartesian3(1, 1, 1)]
-    *@param {Cesium.Rotation}[options.rotation]
-    *@param {Boolean}[options.show=true]
-    *@param {Boolean}[options.showReference=true]
-    *@param {Cesium.ArrowGeometry}[options.referenceAxisParameter]
-    *
-    *@property {Cesium.Matrix4}modelMatrix 
-    *@property {Cesium.Cartesian3}up 
-    *@property {Cesium.Cartesian3}position 
-    *@property {Cesium.Cartesian3}scale 
-    *@property {Cesium.Rotation}rotation 
-    *@property {Boolean}show 
-    *@property {Boolean}showReference
-    *@property {Boolean}modelMatrixNeedsUpdate
-    *@property {Cesium.Event}beforeUpate  
-    *
-    *@constructor
-    *@memberof Cesium
-    *@extends Cesium.Primitive
-    *
-    *@example 
-     
-        MeshVisualizer = Cesium.MeshVisualizer;
-        Mesh = Cesium.Mesh;
-        MeshMaterial = Cesium.MeshMaterial; 
-        FramebufferTexture = Cesium.FramebufferTexture;
-
-        var center = Cesium.Cartesian3.fromDegrees(homePosition[0], homePosition[1], 50000);
-        var modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(center);
-
-        var meshVisualizer = new MeshVisualizer({
-            modelMatrix: modelMatrix,
-        });
-        viewer.scene.primitives.add(meshVisualizer);
-
-
-        //示例1：Cesium.Geometry+Cesium.MeshMaterial组合
-        var box = Cesium.BoxGeometry.createGeometry(Cesium.BoxGeometry.fromDimensions({
-            dimensions: new Cesium.Cartesian3(100000, 50000, 50000),
-            vertexFormat: Cesium.VertexFormat.POSITION_ONLY
-        }));
-        
-        var material = new MeshMaterial({
-            defaultColor: "rgba(255,0,0,1.0)",
-            wireframe: false,
-            side: MeshMaterial.Sides.DOUBLE
-        });
-        var boxMesh = new Mesh(box, material);
-
-        meshVisualizer.add(boxMesh);
-
-        //示例2：Cesium.CSG+Cesium.MeshMaterial组合，可以用Cesium.CSG做布尔运算并渲染运算结果
-
-        //首先使用Cesium创建球体
-         var sphere = new Cesium.SphereGeometry({
-             radius: 50000.0,
-             vertexFormat: Cesium.VertexFormat.POSITION_ONLY
-         });
-         sphere = Cesium.SphereGeometry.createGeometry(sphere);
-        
-         var sphereMesh = new Mesh(sphere, material);
-         sphereMesh.position = new Cesium.Cartesian3(100000, 0, 0)
-         meshVisualizer.add(sphereMesh);
-
-         //将球体对象Cesium.SphereGeometry转成Cesium.CSG实例
-         sphere = CSG.toCSG(sphere);
-         //将盒子对象转成Cesium.CSG实例
-         box = CSG.toCSG(box);
-
-          //做布尔运算
-          var subResult = sphere.subtract(box);
-          //渲染运算结果
-          var subResultMesh = new Mesh(subResult, material);
-          subResultMesh.position = new Cesium.Cartesian3(700000, 0, 0)
-          meshVisualizer.add(subResultMesh);
-
-          //示例3：使用帧缓存作纹理,实际应用中如体绘制，风场流场绘制等等都可以运用此技术
-
-          function createGeometry() {
-            var p1 = new Cesium.Cartesian3(-50000, 50000, 100);
-            var p2 = new Cesium.Cartesian3(-50000, -50000, 100);
-            var p3 = new Cesium.Cartesian3(50000, -50000, 100);
-            var p4 = new Cesium.Cartesian3(50000, 50000, 100);
-
-            var positions = new Float64Array([
-              p1.x, p1.y, p1.z,
-              p2.x, p2.y, p2.z,
-              p3.x, p3.y, p3.z,
-              p4.x, p4.y, p4.z
-            ]);
-            var indices = new Uint16Array([
-              0, 1, 3,
-              1, 2, 3,
-            ]);
-            var sts = new Float32Array([
-              1, 1,
-              1, 0,
-              0, 0,
-              0, 1
-            ]);
-            var geometry = new Cesium.Geometry({
-                attributes: {
-                    position: new Cesium.GeometryAttribute({
-                        componentDatatype: Cesium.ComponentDatatype.DOUBLE,
-                        componentsPerAttribute: 3,
-                        values: positions
-                    }),
-                    st: new Cesium.GeometryAttribute({
-                        componentDatatype: Cesium.ComponentDatatype.FLOAT,
-                        componentsPerAttribute: 2,
-                        values: sts
-                    })
-                },
-                indices: indices,
-                primitiveType: Cesium.PrimitiveType.TRIANGLES,
-                boundingSphere: Cesium.BoundingSphere.fromVertices(positions)
-            });
-
-            return geometry;
-        }
-        //将上文中的盒子渲染到缓存，作为纹理参与createGeometry（）方法创建的几何体渲染过程
-        var framebufferTex = new FramebufferTexture(boxMesh);
-        var geometry = createGeometry();
-        var customMesh = new Mesh(geometry, new MeshMaterial({
-
-            uniforms: {
-                u_textureMap: framebufferTex//Cesium.buildModuleUrl('Widgets/Images/TerrainProviders/STK.png')
-            },
-            side: MeshMaterial.Sides.DOUBLE,
-            vertexShader : "\n\
-                \n\
-                varying vec3 v_position;\n\
-                varying vec2 v_st;\n\
-                \n\
-                void main(void) \n\
-                {\n\
-                vec4 pos = u_modelViewMatrix * vec4(position,1.0);\n\
-                v_position = pos.xyz;\n\
-                v_st=st;\n\
-                gl_Position = u_projectionMatrix * pos;\n\
-                }",
-            fragmentShader : "varying vec2 v_st;\
-                uniform sampler2D u_textureMap;\
-                void main()\
-                {\
-                gl_FragColor = texture2D(u_textureMap,v_st);\n\
-                \
-                }\
-                "
-        }));
-        customMesh.position = new Cesium.Cartesian3(100000, 0, 0);
-        meshVisualizer.add(customMesh);
-    */
-    function MeshVisualizer(options) {
-        this._modelMatrix = defaultValue(options.modelMatrix, Matrix4.IDENTITY);
-        this._actualModelMatrix = Matrix4.clone(this._modelMatrix);
-        this._ready = true;
-        this._modelMatrixNeedsUpdate = true;
-
-        this._isWireframe = false;
-        this._up = defaultValue(options.up, new Cartesian3(0, 0, 1));
-        this._position = defaultValue(options.position, new Cartesian3(0, 0, 0));
-        this._scale = defaultValue(options.scale, new Cartesian3(1, 1, 1));
-        this._rotation = defaultValue(options.rotation, { axis: new Cartesian3(0, 0, 1), angle: 0 });
-        this._rotation = new Rotation(this._rotation.axis, this._rotation.angle);
-        this._rotation.paramChanged.addEventListener(this.onModelMatrixNeedUpdate, this);
-
-
-        this._chidren = [];
-        this._debug = false;
-        this._show = defaultValue(options.show, true);
-
-        this._center = new Cartesian3();
-        Cesium.Matrix4.getTranslation(this._modelMatrix, this._center);
-        this._framebufferTextures = {};
-        this._uniformValueCache = {};
-        this._textureCache = {};
-        this._uniformMaps = {};
-        this.referenceMesh = new ReferenceMesh({
-            axisParameter: defaultValue(options.referenceAxisParameter, { length: 50000 * 2 }),
-            show: defaultValue(options.showReference, false)
-        });
-        this.add(this.referenceMesh);
-        this._pickIds = [];
-        this.beforeUpate = new Cesium.Event();
-        this._scene = null;
-    }
-    var world2localMatrix = new Cesium.Matrix4();
-    var surfacePointLocal = new Cesium.Cartesian3();
-    var rayDir = new Cesium.Cartesian3();
-    var pos = new Cesium.Cartesian3();
-    var rayOriginLocal = new Cesium.Cartesian3();
-    var scratchRay = new Cesium.Ray();
-
-    MeshVisualizer.prototype = {
-        /**
-        *@param {Cesium.Mesh}mesh
-        */
-        remove: function (mesh) {
-
-            for (var i = 0; i < this._chidren.length; i++) {
-                if (this._chidren[i] == mesh) {
-
-                    this._chidren.splice(i, 1);
-                }
-            }
-            MeshVisualizer.traverse(mesh, function () {
-                if (mesh._drawCommand) {
-                    mesh._drawCommand.destroy && mesh._drawCommand.destroy();
-                }
-                if (mesh._actualMesh && mesh._actualMesh._drawCommand) {
-                    Cesium.destroyObject(mesh._actualMesh._drawCommand);
-                    Cesium.destroyObject(mesh._actualMesh.geometry);
-                    Cesium.destroyObject(mesh._actualMesh);
-                    Cesium.destroyObject(mesh);
-                }
-            }, false);
-        },
-        /**
-        *
-        *拾取点，用局部坐标系表达。内部使用Cesium.Scene.pickPosition和MeshVisualizer.worldCoordinatesToLocal实现。
-        *@param {Cesium.Cartesian2}windowPosition
-        *@param {Cesium.Ray}result
-        *@return {Cesium.Cartesian3}
-        */
-        pickPosition: function (windowPosition, result) {
-            if (!this._scene) {
-                return undefined;
-            }
-            this._scene.pickPosition(windowPosition, surfacePointLocal);
-
-            if (!surfacePointLocal) {
-                return undefined;
-            }
-
-            this.worldCoordinatesToLocal(surfacePointLocal, surfacePointLocal);
-            Cesium.Cartesian3.clone(surfacePointLocal, result);
-            return result;
-        },
-        /**
-        *
-        *创建一条射线，用局部坐标系表达
-        *@param {Cesium.Cartesian2}windowPosition
-        *@param {Cesium.Ray}result
-        *@return {Cesium.Ray}
-        */
-        getPickRay: function (windowPosition, result) {
-            if (!this._scene) {
-                return undefined;
-            }
-            if (!result) {
-                result = Cesium.Ray();
-            }
-            this._scene.camera.getPickRay(windowPosition, scratchRay);//ray用于计算小球发射点位置，这里射线的起始点是世界坐标，不能像Threejs那样直接拿来计算，需要转成局部坐标
-            this._scene.pickPosition(windowPosition, surfacePointLocal);//射线和局部场景的交点
-
-            if (!surfacePointLocal) {
-                return undefined;
-            }
-
-            Cesium.Cartesian3.clone(scratchRay.direction, rayDir);
-
-            //世界坐标转局部坐标
-            this.worldCoordinatesToLocal(scratchRay.origin, rayOriginLocal);
-            this.worldCoordinatesToLocal(surfacePointLocal, surfacePointLocal);
-
-            Cesium.Cartesian3.add(rayOriginLocal, rayDir, pos);
-            //计算发射方向
-            Cesium.Cartesian3.subtract(surfacePointLocal, pos, rayDir);
-            Cesium.Cartesian3.clone(surfacePointLocal, result.origin);
-            Cesium.Cartesian3.clone(rayDir, result.direction);
-            return result;
-        },
-        /**
-        *世界坐标到局部坐标
-        *@param {Cesium.Cartesian3}worldCoordinates
-        *@param {Cesium.Cartesian3}result
-        *@return {Cesium.Cartesian3}
-        */
-        worldCoordinatesToLocal: function (worldCoordinates, result) {
-            if (!result) {
-                result = new Cartesian3();
-            }
-            Cesium.Matrix4.inverseTransformation(this._actualModelMatrix, world2localMatrix)
-            Cesium.Matrix4.multiplyByPoint(world2localMatrix, worldCoordinates, result);
-            return result;
-        },
-        /**
-       *局部坐标到世界坐标
-       *@param {Cesium.Cartesian3}localCoordinates
-       *@param {Cesium.Cartesian3}result
-       *@return {Cesium.Cartesian3}
-       */
-        localToWorldCoordinates: function (localCoordinates, result) {
-            if (!result) {
-                result = new Cartesian3();
-            }
-            Cesium.Matrix4.multiplyByPoint(this._actualModelMatrix, localCoordinates, result);
-            return result;
-        },
-        onModelMatrixNeedUpdate: function () {
-            this._modelMatrixNeedsUpdate = true;
-        },
-        /**
-         *
-         *@param {Number}x
-         *@param {Number}y
-         *@param {Number}z
-         */
-        setPosition: function (x, y, z) {
-            var changed = false;
-            if (arguments.length == 1) {
-                if (typeof x == 'number') {
-                    if (x != this._position.x) changed = true;
-                    this._position.x = x;
-                } else if (x instanceof Cesium.Cartesian3) {
-                    if (x != this._position.x
-                        || y != this._position.y
-                        || z != this._position.z) {
-                        changed = true;
-                    }
-
-                    this._position.x = x.x;
-                    this._position.y = x.y;
-                    this._position.z = x.z;
-                }
-            }
-            if (arguments.length == 2 && typeof y == 'number') {
-                if (y != this._position.y) changed = true;
-                this._position.y = y;
-            }
-            if (arguments.length == 3 && typeof z == 'number') {
-                if (z != this._position.z) changed = true;
-                this._position.z = z;
-            }
-            if (changed) {
-                this._modelMatrixNeedsUpdate = true;
-            }
-        },
-        /**
-         *
-         *@param {Number}x
-         *@param {Number}y
-         *@param {Number}z
-         */
-        setScale: function (x, y, z) {
-            var changed = false;
-            if (arguments.length == 1) {
-                if (typeof x == 'number') {
-                    if (x != this._scale.x) changed = true;
-                    this._scale.x = x;
-                } else if (x instanceof Cesium.Cartesian3) {
-                    if (x != this._scale.x
-                        || y != this._scale.y
-                        || z != this._scale.z) {
-                        changed = true;
-                    }
-
-                    this._scale.x = x.x;
-                    this._scale.y = x.y;
-                    this._scale.z = x.z;
-                }
-            }
-            if (arguments.length == 2 && typeof y == 'number') {
-                if (y != this._scale.y) changed = true;
-                this._scale.y = y;
-            }
-            if (arguments.length == 3 && typeof z == 'number') {
-                if (z != this._scale.z) changed = true;
-                this._scale.z = z;
-            }
-            if (changed) {
-                this._modelMatrixNeedsUpdate = true;
-            }
-        },
-
-        toWireframe: function (geometry) {
-            if (geometry.primitiveType !== Cesium.PrimitiveType.TRIANGLES
-                && geometry.primitiveType !== Cesium.PrimitiveType.TRIANGLE_FAN
-                && geometry.primitiveType !== Cesium.PrimitiveType.TRIANGLE_STRIP) {
-                return geometry;
-            }
-            if (!geometry.triangleIndices) {
-                geometry.triangleIndices = geometry.indices;
-            }
-            //if (geometry.lineIndices) {
-            //    geometry.indices = geometry.lineIndices;
-            //    return geometry;
-            //}
-            geometry = GeometryPipeline.toWireframe(geometry);
-            //geometry.lineIndices = geometry.indices;
-            return geometry;
-        },
-
-        restoreFromWireframe: function (geometry) {
-            if (geometry.triangleIndices) {
-                geometry.indices = geometry.triangleIndices;
-            }
-            geometry.primitiveType = Cesium.PrimitiveType.TRIANGLES;
-            return geometry;
-        },
-
-        /**
-        * 
-        *@param {Cesium.Mesh} mesh
-        *@param {Cesium.FrameState} frameState
-        *@return {Cesium.DrawCommand} 
-        *@private
-        */
-        createDrawCommand: function (mesh, frameState) {
-            var that = this;
-            var context = frameState.context;
-            var geometry = mesh.geometry;
-            var material = mesh.material;
-
-            var command = new Cesium.DrawCommand({
-                modelMatrix: Matrix4.clone(this.modelMatrix),
-                owner: mesh,
-                primitiveType: geometry.primitiveType,
-                cull: false,
-                pass: material.translucent ? Cesium.Pass.TRANSLUCENT : Cesium.Pass.OPAQUE
-                //,boundingVolume: geometry.boundingSphere
-            });
-
-            var attributeLocations = GeometryPipeline.createAttributeLocations(geometry);
-
-            command.vertexArray = VertexArray.fromGeometry({
-                context: context,
-                geometry: geometry,
-                attributeLocations: attributeLocations,
-                bufferUsage: BufferUsage.STATIC_DRAW
-            });
-            command.vertexArray._attributeLocations = attributeLocations;
-
-            var pickObject = {
-                primitive: this,
-                id: mesh
-            };
-
-
-            var pickId = context.createPickId(pickObject);
-            that._pickIds.push(pickId);
-
-            var pickColor = pickId.color;
-
-            command._sp = ShaderProgram.fromCache({
-                context: context,
-                fragmentShaderSource: this.getFragmentShaderSource(material),
-                vertexShaderSource: this.getVertexShaderSource(geometry, material),
-                attributeLocations: attributeLocations
-            });
-            command._pickSp = ShaderProgram.fromCache({
-                context: context,
-                fragmentShaderSource: 'void main() {\n\tgl_FragColor = vec4(' + pickColor.red + ',' + pickColor.green + ',' + pickColor.blue + ',' + pickColor.alpha + ');\n}',
-                vertexShaderSource: this.getVertexShaderSource(geometry, material),
-                attributeLocations: attributeLocations
-            });
-            command.shaderProgram = command._sp;
-
-            command.renderState = this.getRenderState(material);
-
-            command.uniformMap = this.getUniformMap(material, frameState);
-
-            return command;
-        },
-
-        /**
-        *
-        *
-        *@param {THREE.Material}material 
-        *@return {Cesium.RenderState}frameState
-        *@private
-        */
-        getRenderState: function (material) {
-            var renderState = {
-                blending: material.blending ? BlendingState.ALPHA_BLEND : BlendingState.DISABLED,
-                depthTest: {
-                    enabled: material.depthTest,
-                    func: DepthFunction.LESS
-                },
-                cull: {
-                    enabled: true,
-                    face: CullFace.FRONT
-                },
-                depthRange: {
-                    near: 0,
-                    far: 1
-                },
-                colorMask: {
-                    red: true,
-                    green: true,
-                    blue: true,
-                    alpha: true
-                },
-                depthMask: material.depthMask
-            }
-            renderState.cull.enabled = true;
-            renderState.blending.color = {
-                red: 0.0,
-                green: 0.0,
-                blue: 0.0,
-                alpha: 0.0
-            };
-            switch (material.side) {
-                case MeshMaterial.Sides.FRONT:
-                    renderState.cull.face = CullFace.BACK;
-                    break;
-                case MeshMaterial.Sides.BACK:
-                    renderState.cull.face = CullFace.FRONT;
-                    break;
-                default:
-                    renderState.cull.enabled = false;
-                    break;
-            }
-
-            renderState = RenderState.fromCache(renderState);
-
-            return renderState;
-        },
-        /**
-        *
-        *
-        *@param {THREE.Material}material
-        *@param {Cesium.DrawCommand}drawCommand
-        *@param {Cesium.FrameState}frameState
-        *@private
-        */
-        getUniformMap: function (material, frameState) {
-            if (this._uniformMaps[material.uuid] && !material.needsUpdate) {
-                return this._uniformMaps[material.uuid];
-
-            }
-            var uniformMap = {};
-            this._uniformMaps[material.uuid] = uniformMap;
-
-            material.needsUpdate = false;
-
-            uniformMap.cameraPosition = function () {
-                return frameState.camera.position;
-            }
-            uniformMap.u_cameraPosition = function () {
-                return frameState.camera.position;
-            }
-            //base matrix
-            uniformMap.u_normalMatrix = function () {
-                return frameState.context.uniformState.normal;
-            }
-            uniformMap.u_projectionMatrix = function () {
-                return frameState.context.uniformState.projection;
-            }
-
-            uniformMap.u_modelViewMatrix = function () {
-                return frameState.context.uniformState.modelView;
-            }
-            //base matrix for threejs
-            uniformMap.normalMatrix = function () {
-                return frameState.context.uniformState.normal;
-            }
-            uniformMap.projectionMatrix = function () {
-                return frameState.context.uniformState.projection;
-            }
-
-            uniformMap.modelViewMatrix = function () {
-                return frameState.context.uniformState.modelView;
-            }
-            uniformMap.modelMatrix = function () {
-                return frameState.context.uniformState.model;
-            }
-            uniformMap.u_modelMatrix = function () {
-                return frameState.context.uniformState.model;
-            }
-            uniformMap.u_viewMatrix = function () {
-                return frameState.context.uniformState.view;
-            }
-            uniformMap.viewMatrix = function () {
-                return frameState.context.uniformState.view;
-            }
-
-            if (material.uniformStateUsed && material.uniformStateUsed.length) {
-                material.uniformStateUsed.forEach(function (item) {
-                    if (!uniformMap[item.glslVarName]) {
-                        if (!frameState.context.uniformState[item.uniformStateName]) {
-                            throw new Error(item.uniformStateName + "不是Cesium引擎的内置对象");
-                        }
-                        uniformMap[item.glslVarName] = function () {
-                            return frameState.context.uniformState[item.uniformStateName];
-                        }
-                    }
-                });
-            }
-            var that = this;
-
-            function getCubeTextureCallback(name, item, mtl) {
-                var callback = function () {
-                    if (!that._textureCache[item.uuid] || item.needsUpdate) {
-                        if (!callback.allLoaded && !callback.isLoading) {
-                            var promises = [];
-                            for (var i = 0; i < item.value.length; i++) {
-                                if (item.value[i] instanceof HTMLCanvasElement
-                                    || item.value[i] instanceof HTMLVideoElement
-                                    || item.value[i] instanceof HTMLImageElement
-                                    ) {
-                                    var deferred = Cesium.when.defer();
-                                    requestAnimationFrame(function () {
-                                        deferred.resolve(item.value[i]);
-                                    });
-                                    promises.push(deferred);
-                                } else if (typeof item.value[i] === 'string') {
-                                    promises.push(Cesium.loadImage(item.value[i]));
-                                } else {
-                                    throw Error(name + "" + i + "给定值“ " + item[i] + "” 不是有效的纹理图片");
-                                }
-                            }
-                            callback.isLoading = true;
-                            item.needsUpdate = false;
-                            Cesium.when.all(promises, function (images) {
-
-                                that._textureCache[item.uuid] = new Cesium.CubeMap({
-                                    context: frameState.context,
-                                    source: {
-                                        positiveX: images[0],
-                                        negativeX: images[1],
-                                        positiveY: images[2],
-                                        negativeY: images[3],
-                                        positiveZ: images[4],
-                                        negativeZ: images[5]
-                                    }
-                                });
-
-                                callback.allLoaded = true;
-                                callback.isLoading = false;
-                            });
-                        }
-                    }
-                    if (callback.allLoaded) {
-                        return that._textureCache[item.uuid];
-                    }
-                    else {
-                        if (!that.defaultCubeMap) {
-
-                            if (!that.defaultTextureImage) {
-                                that.defaultTextureImage = document.createElement("canvas");
-                                that.defaultTextureImage.width = 1;
-                                that.defaultTextureImage.height = 1;
-                            }
-
-                            that.defaultCubeMap = new Cesium.CubeMap({
-                                context: frameState.context,
-                                source: {
-                                    positiveX: that.defaultTextureImage,
-                                    negativeX: that.defaultTextureImage,
-                                    positiveY: that.defaultTextureImage,
-                                    negativeY: that.defaultTextureImage,
-                                    positiveZ: that.defaultTextureImage,
-                                    negativeZ: that.defaultTextureImage
-                                }
-                            });
-                        }
-                        return that.defaultCubeMap;
-                    }
-                }
-                if (callback.allLoaded) {
-                    callback.allLoaded = false;
-                    callback.isLoading = false;
-                }
-                return callback;
-            }
-
-
-            function createTexture(texture, context) {
-
-                var TextureMinificationFilter = Cesium.TextureMinificationFilter;
-                var TextureWrap = Cesium.TextureWrap;
-
-                var sampler = texture.sampler;
-
-                var mipmap =
-                    (sampler.minificationFilter === TextureMinificationFilter.NEAREST_MIPMAP_NEAREST) ||
-                    (sampler.minificationFilter === TextureMinificationFilter.NEAREST_MIPMAP_LINEAR) ||
-                    (sampler.minificationFilter === TextureMinificationFilter.LINEAR_MIPMAP_NEAREST) ||
-                    (sampler.minificationFilter === TextureMinificationFilter.LINEAR_MIPMAP_LINEAR);
-                var requiresNpot = mipmap ||
-                    (sampler.wrapS === TextureWrap.REPEAT) ||
-                    (sampler.wrapS === TextureWrap.MIRRORED_REPEAT) ||
-                    (sampler.wrapT === TextureWrap.REPEAT) ||
-                    (sampler.wrapT === TextureWrap.MIRRORED_REPEAT);
-
-                var source = texture.source;
-                var npot = !CesiumMath.isPowerOfTwo(source.width) || !CesiumMath.isPowerOfTwo(source.height);
-
-                if (requiresNpot && npot) {
-                    // WebGL requires power-of-two texture dimensions for mipmapping and REPEAT/MIRRORED_REPEAT wrap modes.
-                    var canvas = document.createElement('canvas');
-                    canvas.width = CesiumMath.nextPowerOfTwo(source.width);
-                    canvas.height = CesiumMath.nextPowerOfTwo(source.height);
-                    var canvasContext = canvas.getContext('2d');
-                    canvasContext.drawImage(source, 0, 0, source.width, source.height, 0, 0, canvas.width, canvas.height);
-                    source = canvas;
-                }
-
-                var tx;
-
-                if (texture.target === WebGLConstants.TEXTURE_2D) {
-                    tx = new Texture({
-                        context: context,
-                        source: source,
-                        width: texture.width,
-                        height: texture.height,
-                        pixelFormat: texture.internalFormat,
-                        pixelDatatype: texture.type,
-                        sampler: sampler,
-                        flipY: texture.flipY
-                    });
-                }
-                // GLTF_SPEC: Support TEXTURE_CUBE_MAP.  https://github.com/KhronosGroup/glTF/issues/40
-
-                if (mipmap) {
-                    tx.generateMipmap();
-                }
-
-                return tx;
-            }
-            var WebGLConstants = Cesium.WebGLConstants;
-            function onTextureImageLoaded(image, item) {
-                var tex;
-                if (defined(image.internalFormat)) {
-                    tex = new Texture({
-                        context: frameState.context,
-                        pixelFormat: image.internalFormat,
-                        width: image.width,
-                        height: image.height,
-                        source: {
-                            arrayBufferView: image.bufferView
-                        },
-                        flipY: item.flipY
-                    });
-                } else {
-                    var format = Cesium.WebGLConstants.RGB;
-                    if (image instanceof HTMLCanvasElement
-                        || image instanceof HTMLVideoElement
-                        || (image.src && image.src.toLocaleLowerCase().indexOf(".png") >= 0)
-                        ) {
-                        format = Cesium.WebGLConstants.RGBA;
-                    }
-                    if (item.sampler) {
-                        tex = createTexture({
-                            context: frameState.context,
-                            source: image,
-                            target: WebGLConstants.TEXTURE_2D,
-                            width: item.width,
-                            height: item.height,
-                            pixelFormat: format,
-                            flipY: item.flipY,
-                            sampler: new Cesium.Sampler(item.sampler)
-                        }, frameState.context);
-                    } else {
-                        tex = new Texture({
-                            context: frameState.context,
-                            source: image,
-                            target: WebGLConstants.TEXTURE_2D,
-                            width: item.width,
-                            height: item.height,
-                            pixelFormat: format,
-                            flipY: item.flipY
-                        });
-                    }
-                }
-                return tex;
-            }
-
-            function getTextureCallback(item) {
-
-                var callback = function () {
-
-                    if (!that._textureCache[item.value] || item.needsUpdate) {
-
-                        if (item.value instanceof HTMLImageElement
-                                    || item.value instanceof HTMLCanvasElement
-                                    || item.value instanceof HTMLVideoElement
-                            ) {
-                            var image = item.value;
-                            that._textureCache[item.value] = onTextureImageLoaded(image, item);
-                            item.needsUpdate = false;
-                            return that._textureCache[item.value];
-
-                        } else {
-                            if (typeof item.value === "string" && !callback.isLoading) {
-                                callback.isLoading = true;
-                                item.needsUpdate = false;
-                                var url = item.value.toLocaleLowerCase();
-
-                                var extension = Path.GetExtension(url).slice(1);
-                                if (extension == 'tif') {//处理tif纹理
-
-                                    Cesium.loadArrayBuffer(url).then(function (imageArrayBuffer) {
-                                        var tiffParser = new TIFFParser();
-                                        var tiffCanvas = tiffParser.parseTIFF(imageArrayBuffer);
-                                        if (that._textureCache[item.value]) {
-                                            that._textureCache[item.value].destroy && that._textureCache[item.value].destroy();
-                                        }
-                                        that._textureCache[item.value] = onTextureImageLoaded(tiffCanvas, item);
-                                        callback.isLoading = false;
-
-                                    }).otherwise(function (err) {
-                                        console.log(err);
-                                    })
-
-                                } else {
-                                    Cesium.loadImage(item.value).then(function (image) {
-                                        if (that._textureCache[item.value]) {
-                                            that._textureCache[item.value].destroy && that._textureCache[item.value].destroy();
-                                        }
-                                        that._textureCache[item.value] = onTextureImageLoaded(image, item);
-                                        callback.isLoading = false;
-                                    }).otherwise(function (err) {
-                                        console.log(err);
-                                    })
-                                }
-                            }
-
-                            if (!that.defaultTextureImage) {
-                                that.defaultTextureImage = document.createElement("canvas");
-                                that.defaultTextureImage.width = 1;
-                                that.defaultTextureImage.height = 1;
-                            }
-                            if (!that.defaultTexture) {
-                                that.defaultTexture = new Texture({
-                                    context: frameState.context,
-                                    source: that.defaultTextureImage
-                                });
-                            }
-
-                            return that.defaultTexture;
-                        }
-
-                    } else {
-                        return that._textureCache[item.value];
-                    }
-
-                }
-
-                return callback;
-            }
-
-            if (material.uniforms) {
-
-                function setUniformCallbackFunc(name, item) {
-
-                    if (item !== undefined && item !== null) {//item may be 0
-                        var isImageUrl = typeof item.value === "string";
-                        var isCssColorString = typeof item.value === "string";
-                        if (typeof item.value === "string") {
-                            var itemLowerCase = item.value.toLocaleLowerCase();
-                            if (itemLowerCase.endsWith(".png")
-                                || itemLowerCase.endsWith(".jpg")
-                                || itemLowerCase.endsWith(".bmp")
-                                || itemLowerCase.endsWith(".gif")
-                                || itemLowerCase.endsWith(".tif")
-                                || itemLowerCase.endsWith(".tiff")
-                                || itemLowerCase.startsWith("data:")
-                                ) {
-                                isImageUrl = true;
-                                isCssColorString = false;
-                            } else {
-                                try {
-                                    Cesium.Color.fromCssColorString(item.value);
-                                    isImageUrl = true;
-                                    isCssColorString = false;
-                                } catch (e) {
-                                    isImageUrl = false;
-                                    isCssColorString = false;
-                                }
-                            }
-                        }
-
-                        if (item.value instanceof Cesium.Cartesian2
-                            || item.value instanceof Cesium.Cartesian3
-                            || item.value instanceof Cesium.Cartesian4
-                            || item.value instanceof Cesium.Color
-                            || item.value instanceof Cesium.Matrix4
-                            || item.value instanceof Cesium.Matrix3
-                            || item.value instanceof Cesium.Matrix2
-                            || typeof item.value === "number"
-                            || isCssColorString
-                            ) {
-                            if (!that._uniformValueCache) {
-                                that._uniformValueCache = {};
-                            }
-                            that._uniformValueCache[item.uuid] = item;
-                            if (isCssColorString) {
-                                item.value = Cesium.Color.fromCssColorString(item.value);
-                            }
-                            uniformMap[name] = function () {
-                                return that._uniformValueCache[item.uuid].value;
-                            }
-                        } else if (item.value instanceof Array && item.value.length == 6) {
-                            uniformMap[name] = getCubeTextureCallback(name, item);
-                        } else if (isImageUrl
-                                    || item.value instanceof HTMLImageElement
-                                    || item.value instanceof HTMLCanvasElement
-                                    || item.value instanceof HTMLVideoElement
-                                ) {
-                            uniformMap[name] = getTextureCallback(item, material);
-                        } else if (item.value instanceof FramebufferTexture) {
-                            if (!that._renderToTextureCommands) {
-                                that._renderToTextureCommands = [];
-                            }
-                            if (!that._framebufferTextures[item.uuid]) {
-                                that._framebufferTextures[item.uuid] = item;
-                            }
-                            uniformMap[name] = function () {
-                                if (!that._framebufferTextures[item.uuid]
-                                    || !that._framebufferTextures[item.uuid].value.texture) {
-                                    return frameState.context.defaultTexture;
-                                }
-                                return that._framebufferTextures[item.uuid].value.texture;
-                            }
-                        }
-                    }
-                }
-
-                var uniforms = material.uniforms;
-                for (var name in uniforms) {
-
-                    if (uniforms.hasOwnProperty(name)) {
-
-                        var item = uniforms[name];
-                        if (item == undefined || item == null) {
-                            continue;
-                        }
-                        setUniformCallbackFunc(name, item);
-                    }
-                }
-            }
-
-            return this._uniformMaps[material.uuid];
-        },
-        /**
-        *
-        *@param {Cesium.Geometry} geometry
-        *@param {Cesium.Material} material
-        *@return {String}
-        *@private  
-        */
-        getVertexShaderSource: function (geometry, material) {
-
-            function getAttributeDefineBlok(userDefine) {
-                var glsl = "";
-                var attrs = geometry.attributes;
-                for (var name in attrs) {
-
-                    if (attrs.hasOwnProperty(name)) {
-                        var attr = attrs[name]
-                        if (attr) {
-
-                            var type = null;
-                            switch (attr.componentsPerAttribute) {
-                                case 1:
-                                    type = "float";
-                                    break;
-                                case 2:
-                                    type = "vec2";
-                                    break;
-                                case 3:
-                                    type = "vec3";
-                                    break;
-                                case 4:
-                                    type = "vec4";
-                                    break;
-                                default:
-                            }
-
-                            if (type) {
-                                if (userDefine.indexOf("attribute " + type + " " + name) >= 0) {
-                                    continue;
-                                }
-                                glsl += "attribute " + type + " " + name + ";\n";
-                            }
-
-                        }
-                    }
-                }
-                return glsl;
-            }
-
-            var uniforms = "\n\
-        uniform mat4 modelViewMatrix;\n\
-        uniform mat4 viewMatrix;\n\
-        uniform mat4 modelMatrix;\n\
-        uniform mat4 projectionMatrix;\n\
-        uniform mat3 normalMatrix;\n\
-        uniform mat4 u_modelViewMatrix;\n\
-        uniform mat4 u_viewMatrix;\n\
-        uniform mat4 u_modelMatrix;\n\
-        uniform mat4 u_projectionMatrix;\n\
-        uniform mat3 u_normalMatrix;\n\
-        uniform vec3 cameraPosition;\n\
-        uniform vec3 u_cameraPosition;\n";
-
-            var innerUniforms = [
-                "uniform mat4 modelViewMatrix",
-                "uniform mat4 modelMatrix",
-                "uniform mat4 projectionMatrix",
-                "uniform mat3 normalMatrix",
-                "uniform mat4 u_modelViewMatrix",
-                "uniform mat4 u_modelMatrix",
-                "uniform mat4 u_projectionMatrix",
-                "uniform mat3 u_normalMatrix",
-                "uniform mat4 u_viewMatrix",
-                "uniform mat4 viewMatrix",
-                "uniform vec3 cameraPosition",
-                "uniform vec3 u_cameraPosition"
-            ];
-            if (material.vertexShader) {
-                uniforms = "";
-                innerUniforms.forEach(function (item) {
-                    if (material.vertexShader.indexOf(item) < 0) {
-                        uniforms += item + ";\n";
-                    }
-                });
-                var vs = getAttributeDefineBlok(material.vertexShader) + uniforms +
-                 material.vertexShader;
-
-                vs = ShaderChunk.parseIncludes(vs);
-                return vs;
-            }
-            else {
-                throw new Error("material.vertexShader 是必须参数");
-            }
-        },
-        /**
-         * 
-         *@param {Cesium.Material} material
-         *@return {String} 
-         *@private
-         */
-        getFragmentShaderSource: function (material) {
-
-            if (material.fragmentShader) {
-                var fs = ShaderChunk.parseIncludes(material.fragmentShader);
-                return fs;
-            } else {
-                throw new Error("material.fragmentShader 是必须参数");
-            }
-        }
-    }
-
-    MeshVisualizer.prototype._computeModelMatrix = function (mesh, frameState) {
-        if (mesh._actualMesh) {
-            mesh = mesh._actualMesh;
-        }
-        var that = this;
-        if (mesh instanceof LOD || mesh instanceof ReferenceMesh || typeof mesh.update === 'function') {
-            if (mesh.parent) {
-                if (mesh.parent == that) {
-                    mesh.update(that._actualModelMatrix, frameState);
-
-                } else if (mesh.parent.modelMatrix) {
-                    mesh.update(mesh.parent.modelMatrix, frameState);
-                } else {
-                    mesh.update(that._actualModelMatrix, frameState);
-                }
-            } else {
-                mesh.update(that._actualModelMatrix, frameState);
-            }
-        } else {
-            var position = mesh.position;
-            if (mesh.parent instanceof LOD) {
-                Matrix4.clone(mesh.parent.modelMatrix, mesh.modelMatrix);
-
-            } else if (mesh._modelMatrixNeedsUpdate) {
-                var rotation = mesh.quaternion ? mesh.quaternion : mesh.rotation;
-
-                if (mesh.parent && mesh.parent.modelMatrix) {
-
-                    var actualModelMatrix = mesh.parent.modelMatrix ? mesh.parent.modelMatrix : mesh._drawCommand.modelMatrix;
-                    RendererUtils.computeModelMatrix(
-                         actualModelMatrix,
-                         mesh.position,
-                         rotation,
-                         mesh.scale,
-                         mesh.modelMatrix
-                    );
-
-                } else {
-                    RendererUtils.computeModelMatrix(
-                         that._actualModelMatrix,
-                         mesh.position,
-                         rotation,
-                         mesh.scale,
-                         mesh.modelMatrix
-                     );
-                }
-
-                mesh._modelMatrixNeedsUpdate = false;
-            }
-        }
-    }
-    /**
-    *
-    *@param {Cesium.FrameState}frameState
-    */
-    MeshVisualizer.prototype.update = function (frameState) {
-        if (!this._scene) {
-            this._scene = frameState.camera._scene;
-        }
-        if (!this._ready || !this.show && this._chidren.length > 0) {//如果未准备好则不加入渲染队列
-            return;
-        }
-        this.beforeUpate.raiseEvent(frameState);
-
-        var that = this;
-        var wireframeChanged = false;
-        var sysWireframe = frameState.camera._scene._globe._surface.tileProvider._debug.wireframe;
-        if (this.debug) {
-            sysWireframe = true;
-        }
-
-        if (sysWireframe != this._isWireframe) {
-            wireframeChanged = true;
-        }
-        if (this._modelMatrixNeedsUpdate) {
-            this._actualModelMatrix = RendererUtils.computeModelMatrix(
-                    this._modelMatrix,
-                    this._position,
-                    this._rotation,
-                    this._scale,
-                    this._actualModelMatrix
-                );
-            if (this._up && this._up.y) {
-                this._actualModelMatrix = RendererUtils.yUp2Zup(this._actualModelMatrix, this._actualModelMatrix);
-            }
-            Cesium.Cartesian3.clone(this._scale, this._oldScale);
-            Cesium.Cartesian3.clone(this._position, this._oldPosition);
-            this._modelMatrixNeedsUpdate = false;
-        }
-
-        MeshVisualizer.traverse(this, function (mesh) {
-            if (typeof THREE !== 'undefined' && mesh instanceof THREE.Mesh) {
-                var needsUpdate = !mesh._actualMesh
-                    || mesh.needsUpdate
-                    || mesh.geometry.needsUpdate;
-                if (!needsUpdate) {
-                    for (var pn in mesh.geometry.attributes) {
-                        if (mesh.geometry.attributes.hasOwnProperty(pn)) {
-                            if (mesh.geometry.attributes[pn].needsUpdate) {
-                                needsUpdate = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (needsUpdate) {
-                    mesh._actualMesh = new Mesh(mesh.geometry, mesh.material);
-                }
-                mesh._actualMesh.quaternion = Cesium.Quaternion.clone(mesh.quaternion);
-                mesh._actualMesh.position = mesh.position;
-                mesh._actualMesh.scale = mesh.scale;
-                mesh._actualMesh.modelMatrixNeedsUpdate = mesh.modelMatrixNeedsUpdate;
-                mesh = mesh._actualMesh;
-            }
-
-
-            that._computeModelMatrix(mesh, frameState);
-
-            if (typeof mesh.update !== 'function') {
-                if (!mesh._drawCommand
-                        || mesh.needsUpdate
-                        || mesh.geometry.needsUpdate
-                        || wireframeChanged
-                    ) {//重新构建绘图命令，比如geometry完全不同于之前一帧 或者顶点和索引数量都发生改变等时，执行这段
-
-                    if (sysWireframe || mesh.material.wireframe) {
-                        that.toWireframe(mesh.geometry);
-                    } else {
-                        that.restoreFromWireframe(mesh.geometry);
-                    }
-
-                    mesh._drawCommand = that.createDrawCommand(mesh, frameState);
-
-                    mesh.needsUpdate = false;
-                    mesh.geometry.needsUpdate = false;
-                } else {//在不需要重新构建绘图命令时，检查各个属性和索引是否需要更新，需要则将更新相应的缓冲区
-
-                    //更新属性缓冲区
-                    for (var name in mesh.geometry.attributes) {
-                        if (mesh.geometry.attributes.hasOwnProperty(name)) {
-                            if (mesh.geometry.attributes[name] && mesh.geometry.attributes[name].needsUpdate) {
-                                var attrLocation = mesh._drawCommand.vertexArray._attributeLocations[name]
-                                var vb = mesh._drawCommand.vertexArray._attributes[attrLocation].vertexBuffer;
-                                vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
-                            }
-                        }
-                    }
-                    //更新索引缓冲区
-                    if (mesh.geometry.indexNeedsUpdate) {
-                        var vb = mesh._drawCommand.vertexArray.indexBuffer;
-                        vb.copyFromArrayView(mesh.geometry.indices, 0);
-                    }
-                }
-                mesh._drawCommand.modelMatrix = mesh.modelMatrix;
-                if (!mesh._drawCommand.boundingVolume) {
-                    if (!mesh.geometry.boundingSphere) {
-                        mesh.geometry.boundingSphere = Cesium.BoundingSphere.fromVertices(mesh.geometry.attributes.position.values);
-                    }
-                    mesh._drawCommand.boundingVolume = Cesium.BoundingSphere.clone(mesh.geometry.boundingSphere);
-                }
-                Cesium.Matrix4.getTranslation(mesh.modelMatrix, mesh._drawCommand.boundingVolume.center);
-
-                if (frameState.passes.pick) {
-                    mesh._drawCommand.shaderProgram = mesh._drawCommand._pickSp;
-                } else {
-                    mesh._drawCommand.renderState.depthTest.enabled = true;
-                    mesh._drawCommand.shaderProgram = mesh._drawCommand._sp;
-                }
-                frameState.commandList.push(mesh._drawCommand);
-            } else {
-                mesh.needsUpdate = false;
-            }
-
-        }, true);
-
-        //执行帧缓冲绘图命令
-        for (var i in that._framebufferTextures) {
-            if (that._framebufferTextures.hasOwnProperty(i)) {
-                var item = that._framebufferTextures[i].value;
-                if (item instanceof FramebufferTexture) {
-
-                    item.drawCommands = [];
-                    MeshVisualizer.traverse(item.mesh, function (mesh) {
-                        if (typeof THREE !== 'undefined' && mesh instanceof THREE.Mesh) {
-                            var needsUpdate = !mesh._actualMesh
-                                || mesh.needsUpdate
-                                || mesh.geometry.needsUpdate;
-                            if (!needsUpdate) {
-                                for (var pn in mesh.geometry.attributes) {
-                                    if (mesh.geometry.attributes.hasOwnProperty(pn)) {
-                                        if (mesh.geometry.attributes[pn].needsUpdate) {
-                                            needsUpdate = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (needsUpdate) {
-                                mesh._actualMesh = new Mesh(mesh.geometry, mesh.material);
-                            }
-                            mesh._actualMesh.quaternion = Cesium.Quaternion.clone(mesh.quaternion);
-                            mesh._actualMesh.position = mesh.position;
-                            mesh._actualMesh.scale = mesh.scale;
-                            mesh._actualMesh.modelMatrixNeedsUpdate = mesh.modelMatrixNeedsUpdate;
-                            mesh = mesh._actualMesh;
-                        }
-                        that._computeModelMatrix(mesh, frameState);
-
-                        if (!mesh._textureCommand
-                            || mesh.needsUpdate
-                            || mesh.geometry.needsUpdate
-                        ) {
-                            if (mesh.material.wireframe) {
-                                that.toWireframe(mesh.geometry);
-                            } else {
-                                that.restoreFromWireframe(mesh.geometry);
-                            }
-
-                            mesh._textureCommand = that.createDrawCommand(mesh, frameState);
-                            //mesh._textureCommand.boundingVolume = mesh.geometry.boundingSphere;
-                            mesh.needsUpdate = false;
-                            mesh.material.needsUpdate = false;
-                            mesh._textureCommand.renderState.depthTest.enabled = false;
-                        } else {//在不需要重新构建绘图命令时，检查各个属性和索引是否需要更新，需要则将更新相应的缓冲区
-
-                            //更新属性缓冲区
-                            for (var name in mesh.geometry.attributes) {
-                                if (mesh.geometry.attributes.hasOwnProperty(name)
-                                    && mesh.geometry.attributes[name]) {
-
-                                    if (mesh.geometry.attributes[name] && mesh.geometry.attributes[name].needsUpdate) {
-                                        var attrLocation = mesh._textureCommand.vertexArray._attributeLocations[name]
-                                        var vb = mesh._textureCommand.vertexArray._attributes[attrLocation].vertexBuffer;
-                                        vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
-                                    }
-                                }
-                            }
-                            //更新索引缓冲区
-                            if (mesh.geometry.indexNeedsUpdate) {
-                                var vb = mesh._textureCommand.vertexArray.indexBuffer;
-                                vb.copyFromArrayView(mesh.geometry.indices, 0);
-                            }
-                        }
-
-                        mesh._textureCommand.modelMatrix = mesh.modelMatrix;
-
-                        var context = frameState.context;
-                        var drawingBufferWidth = context.drawingBufferWidth;
-                        var drawingBufferHeight = context.drawingBufferHeight;
-                        if (!item.texture
-                            || item.texture.width != drawingBufferWidth
-                            || item.texture.height != drawingBufferHeight
-                            ) {
-                            item.texture = new Texture({
-                                context: context,
-                                width: drawingBufferWidth,
-                                height: drawingBufferHeight,
-                                pixelFormat: PixelFormat.RGBA
-                            });
-                        }
-
-                        item.drawCommands.push(mesh._textureCommand);
-
-                    }, true);
-
-                    RendererUtils.renderToTexture(item.drawCommands, frameState, item.texture);
-                }
-            }
-        }
-
-        this._isWireframe = sysWireframe;
-        wireframeChanged = false;
-        this._modelMatrixNeedsUpdate = false;
-        this._geometryChanged = false;
-
-    }
-
-    /**
-    *
-    *@param {Cesium.Mesh}mesh
-    */
-    MeshVisualizer.prototype.add = function (mesh) {
-        this._chidren.push(mesh);
-    }
-
-    /**
-    *
-    */
-    MeshVisualizer.prototype.destroy = function () {
-        this._ready = false;
-        MeshVisualizer.traverse(this, function (mesh) {
-            if (mesh._drawCommand) {
-                delete mesh._drawCommand;
-            }
-        }, false);
-        for (var i in this._uniformValueCache) {
-            if (this._uniformValueCache.hasOwnProperty(i)) {
-                delete this._uniformValueCache[i];
-            }
-        }
-        for (var i in this._textureCache) {
-            if (this._textureCache.hasOwnProperty(i)) {
-                delete this._textureCache[i];
-            }
-        }
-        for (var i in this._uniformMaps) {
-            if (this._uniformMaps.hasOwnProperty(i)) {
-                delete this._uniformMaps[i];
-            }
-        }
-        for (var i in this._framebufferTextures) {
-            if (this._framebufferTextures.hasOwnProperty(i)) {
-                delete this._framebufferTextures[i];
-            }
-        }
-        this._uniformValueCache = {};
-        this._textureCache = {};
-        this._uniformMaps = {};
-        this._framebufferTextures = {};
-        if (this._pickIds) {
-            for (i = 0; i < this._pickIds.length; ++i) {
-                this._pickIds[i].destroy && this._pickIds[i].destroy();
-            }
-        }
-    }
-
-    /**
-    *
-    *遍历节点
-    *@param {Cesium.MeshVisualizer|Cesium.Mesh}root
-    *@param {Boolean}traverseFunc 访问每个节点时回调该函数，进行相关操作。回调函数包含一个参数，traverseArgs，其中封装了一个属性cancelCurrent，可以通过改变此属性达到终止遍历当前节点的子节点
-    *@param {Boolean}visibleOnly visibleOnly为true时仅遍历可见的节点，如果父级节点不可见则不再访问其子节点
-    */
-    MeshVisualizer.traverse = function (node, traverseFunc, visibleOnly) {
-        if (!node) {
-            return;
-        }
-        scratchTraverseArgs.cancelCurrent = false;
-        if (visibleOnly && (!node.show && !node.visible)) {
-            return;
-        }
-        if ((node.geometry && node.material) || node instanceof LOD || node instanceof ReferenceMesh) {
-            traverseFunc(node, scratchTraverseArgs);
-        }
-
-        if (scratchTraverseArgs.cancelCurrent) {
-            return;
-        } else if (node.children) {
-            node.children.forEach(function (child) {
-                MeshVisualizer.traverse(child, traverseFunc, visibleOnly);
-            })
-        }
-    },
-
-    Cesium.defineProperties(MeshVisualizer.prototype, {
-        modelMatrixNeedsUpdate: {
-            get: function () {
-                return this._modelMatrixNeedsUpdate;
-            },
-            set: function (val) {
-                this._modelMatrixNeedsUpdate = val;
-                if (val) {
-                    MeshVisualizer.traverse(this, function (child) {
-                        child._modelMatrixNeedsUpdate = val;
-                    }, false);
-                }
-            }
-        },
-        showReference: {
-            get: function () {
-                return this.referenceMesh.show;
-            },
-            set: function (val) {
-                this.referenceMesh.show = val;
-            }
-        },
-        children: {
-            get: function () {
-                return this._chidren;
-            },
-            set: function (val) {
-                this._chidren = val;
-            }
-        },
-        show: {
-            get: function () {
-                return this._show;
-            },
-            set: function (val) {
-                this._show = val;
-            }
-        },
-        debug: {
-            get: function () {
-                return this._debug;
-            },
-            set: function (val) {
-                this._debug = val;
-            }
-        },
-        ready: {
-            get: function () {
-                return this._ready;
-            }
-        },
-        modelMatrix: {
-            get: function () {
-                return this._modelMatrix;
-            },
-            set: function (val) {
-                this._modelMatrix = val;
-                this._modelMatrixNeedsUpdate = true;
-            }
-        },
-        rotation: {
-            get: function () {
-                return this._rotation;
-            },
-            set: function (val) {
-                if (val != this._rotation) {
-                    this._rotation = val;
-                    this._needUpdate = true;
-                }
-                this._rotation.paramChanged.removeEventListener(this._onNeedUpdateChanged);
-                this._rotation = val;
-                this._rotation.paramChanged.addEventListener(this._onNeedUpdateChanged);
-            }
-        },
-        position: {
-            get: function () {
-                return this._position;
-            },
-            set: function (val) {
-                if (val.x != this._position.x || val.y != this._position.y || val.z != this._position.z) {
-                    this._position = val;
-                    this._modelMatrixNeedsUpdate = true;
-                }
-                this._position = val;
-            }
-        },
-        scale: {
-            get: function () {
-                return this._scale;
-            },
-            set: function (val) {
-                if (val.x != this._scale.x || val.y != this._scale.y || val.z != this._scale.z) {
-                    this._scale = val;
-                    this._modelMatrixNeedsUpdate = true;
-                }
-                this._scale = val;
-            }
-        }
-    });
-    return MeshVisualizer;
-})
-;
 define('Core/Shaders/ShaderLib',[
     'Core/Shaders/ShaderChunk'
 ], function (
@@ -7338,6 +5754,3050 @@ define('Core/Shaders/ShaderLib',[
     return ShaderLib;
 
 });
+define('Core/MaterialUtils',[
+    'Core/Shaders/ShaderChunk',
+    'Core/Shaders/ShaderLib',
+    'Core/MeshMaterial'
+], function (
+    ShaderChunk,
+    ShaderLib,
+    MeshMaterial
+    ) {
+    var shaderIDs = {
+        MeshDepthMaterial: 'depth',
+        MeshNormalMaterial: 'normal',
+        MeshBasicMaterial: 'basic',
+        MeshLambertMaterial: 'lambert',
+        MeshPhongMaterial: 'phong',
+        MeshToonMaterial: 'phong',
+        MeshStandardMaterial: 'physical',
+        MeshPhysicalMaterial: 'physical',
+        LineBasicMaterial: 'basic',
+        LineDashedMaterial: 'dashed',
+        PointsMaterial: 'points'
+    };
+
+    /**
+    *
+    *@constructor
+    *@memberof Cesium
+    */
+    function MaterialUtils() {
+
+    }
+
+    /**
+   *
+   *@param {THREE.Material}material3js
+   *@return {Cesium.MeshMaterial}
+   */
+    MaterialUtils.fromMaterial3js = function (material3js) {
+        var shaderID = shaderIDs[material3js.type];
+        material3js["is" + material3js.type] = true;
+        var shader = THREE.ShaderLib[shaderID];
+
+        if (!shader) {
+            shader = material3js;
+        }
+
+        var material = new MeshMaterial({
+            vertexShader: shader.vertexShader,
+            fragmentShader: shader.fragmentShader,
+            uniforms: cloneUniforms(shader.uniforms)
+        });
+
+        material.material3js = material3js;
+        MaterialUtils.updateMaterialFrom3js(material);
+        return material;
+    }
+
+    function cloneUniforms(uniforms3js) {
+        var uniforms = {};
+        for (var i in uniforms3js) {
+            if (uniforms3js.hasOwnProperty(i)) {
+                uniforms[i] = { 
+                    value: {}
+                };
+                for (var n in uniforms3js[i]) { 
+                    if (n!=="value") {
+                        uniforms[i][n] = uniforms3js[i][n];
+                    }
+                }
+                if (uniforms3js[i].t) {
+                    switch (uniforms3js[i].t) {
+
+                        default:
+                    }
+                }
+               
+                bindUniformValue(uniforms[i], uniforms3js[i].value);
+            }
+        }
+        return uniforms;
+    }
+
+    /**
+    *
+    *@param {Cesium.MeshMaterial}materialWidth3js
+    *@private
+    */
+    MaterialUtils.updateMaterialFrom3js = function (materialWidth3js) {
+        if (!materialWidth3js || !materialWidth3js.material3js) {
+            return;
+        }
+
+        var material3js = materialWidth3js.material3js;
+        materialWidth3js.translucent = material3js.transparent;
+
+        materialWidth3js.wireframe = material3js.wireframe;
+
+        var m_uniforms = materialWidth3js.uniforms;
+        var material = materialWidth3js.material3js;
+        if (material.isMeshBasicMaterial ||
+				material.isMeshLambertMaterial ||
+				material.isMeshPhongMaterial ||
+				material.isMeshStandardMaterial ||
+				material.isMeshNormalMaterial ||
+				material.isMeshDepthMaterial) {
+
+            refreshUniformsCommon(m_uniforms, material);
+
+        }
+
+        // refresh single material specific uniforms
+
+        if (material.isLineBasicMaterial) {
+
+            refreshUniformsLine(m_uniforms, material);
+
+        } else if (material.isLineDashedMaterial) {
+
+            refreshUniformsLine(m_uniforms, material);
+            refreshUniformsDash(m_uniforms, material);
+
+        } else if (material.isPointsMaterial) {
+
+            refreshUniformsPoints(m_uniforms, material);
+
+        } else if (material.isMeshLambertMaterial) {
+
+            refreshUniformsLambert(m_uniforms, material);
+
+        } else if (material.isMeshToonMaterial) {
+
+            refreshUniformsToon(m_uniforms, material);
+
+        } else if (material.isMeshPhongMaterial) {
+
+            refreshUniformsPhong(m_uniforms, material);
+
+        } else if (material.isMeshPhysicalMaterial) {
+
+            refreshUniformsPhysical(m_uniforms, material);
+
+        } else if (material.isMeshStandardMaterial) {
+
+            refreshUniformsStandard(m_uniforms, material);
+
+        } else if (material.isMeshDepthMaterial) {
+
+            if (material.displacementMap) {
+
+                bindUniformValue(m_uniforms.displacementMap, material.displacementMap);
+                bindUniformValue(m_uniforms.displacementScale, material.displacementScale);
+                bindUniformValue(m_uniforms.displacementBias, material.displacementBias);
+
+            }
+
+        } else if (material.isMeshNormalMaterial) {
+
+            refreshUniformsNormal(m_uniforms, material);
+
+        } else {
+            for (var i in material.uniforms) {
+                if (material.uniforms.hasOwnProperty(i)) {
+                    bindUniformValue(m_uniforms[i], material.uniforms[i].value);
+                }
+            }
+        }
+        //if (material.lights) {
+
+        //    // wire up the material to this renderer's lighting state
+
+        //    //uniforms.ambientLightColor.value = _lights.ambient;
+        //    //uniforms.directionalLights.value = _lights.directional;
+        //    //uniforms.spotLights.value = _lights.spot;
+        //    //uniforms.rectAreaLights.value = _lights.rectArea;
+        //    //uniforms.pointLights.value = _lights.point;
+        //    //uniforms.hemisphereLights.value = _lights.hemi;
+
+        //    //uniforms.directionalShadowMap.value = _lights.directionalShadowMap;
+        //    //uniforms.directionalShadowMatrix.value = _lights.directionalShadowMatrix;
+        //    //uniforms.spotShadowMap.value = _lights.spotShadowMap;
+        //    //uniforms.spotShadowMatrix.value = _lights.spotShadowMatrix;
+        //    //uniforms.pointShadowMap.value = _lights.pointShadowMap;
+        //    //uniforms.pointShadowMatrix.value = _lights.pointShadowMatrix;
+        //    // TODO (abelnation): add area lights shadow info to uniforms
+
+        //} else {
+        m_uniforms.ambientLightColor = { value: new Cesium.Color(0.06666666666666667, 0.06666666666666667, 0.06666666666666667) };
+        //}
+    }
+
+
+
+    /**
+     *
+     *@param {Object}material3js
+     *@return {Boolean}
+     */
+    MaterialUtils.isMaterial3js = function (material3js) {
+        return typeof THREE !== 'undefined' && material3js instanceof THREE.Material;
+    }
+    // Uniforms (refresh bindUniformValue(uniforms objects)
+
+    function refreshUniformsCommon(uniforms, material) {
+
+        bindUniformValue(uniforms.opacity, material.opacity);
+
+        bindUniformValue(uniforms.diffuse, material.color);
+
+        if (material.emissive) {
+            var val3js = new material.emissive.constructor().copy(material.emissive).multiplyScalar(material.emissiveIntensity)
+            bindUniformValue(uniforms.emissive, val3js);
+
+        }
+
+        bindUniformValue(uniforms.map, material.map);
+        bindUniformValue(uniforms.specularMap, material.specularMap);
+        bindUniformValue(uniforms.alphaMap, material.alphaMap);
+
+        if (material.lightMap) {
+
+            bindUniformValue(uniforms.lightMap, material.lightMap);
+            bindUniformValue(uniforms.lightMapIntensity, material.lightMapIntensity);
+
+        }
+
+        if (material.aoMap) {
+
+            bindUniformValue(uniforms.aoMap, material.aoMap);
+            bindUniformValue(uniforms.aoMapIntensity, material.aoMapIntensity);
+
+        }
+
+        // uv repeat and offset setting priorities
+        // 1. color map
+        // 2. specular map
+        // 3. normal map
+        // 4. bump map
+        // 5. alpha map
+        // 6. emissive map
+
+        var uvScaleMap
+
+        if (material.map) {
+
+            uvScaleMap = material.map
+
+        } else if (material.specularMap) {
+
+            uvScaleMap = material.specularMap
+
+        } else if (material.displacementMap) {
+
+            uvScaleMap = material.displacementMap
+
+        } else if (material.normalMap) {
+
+            uvScaleMap = material.normalMap
+
+        } else if (material.bumpMap) {
+
+            uvScaleMap = material.bumpMap
+
+        } else if (material.roughnessMap) {
+
+            uvScaleMap = material.roughnessMap
+
+        } else if (material.metalnessMap) {
+
+            uvScaleMap = material.metalnessMap
+
+        } else if (material.alphaMap) {
+
+            uvScaleMap = material.alphaMap
+
+        } else if (material.emissiveMap) {
+
+            uvScaleMap = material.emissiveMap
+
+        }
+
+        if (uvScaleMap !== undefined) {
+
+            // backwards compatibility
+            if (uvScaleMap.isWebGLRenderTarget) {
+
+                uvScaleMap = uvScaleMap.texture
+
+            }
+
+            var offset = uvScaleMap.offset
+            var repeat = uvScaleMap.repeat
+
+            bindUniformValue(uniforms.offsetRepeat, offset);
+
+        }
+
+        bindUniformValue(uniforms.envMap, material.envMap);
+
+        // don't flip CubeTexture envMaps, flip everything else:
+        //  WebGLRenderTargetCube will be flipped for backwards compatibility
+        //  WebGLRenderTargetCube.texture will be flipped because it's a Texture and NOT a CubeTexture
+        // this check must be handled differently, or removed entirely, if WebGLRenderTargetCube uses a CubeTexture in the future
+        bindUniformValue(uniforms.flipEnvMap, (!(material.envMap && material.envMap.isCubeTexture)) ? 1 : -1);
+
+        bindUniformValue(uniforms.reflectivity, material.reflectivity);
+        bindUniformValue(uniforms.refractionRatio, material.refractionRatio);
+
+    }
+
+    function refreshUniformsLine(uniforms, material) {
+
+        bindUniformValue(uniforms.diffuse, material.color);
+        bindUniformValue(uniforms.opacity, material.opacity);
+
+    }
+
+    function refreshUniformsDash(uniforms, material) {
+
+        bindUniformValue(uniforms.dashSize, material.dashSize);
+        bindUniformValue(uniforms.totalSize, material.dashSize + material.gapSize);
+        bindUniformValue(uniforms.scale, material.scale);
+
+    }
+
+    function refreshUniformsPoints(uniforms, material) {
+
+        bindUniformValue(uniforms.diffuse, material.color);
+        bindUniformValue(uniforms.opacity, material.opacity);
+        bindUniformValue(uniforms.size, material.size * _pixelRatio);
+        bindUniformValue(uniforms.scale, _height * 0.5);
+
+        bindUniformValue(uniforms.map, material.map);
+
+        if (material.map !== null) {
+
+            var offset = material.map.offset;
+            var repeat = material.map.repeat;
+
+            bindUniformValue(uniforms.offsetRepeat.value.set(offset.x, offset.y, repeat.x, repeat.y));
+
+        }
+
+    }
+
+    function refreshUniformsFog(uniforms, fog) {
+
+        bindUniformValue(uniforms.fogColor, fog.color);
+
+        if (fog.isFog) {
+
+            bindUniformValue(uniforms.fogNear, fog.near);
+            bindUniformValue(uniforms.fogFar, fog.far);
+
+        } else if (fog.isFogExp2) {
+
+            bindUniformValue(uniforms.fogDensity, fog.density);
+
+        }
+
+    }
+
+    function refreshUniformsLambert(uniforms, material) {
+
+        if (material.emissiveMap) {
+
+            bindUniformValue(uniforms.emissiveMap, material.emissiveMap);
+
+        }
+
+    }
+
+    function refreshUniformsPhong(uniforms, material) {
+
+        bindUniformValue(uniforms.specular, material.specular);
+        bindUniformValue(uniforms.shininess, Math.max(material.shininess, 1e-4)); // to prevent pow( 0.0, 0.0 )
+
+        if (material.emissiveMap) {
+
+            bindUniformValue(uniforms.emissiveMap, material.emissiveMap);
+
+        }
+
+        if (material.bumpMap) {
+
+            bindUniformValue(uniforms.bumpMap, material.bumpMap);
+            bindUniformValue(uniforms.bumpScale, material.bumpScale);
+
+        }
+
+        if (material.normalMap) {
+
+            bindUniformValue(uniforms.normalMap, material.normalMap);
+            bindUniformValue(uniforms.normalScale.value.copy(material.normalScale));
+
+        }
+
+        if (material.displacementMap) {
+
+            bindUniformValue(uniforms.displacementMap, material.displacementMap);
+            bindUniformValue(uniforms.displacementScale, material.displacementScale);
+            bindUniformValue(uniforms.displacementBias, material.displacementBias);
+
+        }
+
+    }
+
+    function refreshUniformsToon(uniforms, material) {
+
+        refreshUniformsPhong(uniforms, material);
+
+        if (material.gradientMap) {
+
+            bindUniformValue(uniforms.gradientMap, material.gradientMap);
+
+        }
+
+    }
+
+    function refreshUniformsStandard(uniforms, material) {
+
+        bindUniformValue(uniforms.roughness, material.roughness);
+        bindUniformValue(uniforms.metalness, material.metalness);
+
+        if (material.roughnessMap) {
+
+            bindUniformValue(uniforms.roughnessMap, material.roughnessMap);
+
+        }
+
+        if (material.metalnessMap) {
+
+            bindUniformValue(uniforms.metalnessMap, material.metalnessMap);
+
+        }
+
+        if (material.emissiveMap) {
+
+            bindUniformValue(uniforms.emissiveMap, material.emissiveMap);
+
+        }
+
+        if (material.bumpMap) {
+
+            bindUniformValue(uniforms.bumpMap, material.bumpMap);
+            bindUniformValue(uniforms.bumpScale, material.bumpScale);
+
+        }
+
+        if (material.normalMap) {
+
+            bindUniformValue(uniforms.normalMap, material.normalMap);
+            bindUniformValue(uniforms.normalScale.value.copy(material.normalScale));
+
+        }
+
+        if (material.displacementMap) {
+
+            bindUniformValue(uniforms.displacementMap, material.displacementMap);
+            bindUniformValue(uniforms.displacementScale, material.displacementScale);
+            bindUniformValue(uniforms.displacementBias, material.displacementBias);
+
+        }
+
+        if (material.envMap) {
+
+            //bindUniformValue(uniforms.envMap, material.envMap); // part of bindUniformValue(uniforms common
+            bindUniformValue(uniforms.envMapIntensity, material.envMapIntensity);
+
+        }
+
+    }
+
+    function refreshUniformsPhysical(uniforms, material) {
+
+        bindUniformValue(uniforms.clearCoat, material.clearCoat);
+        bindUniformValue(uniforms.clearCoatRoughness, material.clearCoatRoughness);
+
+        refreshUniformsStandard(uniforms, material)
+
+    }
+
+    function refreshUniformsNormal(uniforms, material) {
+
+        if (material.bumpMap) {
+
+            bindUniformValue(uniforms.bumpMap, material.bumpMap);
+            bindUniformValue(uniforms.bumpScale, material.bumpScale);
+
+        }
+
+        if (material.normalMap) {
+
+            bindUniformValue(uniforms.normalMap, material.normalMap);
+            bindUniformValue(uniforms.normalScale.value.copy(material.normalScale));
+
+        }
+
+        if (material.displacementMap) {
+
+            bindUniformValue(uniforms.displacementMap, material.displacementMap);
+            bindUniformValue(uniforms.displacementScale, material.displacementScale);
+            bindUniformValue(uniforms.displacementBias, material.displacementBias);
+
+        }
+
+    }
+
+    function bindUniformValue(valCesium, val3js) {
+
+        var type = typeof val3js;
+        if (type === 'undefined') {
+            valCesium.value = undefined;
+            return;
+        }
+        if (val3js === null) {
+            valCesium.value = null; return;
+        }
+        if (typeof valCesium.value !== "undefined"
+            && valCesium.value != null
+            && (valCesium.value.constructor
+            && valCesium.value.constructor.clone
+            && val3js.constructor == valCesium.value.constructor)) {
+
+            valCesium.value = valCesium.value.constructor.clone(val3js);
+        } else {
+            switch (type) {
+                case "number":
+                case "string":
+                    valCesium.value = val3js;
+                    break;
+                case "object":
+                    if (val3js instanceof THREE.Vector2) {
+                        if (!valCesium.value.constructor.clone) {
+                            valCesium.value = new Cesium.Cartesian2();
+                        }
+                    }
+                    if (val3js instanceof THREE.Vector3) {
+                        if (!valCesium.value.constructor.clone) {
+                            valCesium.value = new Cesium.Cartesian3();
+                        }
+                    }
+                    if (val3js instanceof THREE.Vector4) {
+                        if (!valCesium.value.constructor.clone) {
+                            valCesium.value = new Cesium.Cartesian4();
+                        }
+                    }
+                    if (val3js instanceof THREE.Matrix3) {
+                        if (!valCesium.value.constructor.clone) {
+                            valCesium.value = new Cesium.Matrix3();
+                        }
+                    }
+                    if (val3js instanceof THREE.Matrix4) {
+                        if (!valCesium.value.constructor.clone) {
+                            valCesium.value = new Cesium.Matrix4();
+                        }
+                    }
+                    if (val3js instanceof THREE.Color) {
+                        if (!valCesium.value.constructor.clone) {
+                            valCesium.value = new Cesium.Color(val3js.r, val3js.g, val3js.b, val3js.a);
+                        }
+                    } else if (valCesium.value != null && valCesium.value.constructor.clone) {
+                        valCesium.value.constructor.clone(val3js, valCesium.value);
+                    } else if (val3js instanceof THREE.Texture) {
+                        if (valCesium.value != val3js.image) {
+                            valCesium.value = val3js.image;
+                            var sampler = {};
+
+                            sampler.magnificationFilter = Cesium.WebGLConstants.LINEAR;
+                            sampler.minificationFilter = Cesium.WebGLConstants.NEAREST_MIPMAP_LINEAR;
+                            sampler.wrapS = Cesium.WebGLConstants.REPEAT;
+                            sampler.wrapT = Cesium.WebGLConstants.REPEAT;
+                            valCesium.sampler = sampler;
+                            valCesium.flipY = val3js.flipY;
+
+                            valCesium.needsUpdate = true;
+                        }
+                    } else {
+                        valCesium.value = val3js;
+                    }
+                    break;
+                default:
+                    console.log("未知uniform.value类型");
+                    break;
+            }
+        }
+    }
+
+    return MaterialUtils;
+});
+define('Core/MeshUtils',[
+    'Core/MaterialUtils',
+    'Core/GeometryUtils',
+    'Core/Mesh'
+], function (
+    MaterialUtils,
+    GeometryUtils,
+    Mesh
+    ) {
+
+    /**
+    *
+    *@constructor
+    *@memberof Cesium
+    */
+    function MeshUtils() {
+
+    }
+
+    /**
+    *
+    *@param {THREE.Mesh}mesh3js
+    *@return {Cesium.Mesh}
+    */
+    MeshUtils.fromMesh3js = function (mesh3js) {
+        if (!MeshUtils.isMesh3js(mesh3js)) {
+            return undefined;
+        }
+        var geometry = mesh3js.geometry;
+        if (GeometryUtils.isGeometry3js(geometry)) {
+            geometry = GeometryUtils.fromGeometry3js(geometry);
+            //if (mesh3js.material.type === "MeshNormalMaterial" || mesh3js.material.type === "MeshPhongMaterial") {
+            //    GeometryUtils.computeVertexNormals(geometry)
+            //}
+        }
+        var material = mesh3js.material;
+        if (MaterialUtils.isMaterial3js(material)) {
+            material = MaterialUtils.fromMaterial3js(material);
+        }
+        var mesh = new Mesh({
+            geometry: geometry,
+            material: material,
+            position: mesh3js.position,
+            scale: mesh3js.scale
+        });
+        mesh.quaternion = mesh3js.quaternion; 
+        return mesh;
+    }
+    /**
+     *
+     *@param {Object}mesh
+     *@return {Boolean}
+     */
+    MeshUtils.isMesh3js = function (mesh) {
+        return typeof THREE !== 'undefined' && mesh instanceof THREE.Mesh;
+    }
+    return MeshUtils;
+});
+define('Core/ShaderUtils',[ ], function (
+
+    ) {
+    /**
+   *
+   *@memberof Cesium
+   *@constructor
+   */
+    function ShaderUtils() {
+
+    }
+
+    /**
+    *
+    *
+    */
+    ShaderUtils.processShader3js = function (material3js, shader) {
+        var program = new WebGLProgram(material3js, shader);
+        return program;
+
+    }
+
+    if (typeof THREE=='undefined') {
+         
+        return ShaderUtils; 
+    }
+    var shaderIDs = {
+        MeshDepthMaterial: 'depth',
+        MeshNormalMaterial: 'normal',
+        MeshBasicMaterial: 'basic',
+        MeshLambertMaterial: 'lambert',
+        MeshPhongMaterial: 'phong',
+        MeshToonMaterial: 'phong',
+        MeshStandardMaterial: 'physical',
+        MeshPhysicalMaterial: 'physical',
+        LineBasicMaterial: 'basic',
+        LineDashedMaterial: 'dashed',
+        PointsMaterial: 'points'
+    };
+
+    var parameterNames = [
+		"precision", "supportsVertexTextures", "map", "mapEncoding", "envMap", "envMapMode", "envMapEncoding",
+		"lightMap", "aoMap", "emissiveMap", "emissiveMapEncoding", "bumpMap", "normalMap", "displacementMap", "specularMap",
+		"roughnessMap", "metalnessMap", "gradientMap",
+		"alphaMap", "combine", "vertexColors", "fog", "useFog", "fogExp",
+		"flatShading", "sizeAttenuation", "logarithmicDepthBuffer", "skinning",
+		"maxBones", "useVertexTexture", "morphTargets", "morphNormals",
+		"maxMorphTargets", "maxMorphNormals", "premultipliedAlpha",
+		"numDirLights", "numPointLights", "numSpotLights", "numHemiLights", "numRectAreaLights",
+		"shadowMapEnabled", "shadowMapType", "toneMapping", 'physicallyCorrectLights',
+		"alphaTest", "doubleSided", "flipSided", "numClippingPlanes", "numClipIntersection", "depthPacking"
+    ];
+    var ShaderChunk = THREE.ShaderChunk;
+    var ShaderLib = THREE.ShaderLib;
+    var BackSide = THREE.BackSide,
+        DoubleSide = THREE.DoubleSide,
+        FlatShading = THREE.FlatShading,
+        CubeUVRefractionMapping = THREE.CubeUVRefractionMapping,
+        CubeUVReflectionMapping = THREE.CubeUVReflectionMapping,
+        GammaEncoding = THREE.GammaEncoding,
+        LinearEncoding = THREE.LinearEncoding,
+    NoToneMapping = THREE.NoToneMapping,
+    AddOperation = THREE.AddOperation,
+    MixOperation = THREE.MixOperation,
+    MultiplyOperation = THREE.MultiplyOperation,
+    EquirectangularRefractionMapping = THREE.EquirectangularRefractionMapping,
+    CubeRefractionMapping = THREE.CubeRefractionMapping,
+    SphericalReflectionMapping = THREE.SphericalReflectionMapping,
+    EquirectangularReflectionMapping = THREE.EquirectangularReflectionMapping,
+    CubeReflectionMapping = THREE.CubeReflectionMapping,
+    PCFSoftShadowMap = THREE.PCFSoftShadowMap,
+    PCFShadowMap = THREE.PCFShadowMap,
+    CineonToneMapping = THREE.CineonToneMapping,
+    Uncharted2ToneMapping = THREE.Uncharted2ToneMapping,
+    ReinhardToneMapping = THREE.ReinhardToneMapping,
+    LinearToneMapping = THREE.LinearToneMapping,
+    GammaEncoding = THREE.GammaEncoding,
+    RGBDEncoding = THREE.RGBDEncoding,
+    RGBM16Encoding = THREE.RGBM16Encoding,
+    RGBM7Encoding = THREE.RGBM7Encoding,
+    RGBEEncoding = THREE.RGBEEncoding,
+    sRGBEncoding = THREE.sRGBEncoding;
+
+
+   
+
+   
+    function getTextureEncodingFromMap(map, gammaOverrideLinear) {
+
+        var encoding;
+
+        if (!map) {
+
+            encoding = LinearEncoding;
+
+        } else if (map.isTexture) {
+
+            encoding = map.encoding;
+
+        } else if (map.isWebGLRenderTarget) {
+
+            console.warn("THREE.WebGLPrograms.getTextureEncodingFromMap: don't use render targets as textures. Use their .texture property instead.");
+            encoding = map.texture.encoding;
+
+        }
+
+        // add backwards compatibility for WebGLRenderer.gammaInput/gammaOutput parameter, should probably be removed at some point.
+        if (encoding === LinearEncoding && gammaOverrideLinear) {
+
+            encoding = GammaEncoding;
+
+        }
+
+        return encoding;
+
+    }
+
+    function getParameters(material) {//, lights, fog, nClipPlanes, nClipIntersection, object) {
+
+        var shaderID = shaderIDs[material.type];
+
+        // heuristics to create shader parameters according to lights in the scene
+        // (not to blow over maxLights budget)
+
+        //var maxBones = allocateBones(object);
+        //var precision = renderer.getPrecision();
+
+        //if (material.precision !== null) {
+
+        //    precision = capabilities.getMaxPrecision(material.precision);
+
+        //    if (precision !== material.precision) {
+
+        //        console.warn('THREE.WebGLProgram.getParameters:', material.precision, 'not supported, using', precision, 'instead.');
+
+        //    }
+
+        //}
+
+        var currentRenderTarget = null;// renderer.getCurrentRenderTarget();
+        var renderer = {};
+        var parameters = {
+
+            shaderID: shaderID,
+
+            precision: "high",//precision,
+            supportsVertexTextures: true,// capabilities.vertexTextures,
+            outputEncoding: getTextureEncodingFromMap((!currentRenderTarget) ? null : currentRenderTarget.texture, renderer.gammaOutput),
+            map: !!material.map,
+            mapEncoding: getTextureEncodingFromMap(material.map, renderer.gammaInput),
+            envMap: !!material.envMap,
+            envMapMode: material.envMap && material.envMap.mapping,
+            envMapEncoding: getTextureEncodingFromMap(material.envMap, renderer.gammaInput),
+            envMapCubeUV: (!!material.envMap) && ((material.envMap.mapping === CubeUVReflectionMapping) || (material.envMap.mapping === CubeUVRefractionMapping)),
+            lightMap: !!material.lightMap,
+            aoMap: !!material.aoMap,
+            emissiveMap: !!material.emissiveMap,
+            emissiveMapEncoding: getTextureEncodingFromMap(material.emissiveMap, renderer.gammaInput),
+            bumpMap: !!material.bumpMap,
+            normalMap: !!material.normalMap,
+            displacementMap: !!material.displacementMap,
+            roughnessMap: !!material.roughnessMap,
+            metalnessMap: !!material.metalnessMap,
+            specularMap: !!material.specularMap,
+            alphaMap: !!material.alphaMap,
+
+            gradientMap: !!material.gradientMap,
+
+            combine: material.combine,
+
+            vertexColors: material.vertexColors,
+
+            fog: false,//!!fog,
+            useFog: material.fog,
+            fogExp: false,//(fog && fog.isFogExp2),
+
+            flatShading: material.shading === FlatShading,
+
+            sizeAttenuation: material.sizeAttenuation,
+            logarithmicDepthBuffer: false,// capabilities.logarithmicDepthBuffer,
+
+            skinning: material.skinning,
+            //maxBones: maxBones,
+            //useVertexTexture: capabilities.floatVertexTextures && object && object.skeleton && object.skeleton.useVertexTexture,
+
+            morphTargets: material.morphTargets,
+            morphNormals: material.morphNormals,
+            //maxMorphTargets: renderer.maxMorphTargets,
+            //maxMorphNormals: renderer.maxMorphNormals,
+
+            numDirLights: 0,// lights.directional.length,
+            numPointLights: 0,// lights.point.length,
+            numSpotLights: 0,// lights.spot.length,
+            numRectAreaLights: 0,// lights.rectArea.length,
+            numHemiLights: 0,// lights.hemi.length,
+
+            numClippingPlanes: 0,//nClipPlanes,
+            numClipIntersection: 0,//nClipIntersection,
+
+            //shadowMapEnabled:  renderer.shadowMap.enabled && object.receiveShadow && lights.shadows.length > 0,
+            //shadowMapType: renderer.shadowMap.type,
+
+            //toneMapping: renderer.toneMapping,
+            //physicallyCorrectLights: renderer.physicallyCorrectLights,
+
+            premultipliedAlpha: material.premultipliedAlpha,
+
+            alphaTest: material.alphaTest,
+            doubleSided: material.side === DoubleSide,
+            flipSided: material.side === BackSide,
+
+            depthPacking: (material.depthPacking !== undefined) ? material.depthPacking : false
+
+        };
+
+        return parameters;
+
+    };
+
+    /**
+	 * @author mrdoob / http://mrdoob.com/
+	 */
+
+    var programIdCount = 0;
+
+    function getEncodingComponents(encoding) {
+
+        switch (encoding) {
+
+            case LinearEncoding:
+                return ['Linear', '( value )'];
+            case sRGBEncoding:
+                return ['sRGB', '( value )'];
+            case RGBEEncoding:
+                return ['RGBE', '( value )'];
+            case RGBM7Encoding:
+                return ['RGBM', '( value, 7.0 )'];
+            case RGBM16Encoding:
+                return ['RGBM', '( value, 16.0 )'];
+            case RGBDEncoding:
+                return ['RGBD', '( value, 256.0 )'];
+            case GammaEncoding:
+                return ['Gamma', '( value, float( GAMMA_FACTOR ) )'];
+            default:
+                throw new Error('unsupported encoding: ' + encoding);
+
+        }
+
+    }
+
+    function getTexelDecodingFunction(functionName, encoding) {
+
+        var components = getEncodingComponents(encoding);
+        return "vec4 " + functionName + "( vec4 value ) {  return " + components[0] + "ToLinear" + components[1] + " ; }";
+
+    }
+
+    function getTexelEncodingFunction(functionName, encoding) {
+
+        var components = getEncodingComponents(encoding);
+        return "vec4 " + functionName + "( vec4 value ) { return LinearTo" + components[0] + components[1] + " ; }";
+
+    }
+
+    function getToneMappingFunction(functionName, toneMapping) {
+
+        var toneMappingName;
+
+        switch (toneMapping) {
+
+            case LinearToneMapping:
+                toneMappingName = "Linear";
+                break;
+
+            case ReinhardToneMapping:
+                toneMappingName = "Reinhard";
+                break;
+
+            case Uncharted2ToneMapping:
+                toneMappingName = "Uncharted2";
+                break;
+
+            case CineonToneMapping:
+                toneMappingName = "OptimizedCineon";
+                break;
+
+            default:
+                throw new Error('unsupported toneMapping: ' + toneMapping);
+
+        }
+
+        return "vec3 " + functionName + "( vec3 color ) {  return " + toneMappingName + "ToneMapping( color );  }";
+
+    }
+
+    function generateExtensions(extensions, parameters, rendererExtensions) {
+
+        extensions = extensions || {};
+
+        var chunks = [
+			(extensions.derivatives || parameters.envMapCubeUV || parameters.bumpMap || parameters.normalMap || parameters.flatShading) ? '#extension GL_OES_standard_derivatives : enable' : '',
+			(extensions.fragDepth || parameters.logarithmicDepthBuffer) && rendererExtensions.get('EXT_frag_depth') ? '#extension GL_EXT_frag_depth : enable' : '',
+			(extensions.drawBuffers) && rendererExtensions.get('WEBGL_draw_buffers') ? '#extension GL_EXT_draw_buffers : require' : '',
+			(extensions.shaderTextureLOD || parameters.envMap) && rendererExtensions.get('EXT_shader_texture_lod') ? '#extension GL_EXT_shader_texture_lod : enable' : ''
+        ];
+
+        return chunks.filter(filterEmptyLine).join('\n');
+
+    }
+
+    function generateDefines(defines) {
+
+        var chunks = [];
+
+        for (var name in defines) {
+
+            var value = defines[name];
+
+            if (value === false) continue;
+
+            chunks.push('#define ' + name + ' ' + value);
+
+        }
+
+        return chunks.join('\n');
+
+    }
+
+    function filterEmptyLine(string) {
+
+        return string !== '';
+
+    }
+
+    function replaceLightNums(string, parameters) {
+
+        return string
+			.replace(/NUM_DIR_LIGHTS/g, parameters.numDirLights)
+			.replace(/NUM_SPOT_LIGHTS/g, parameters.numSpotLights)
+			.replace(/NUM_RECT_AREA_LIGHTS/g, parameters.numRectAreaLights)
+			.replace(/NUM_POINT_LIGHTS/g, parameters.numPointLights)
+			.replace(/NUM_HEMI_LIGHTS/g, parameters.numHemiLights);
+
+    }
+
+    function parseIncludes(string) {
+
+        var pattern = /^[ \t]*#include +<([\w\d.]+)>/gm;
+
+        function replace(match, include) {
+
+            var replace = ShaderChunk[include];
+
+            if (replace === undefined) {
+
+                throw new Error('Can not resolve #include <' + include + '>');
+
+            }
+
+            return parseIncludes(replace);
+
+        }
+
+        return string.replace(pattern, replace);
+
+    }
+
+    function unrollLoops(string) {
+
+        var pattern = /for \( int i \= (\d+)\; i < (\d+)\; i \+\+ \) \{([\s\S]+?)(?=\})\}/g;
+
+        function replace(match, start, end, snippet) {
+
+            var unroll = '';
+
+            for (var i = parseInt(start) ; i < parseInt(end) ; i++) {
+
+                unroll += snippet.replace(/\[ i \]/g, '[ ' + i + ' ]');
+
+            }
+
+            return unroll;
+
+        }
+
+        return string.replace(pattern, replace);
+
+    }
+
+    function WebGLProgram(material, shader) {//, parameters) {
+
+        var parameters = getParameters(material);
+        //var shader = ShaderLib[parameters.shaderID];
+
+        //var extensions = material.extensions;
+        var defines = material.defines;
+
+        var vertexShader = shader.vertexShader;
+        var fragmentShader = shader.fragmentShader;
+
+        var shadowMapTypeDefine = 'SHADOWMAP_TYPE_BASIC';
+
+        if (parameters.shadowMapType === THREE.PCFShadowMap) {
+
+            shadowMapTypeDefine = 'SHADOWMAP_TYPE_PCF';
+
+        } else if (parameters.shadowMapType === THREE.PCFSoftShadowMap) {
+
+            shadowMapTypeDefine = 'SHADOWMAP_TYPE_PCF_SOFT';
+
+        }
+
+        var envMapTypeDefine = 'ENVMAP_TYPE_CUBE';
+        var envMapModeDefine = 'ENVMAP_MODE_REFLECTION';
+        var envMapBlendingDefine = 'ENVMAP_BLENDING_MULTIPLY';
+
+        if (parameters.envMap) {
+
+            switch (material.envMap.mapping) {
+
+                case CubeReflectionMapping:
+                case CubeRefractionMapping:
+                    envMapTypeDefine = 'ENVMAP_TYPE_CUBE';
+                    break;
+
+                case CubeUVReflectionMapping:
+                case CubeUVRefractionMapping:
+                    envMapTypeDefine = 'ENVMAP_TYPE_CUBE_UV';
+                    break;
+
+                case EquirectangularReflectionMapping:
+                case EquirectangularRefractionMapping:
+                    envMapTypeDefine = 'ENVMAP_TYPE_EQUIREC';
+                    break;
+
+                case SphericalReflectionMapping:
+                    envMapTypeDefine = 'ENVMAP_TYPE_SPHERE';
+                    break;
+
+            }
+
+            switch (material.envMap.mapping) {
+
+                case CubeRefractionMapping:
+                case EquirectangularRefractionMapping:
+                    envMapModeDefine = 'ENVMAP_MODE_REFRACTION';
+                    break;
+
+            }
+
+            switch (material.combine) {
+
+                case MultiplyOperation:
+                    envMapBlendingDefine = 'ENVMAP_BLENDING_MULTIPLY';
+                    break;
+
+                case MixOperation:
+                    envMapBlendingDefine = 'ENVMAP_BLENDING_MIX';
+                    break;
+
+                case AddOperation:
+                    envMapBlendingDefine = 'ENVMAP_BLENDING_ADD';
+                    break;
+
+            }
+
+        }
+
+        var gammaFactorDefine = 1.0;// (renderer.gammaFactor > 0) ? renderer.gammaFactor : 1.0;
+
+
+        // var customExtensions = generateExtensions(extensions, parameters, renderer.extensions);
+
+        var customDefines = generateDefines(defines);
+
+
+        var prefixVertex, prefixFragment;
+
+        if (material.isRawShaderMaterial) {
+
+            prefixVertex = [
+
+				customDefines,
+
+				'\n'
+
+            ].filter(filterEmptyLine).join('\n');
+
+            prefixFragment = [
+
+				//customExtensions,
+				customDefines,
+
+				'\n'
+
+            ].filter(filterEmptyLine).join('\n');
+
+        } else {
+
+            prefixVertex = [
+
+				//'precision ' + parameters.precision + ' float;',
+				//'precision ' + parameters.precision + ' int;',
+
+				'#define SHADER_NAME ' + shader.name,
+
+				//customDefines,
+
+				parameters.supportsVertexTextures ? '#define VERTEX_TEXTURES' : '',
+
+				'#define GAMMA_FACTOR ' + gammaFactorDefine,
+
+				'#define MAX_BONES ' + parameters.maxBones,
+				//(parameters.useFog && parameters.fog) ? '#define USE_FOG' : '',
+				//(parameters.useFog && parameters.fogExp) ? '#define FOG_EXP2' : '',
+
+				parameters.map ? '#define USE_MAP' : '',
+				parameters.envMap ? '#define USE_ENVMAP' : '',
+				parameters.envMap ? '#define ' + envMapModeDefine : '',
+				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
+				parameters.aoMap ? '#define USE_AOMAP' : '',
+				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
+				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
+				parameters.normalMap ? '#define USE_NORMALMAP' : '',
+				parameters.displacementMap && parameters.supportsVertexTextures ? '#define USE_DISPLACEMENTMAP' : '',
+				parameters.specularMap ? '#define USE_SPECULARMAP' : '',
+				parameters.roughnessMap ? '#define USE_ROUGHNESSMAP' : '',
+				parameters.metalnessMap ? '#define USE_METALNESSMAP' : '',
+				parameters.alphaMap ? '#define USE_ALPHAMAP' : '',
+				parameters.vertexColors ? '#define USE_COLOR' : '',
+
+				parameters.flatShading ? '#define FLAT_SHADED' : '',
+
+				parameters.skinning ? '#define USE_SKINNING' : '',
+				parameters.useVertexTexture ? '#define BONE_TEXTURE' : '',
+
+				parameters.morphTargets ? '#define USE_MORPHTARGETS' : '',
+				parameters.morphNormals && parameters.flatShading === false ? '#define USE_MORPHNORMALS' : '',
+				parameters.doubleSided ? '#define DOUBLE_SIDED' : '',
+				parameters.flipSided ? '#define FLIP_SIDED' : '',
+
+				'#define NUM_CLIPPING_PLANES ' + parameters.numClippingPlanes,
+
+				parameters.shadowMapEnabled ? '#define USE_SHADOWMAP' : '',
+				parameters.shadowMapEnabled ? '#define ' + shadowMapTypeDefine : '',
+
+				parameters.sizeAttenuation ? '#define USE_SIZEATTENUATION' : '',
+
+				parameters.logarithmicDepthBuffer ? '#define USE_LOGDEPTHBUF' : '',
+				//parameters.logarithmicDepthBuffer && renderer.extensions.get('EXT_frag_depth') ? '#define USE_LOGDEPTHBUF_EXT' : '',
+
+				//'uniform mat4 modelMatrix;',
+				//'uniform mat4 modelViewMatrix;',
+				//'uniform mat4 projectionMatrix;',
+				//'uniform mat4 viewMatrix;',
+				//'uniform mat3 normalMatrix;',
+				//'uniform vec3 cameraPosition;',
+
+				//'attribute vec3 position;',
+				//'attribute vec3 normal;',
+				//'attribute vec2 uv;',
+
+				'#ifdef USE_COLOR',
+
+				'	attribute vec3 color;',
+
+				'#endif',
+
+				'#ifdef USE_MORPHTARGETS',
+
+				'	attribute vec3 morphTarget0;',
+				'	attribute vec3 morphTarget1;',
+				'	attribute vec3 morphTarget2;',
+				'	attribute vec3 morphTarget3;',
+
+				'	#ifdef USE_MORPHNORMALS',
+
+				'		attribute vec3 morphNormal0;',
+				'		attribute vec3 morphNormal1;',
+				'		attribute vec3 morphNormal2;',
+				'		attribute vec3 morphNormal3;',
+
+				'	#else',
+
+				'		attribute vec3 morphTarget4;',
+				'		attribute vec3 morphTarget5;',
+				'		attribute vec3 morphTarget6;',
+				'		attribute vec3 morphTarget7;',
+
+				'	#endif',
+
+				'#endif',
+
+				'#ifdef USE_SKINNING',
+
+				'	attribute vec4 skinIndex;',
+				'	attribute vec4 skinWeight;',
+
+				'#endif',
+
+				'\n'
+
+            ].filter(filterEmptyLine).join('\n');
+
+            prefixFragment = [
+
+				//customExtensions,
+
+				//'precision ' + parameters.precision + ' float;',
+				//'precision ' + parameters.precision + ' int;',
+
+				'#define SHADER_NAME ' + shader.name,
+
+				customDefines,
+
+				parameters.alphaTest ? '#define ALPHATEST ' + parameters.alphaTest : '',
+
+				'#define GAMMA_FACTOR ' + gammaFactorDefine,
+
+				(parameters.useFog && parameters.fog) ? '#define USE_FOG' : '',
+				(parameters.useFog && parameters.fogExp) ? '#define FOG_EXP2' : '',
+
+				parameters.map ? '#define USE_MAP' : '',
+				parameters.envMap ? '#define USE_ENVMAP' : '',
+				parameters.envMap ? '#define ' + envMapTypeDefine : '',
+				parameters.envMap ? '#define ' + envMapModeDefine : '',
+				parameters.envMap ? '#define ' + envMapBlendingDefine : '',
+				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
+				parameters.aoMap ? '#define USE_AOMAP' : '',
+				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
+				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
+				parameters.normalMap ? '#define USE_NORMALMAP' : '',
+				parameters.specularMap ? '#define USE_SPECULARMAP' : '',
+				parameters.roughnessMap ? '#define USE_ROUGHNESSMAP' : '',
+				parameters.metalnessMap ? '#define USE_METALNESSMAP' : '',
+				parameters.alphaMap ? '#define USE_ALPHAMAP' : '',
+				parameters.vertexColors ? '#define USE_COLOR' : '',
+
+				parameters.gradientMap ? '#define USE_GRADIENTMAP' : '',
+
+				parameters.flatShading ? '#define FLAT_SHADED' : '',
+
+				parameters.doubleSided ? '#define DOUBLE_SIDED' : '',
+				parameters.flipSided ? '#define FLIP_SIDED' : '',
+
+				'#define NUM_CLIPPING_PLANES ' + parameters.numClippingPlanes,
+				'#define UNION_CLIPPING_PLANES ' + (parameters.numClippingPlanes - parameters.numClipIntersection),
+
+				parameters.shadowMapEnabled ? '#define USE_SHADOWMAP' : '',
+				parameters.shadowMapEnabled ? '#define ' + shadowMapTypeDefine : '',
+
+				parameters.premultipliedAlpha ? "#define PREMULTIPLIED_ALPHA" : '',
+
+				parameters.physicallyCorrectLights ? "#define PHYSICALLY_CORRECT_LIGHTS" : '',
+
+				parameters.logarithmicDepthBuffer ? '#define USE_LOGDEPTHBUF' : '',
+				//parameters.logarithmicDepthBuffer && renderer.extensions.get('EXT_frag_depth') ? '#define USE_LOGDEPTHBUF_EXT' : '',
+
+				//parameters.envMap && renderer.extensions.get('EXT_shader_texture_lod') ? '#define TEXTURE_LOD_EXT' : '',
+
+				'uniform mat4 viewMatrix;',
+				'uniform vec3 cameraPosition;',
+
+				//(parameters.toneMapping !== THREE.NoToneMapping) ? "#define TONE_MAPPING" : '',
+				//(parameters.toneMapping !== THREE.NoToneMapping) ? ShaderChunk['tonemapping_pars_fragment'] : '',  // this code is required here because it is used by the toneMapping() function defined below
+				//(parameters.toneMapping !== THREE.NoToneMapping) ? getToneMappingFunction("toneMapping", parameters.toneMapping) : '',
+
+				parameters.dithering ? '#define DITHERING' : '',
+
+				(parameters.outputEncoding || parameters.mapEncoding || parameters.envMapEncoding || parameters.emissiveMapEncoding) ? ShaderChunk['encodings_pars_fragment'] : '', // this code is required here because it is used by the various encoding/decoding function defined below
+				parameters.mapEncoding ? getTexelDecodingFunction('mapTexelToLinear', parameters.mapEncoding) : '',
+				parameters.envMapEncoding ? getTexelDecodingFunction('envMapTexelToLinear', parameters.envMapEncoding) : '',
+				parameters.emissiveMapEncoding ? getTexelDecodingFunction('emissiveMapTexelToLinear', parameters.emissiveMapEncoding) : '',
+				parameters.outputEncoding ? getTexelEncodingFunction("linearToOutputTexel", parameters.outputEncoding) : '',
+
+				parameters.depthPacking ? "#define DEPTH_PACKING " + material.depthPacking : '',
+
+				'\n'
+
+            ].filter(filterEmptyLine).join('\n');
+
+        }
+
+        vertexShader = parseIncludes(vertexShader);
+        vertexShader = replaceLightNums(vertexShader, parameters);
+
+        fragmentShader = parseIncludes(fragmentShader);
+        fragmentShader = replaceLightNums(fragmentShader, parameters);
+
+        if (!material.isShaderMaterial) {
+
+            vertexShader = unrollLoops(vertexShader);
+            fragmentShader = unrollLoops(fragmentShader);
+
+        }
+
+        var vertexGlsl = prefixVertex + vertexShader;
+        var fragmentGlsl = prefixFragment + fragmentShader;
+
+
+        this.id = programIdCount++;
+        this.usedTimes = 1;
+        this.vertexShader = vertexGlsl;
+        this.fragmentShader = fragmentGlsl;
+
+        return this;
+
+    }
+
+
+    return ShaderUtils;
+});
+define('Core/MeshVisualizer',[
+    'Core/Mesh',
+    'Core/RendererUtils',
+    'Core/MeshMaterial',
+    'Core/Shaders/ShaderChunk',
+    'Core/Rotation',
+    'Core/FramebufferTexture',
+    'Core/LOD',
+    'Core/ReferenceMesh',
+    'ThirdParty/tiff-js/tiff',
+    'Util/Path',
+    'Core/GeometryUtils',
+    'Core/MaterialUtils',
+    'Core/MeshUtils',
+    'Core/ShaderUtils'
+], function (
+    Mesh,
+    RendererUtils,
+    MeshMaterial,
+    ShaderChunk,
+    Rotation,
+    FramebufferTexture,
+    LOD,
+    ReferenceMesh,
+    TIFFParser,
+    Path,
+    GeometryUtils,
+    MaterialUtils,
+    MeshUtils,
+    ShaderUtils
+) {
+
+        var Matrix4 = Cesium.Matrix4;
+        var DrawCommand = Cesium.DrawCommand;
+        var defined = Cesium.defined;
+        var GeometryPipeline = Cesium.GeometryPipeline;
+        var BufferUsage = Cesium.BufferUsage;
+        var BlendingState = Cesium.BlendingState;
+        var VertexArray = Cesium.VertexArray;
+        var ShaderProgram = Cesium.ShaderProgram;
+        var DepthFunction = Cesium.DepthFunction;
+        var CullFace = Cesium.CullFace;
+        var RenderState = Cesium.RenderState;
+        var defaultValue = Cesium.defaultValue;
+        var Texture = Cesium.Texture;
+        var PixelFormat = Cesium.PixelFormat;
+        var BoxGeometry = Cesium.BoxGeometry;
+        var Cartesian3 = Cesium.Cartesian3;
+        var VertexFormat = Cesium.VertexFormat;
+        var CubeMap = Cesium.CubeMap;
+        var loadCubeMap = Cesium.loadCubeMap;
+        var Matrix3 = Cesium.Matrix3;
+        var CesiumMath = Cesium.Math;
+        var Color = Cesium.Color;
+
+        var scratchTranslation = new Cartesian3();
+        var scratchQuaternion = new Cesium.Quaternion();
+        var scratchScale = new Cartesian3();
+        var scratchTranslationQuaternionRotationScale = new Matrix4();
+        var computeModelMatrix = new Matrix4();
+        var scratchPosition = new Cartesian3();
+        var scratchTraverseArgs = {
+            cancelCurrent: false //停止遍历当前节点的所有子节点 
+        };
+        Cesium.Cartesian3.prototype.set = function (x, y, z) {
+            this.x = x; this.y = y; this.z = z;
+        }
+        Cesium.Cartesian3.prototype.copy = function (src) {
+            this.x = src.x; this.y = src.y; this.z = src.z;
+        }
+
+        Cesium.Cartesian2.prototype.set = function (x, y) {
+            this.x = x; this.y = y;
+        }
+        Cesium.Cartesian2.prototype.copy = function (src) {
+            this.x = src.x; this.y = src.y;
+        }
+        Cesium.Quaternion.prototype.set = function (x, y, z, w) {
+            this.x = x; this.y = y; this.z = z; this.w = w;
+        }
+        Cesium.Quaternion.prototype.copy = function (src) {
+            this.x = src.x; this.y = src.y; this.z = src.z; this.w = src.w;
+        }
+        /**
+        *
+        *
+        *@param {Object}options
+        *@param {Cesium.Matrix4}[options.modelMatrix=Cesium.Matrix4.IDENTITY]
+        *@param {Cesium.Cartesian3}[options.up=Cesium.Cartesian3.UNIT_Z]
+        *@param {Cesium.Cartesian3}[options.position=Cesium.Cartesian3.ZERO]
+        *@param {Cesium.Cartesian3}[options.scale=new Cartesian3(1, 1, 1)]
+        *@param {Cesium.Rotation}[options.rotation]
+        *@param {Boolean}[options.show=true]
+        *@param {Boolean}[options.showReference=true]
+        *@param {Cesium.ArrowGeometry}[options.referenceAxisParameter]
+        *
+        *@property {Cesium.Matrix4}modelMatrix 
+        *@property {Cesium.Cartesian3}up 
+        *@property {Cesium.Cartesian3}position 
+        *@property {Cesium.Cartesian3}scale 
+        *@property {Cesium.Rotation}rotation 
+        *@property {Boolean}show 
+        *@property {Boolean}showReference
+        *@property {Boolean}modelMatrixNeedsUpdate
+        *@property {Cesium.Event}beforeUpdate  
+        *
+        *@constructor
+        *@memberof Cesium
+        *@extends Cesium.Primitive
+        *
+        *@example 
+         
+            MeshVisualizer = Cesium.MeshVisualizer;
+            Mesh = Cesium.Mesh;
+            MeshMaterial = Cesium.MeshMaterial; 
+            FramebufferTexture = Cesium.FramebufferTexture;
+    
+            var center = Cesium.Cartesian3.fromDegrees(homePosition[0], homePosition[1], 50000);
+            var modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(center);
+    
+            var meshVisualizer = new MeshVisualizer({
+                modelMatrix: modelMatrix,
+            });
+            viewer.scene.primitives.add(meshVisualizer);
+    
+    
+            //示例1：Cesium.Geometry+Cesium.MeshMaterial组合
+            var box = Cesium.BoxGeometry.createGeometry(Cesium.BoxGeometry.fromDimensions({
+                dimensions: new Cesium.Cartesian3(100000, 50000, 50000),
+                vertexFormat: Cesium.VertexFormat.POSITION_ONLY
+            }));
+            
+            var material = new MeshMaterial({
+                defaultColor: "rgba(255,0,0,1.0)",
+                wireframe: false,
+                side: MeshMaterial.Sides.DOUBLE
+            });
+            var boxMesh = new Mesh(box, material);
+    
+            meshVisualizer.add(boxMesh);
+    
+            //示例2：Cesium.CSG+Cesium.MeshMaterial组合，可以用Cesium.CSG做布尔运算并渲染运算结果
+    
+            //首先使用Cesium创建球体
+             var sphere = new Cesium.SphereGeometry({
+                 radius: 50000.0,
+                 vertexFormat: Cesium.VertexFormat.POSITION_ONLY
+             });
+             sphere = Cesium.SphereGeometry.createGeometry(sphere);
+            
+             var sphereMesh = new Mesh(sphere, material);
+             sphereMesh.position = new Cesium.Cartesian3(100000, 0, 0)
+             meshVisualizer.add(sphereMesh);
+    
+             //将球体对象Cesium.SphereGeometry转成Cesium.CSG实例
+             sphere = CSG.toCSG(sphere);
+             //将盒子对象转成Cesium.CSG实例
+             box = CSG.toCSG(box);
+    
+              //做布尔运算
+              var subResult = sphere.subtract(box);
+              //渲染运算结果
+              var subResultMesh = new Mesh(subResult, material);
+              subResultMesh.position = new Cesium.Cartesian3(700000, 0, 0)
+              meshVisualizer.add(subResultMesh);
+    
+              //示例3：使用帧缓存作纹理,实际应用中如体绘制，风场流场绘制等等都可以运用此技术
+    
+              function createGeometry() {
+                var p1 = new Cesium.Cartesian3(-50000, 50000, 100);
+                var p2 = new Cesium.Cartesian3(-50000, -50000, 100);
+                var p3 = new Cesium.Cartesian3(50000, -50000, 100);
+                var p4 = new Cesium.Cartesian3(50000, 50000, 100);
+    
+                var positions = new Float64Array([
+                  p1.x, p1.y, p1.z,
+                  p2.x, p2.y, p2.z,
+                  p3.x, p3.y, p3.z,
+                  p4.x, p4.y, p4.z
+                ]);
+                var indices = new Uint16Array([
+                  0, 1, 3,
+                  1, 2, 3,
+                ]);
+                var sts = new Float32Array([
+                  1, 1,
+                  1, 0,
+                  0, 0,
+                  0, 1
+                ]);
+                var geometry = new Cesium.Geometry({
+                    attributes: {
+                        position: new Cesium.GeometryAttribute({
+                            componentDatatype: Cesium.ComponentDatatype.DOUBLE,
+                            componentsPerAttribute: 3,
+                            values: positions
+                        }),
+                        st: new Cesium.GeometryAttribute({
+                            componentDatatype: Cesium.ComponentDatatype.FLOAT,
+                            componentsPerAttribute: 2,
+                            values: sts
+                        })
+                    },
+                    indices: indices,
+                    primitiveType: Cesium.PrimitiveType.TRIANGLES,
+                    boundingSphere: Cesium.BoundingSphere.fromVertices(positions)
+                });
+    
+                return geometry;
+            }
+            //将上文中的盒子渲染到缓存，作为纹理参与createGeometry（）方法创建的几何体渲染过程
+            var framebufferTex = new FramebufferTexture(boxMesh);
+            var geometry = createGeometry();
+            var customMesh = new Mesh(geometry, new MeshMaterial({
+    
+                uniforms: {
+                    u_textureMap: framebufferTex//Cesium.buildModuleUrl('Widgets/Images/TerrainProviders/STK.png')
+                },
+                side: MeshMaterial.Sides.DOUBLE,
+                vertexShader : "\n\
+                    \n\
+                    varying vec3 v_position;\n\
+                    varying vec2 v_st;\n\
+                    \n\
+                    void main(void) \n\
+                    {\n\
+                    vec4 pos = u_modelViewMatrix * vec4(position,1.0);\n\
+                    v_position = pos.xyz;\n\
+                    v_st=st;\n\
+                    gl_Position = u_projectionMatrix * pos;\n\
+                    }",
+                fragmentShader : "varying vec2 v_st;\
+                    uniform sampler2D u_textureMap;\
+                    void main()\
+                    {\
+                    gl_FragColor = texture2D(u_textureMap,v_st);\n\
+                    \
+                    }\
+                    "
+            }));
+            customMesh.position = new Cesium.Cartesian3(100000, 0, 0);
+            meshVisualizer.add(customMesh);
+        */
+        function MeshVisualizer(options) {
+            this._modelMatrix = defaultValue(options.modelMatrix, Matrix4.IDENTITY);
+            this._actualModelMatrix = Matrix4.clone(this._modelMatrix);
+            this._ready = true;
+            this._modelMatrixNeedsUpdate = true;
+
+            this._isWireframe = false;
+            this._up = defaultValue(options.up, new Cartesian3(0, 0, 1));
+            this._position = defaultValue(options.position, new Cartesian3(0, 0, 0));
+            this._scale = defaultValue(options.scale, new Cartesian3(1, 1, 1));
+            this._rotation = defaultValue(options.rotation, { axis: new Cartesian3(0, 0, 1), angle: 0 });
+            this._rotation = new Rotation(this._rotation.axis, this._rotation.angle);
+            this._rotation.paramChanged.addEventListener(this.onModelMatrixNeedUpdate, this);
+
+
+            this._chidren = [];
+            this._debug = false;
+            this._show = defaultValue(options.show, true);
+
+            this._center = new Cartesian3();
+            Cesium.Matrix4.getTranslation(this._modelMatrix, this._center);
+            this._framebufferTextures = {};
+            this._uniformValueCache = {};
+            this._textureCache = {};
+            this._uniformMaps = {};
+            this.referenceMesh = new ReferenceMesh({
+                axisParameter: defaultValue(options.referenceAxisParameter, { length: 50000 * 2 }),
+                show: defaultValue(options.showReference, false)
+            });
+            this.add(this.referenceMesh);
+            this._pickIds = [];
+            this.beforeUpdate = new Cesium.Event();
+            this._scene = options.scene;
+        }
+        var world2localMatrix = new Cesium.Matrix4();
+        var surfacePointLocal = new Cesium.Cartesian3();
+        var rayDir = new Cesium.Cartesian3();
+        var pos = new Cesium.Cartesian3();
+        var rayOriginLocal = new Cesium.Cartesian3();
+        var scratchRay = new Cesium.Ray();
+
+        MeshVisualizer.prototype = {
+            /**
+            *@param {Cesium.Mesh}mesh
+            */
+            remove: function (mesh) {
+
+                for (var i = 0; i < this._chidren.length; i++) {
+                    if (this._chidren[i] == mesh) {
+
+                        this._chidren.splice(i, 1);
+                    }
+                }
+                MeshVisualizer.traverse(mesh, function () {
+                    if (mesh._drawCommand) {
+                        mesh._drawCommand.destroy && mesh._drawCommand.destroy();
+                    }
+                    if (mesh._actualMesh && mesh._actualMesh._drawCommand) {
+                        Cesium.destroyObject(mesh._actualMesh._drawCommand);
+                        Cesium.destroyObject(mesh._actualMesh.geometry);
+                        Cesium.destroyObject(mesh._actualMesh);
+                        Cesium.destroyObject(mesh);
+                    }
+                }, false);
+            },
+            /**
+            *
+            *拾取点，用局部坐标系表达。内部使用Cesium.Scene.pickPosition和MeshVisualizer.worldCoordinatesToLocal实现。
+            *@param {Cesium.Cartesian2}windowPosition
+            *@param {Cesium.Ray}result
+            *@return {Cesium.Cartesian3}
+            */
+            pickPosition: function (windowPosition, result) {
+                if (!this._scene) {
+                    return undefined;
+                }
+                this._scene.pickPosition(windowPosition, surfacePointLocal);
+
+                if (!surfacePointLocal) {
+                    return undefined;
+                }
+
+                this.worldCoordinatesToLocal(surfacePointLocal, surfacePointLocal);
+                Cesium.Cartesian3.clone(surfacePointLocal, result);
+                return result;
+            },
+            /**
+            *
+            *创建一条射线，用局部坐标系表达
+            *@param {Cesium.Cartesian2}windowPosition
+            *@param {Cesium.Ray}result
+            *@return {Cesium.Ray}
+            */
+            getPickRay: function (windowPosition, result) {
+                if (!this._scene) {
+                    return undefined;
+                }
+                if (!result) {
+                    result = Cesium.Ray();
+                }
+                this._scene.camera.getPickRay(windowPosition, scratchRay);//ray用于计算小球发射点位置，这里射线的起始点是世界坐标，不能像Threejs那样直接拿来计算，需要转成局部坐标
+                this._scene.pickPosition(windowPosition, surfacePointLocal);//射线和局部场景的交点
+
+                if (!surfacePointLocal) {
+                    return undefined;
+                }
+
+                Cesium.Cartesian3.clone(scratchRay.direction, rayDir);
+
+                //世界坐标转局部坐标
+                this.worldCoordinatesToLocal(scratchRay.origin, rayOriginLocal);
+                this.worldCoordinatesToLocal(surfacePointLocal, surfacePointLocal);
+
+                Cesium.Cartesian3.add(rayOriginLocal, rayDir, pos);
+                //计算发射方向
+                Cesium.Cartesian3.subtract(surfacePointLocal, pos, rayDir);
+                Cesium.Cartesian3.clone(surfacePointLocal, result.origin);
+                Cesium.Cartesian3.clone(rayDir, result.direction);
+                return result;
+            },
+            /**
+            *世界坐标到局部坐标
+            *@param {Cesium.Cartesian3}worldCoordinates
+            *@param {Cesium.Cartesian3}result
+            *@return {Cesium.Cartesian3}
+            */
+            worldCoordinatesToLocal: function (worldCoordinates, result) {
+                if (!result) {
+                    result = new Cartesian3();
+                }
+                Cesium.Matrix4.inverseTransformation(this._actualModelMatrix, world2localMatrix)
+                Cesium.Matrix4.multiplyByPoint(world2localMatrix, worldCoordinates, result);
+                return result;
+            },
+            /**
+           *局部坐标到世界坐标
+           *@param {Cesium.Cartesian3}localCoordinates
+           *@param {Cesium.Cartesian3}result
+           *@return {Cesium.Cartesian3}
+           */
+            localToWorldCoordinates: function (localCoordinates, result) {
+                if (!result) {
+                    result = new Cartesian3();
+                }
+                Cesium.Matrix4.multiplyByPoint(this._actualModelMatrix, localCoordinates, result);
+                return result;
+            },
+            onModelMatrixNeedUpdate: function () {
+                this._modelMatrixNeedsUpdate = true;
+            },
+            /**
+             *
+             *@param {Number}x
+             *@param {Number}y
+             *@param {Number}z
+             */
+            setPosition: function (x, y, z) {
+                var changed = false;
+                if (arguments.length == 1) {
+                    if (typeof x == 'number') {
+                        if (x != this._position.x) changed = true;
+                        this._position.x = x;
+                    } else if (x instanceof Cesium.Cartesian3) {
+                        if (x != this._position.x
+                            || y != this._position.y
+                            || z != this._position.z) {
+                            changed = true;
+                        }
+
+                        this._position.x = x.x;
+                        this._position.y = x.y;
+                        this._position.z = x.z;
+                    }
+                }
+                if (arguments.length == 2 && typeof y == 'number') {
+                    if (y != this._position.y) changed = true;
+                    this._position.y = y;
+                }
+                if (arguments.length == 3 && typeof z == 'number') {
+                    if (z != this._position.z) changed = true;
+                    this._position.z = z;
+                }
+                if (changed) {
+                    this._modelMatrixNeedsUpdate = true;
+                }
+            },
+            /**
+             *
+             *@param {Number}x
+             *@param {Number}y
+             *@param {Number}z
+             */
+            setScale: function (x, y, z) {
+                var changed = false;
+                if (arguments.length == 1) {
+                    if (typeof x == 'number') {
+                        if (x != this._scale.x) changed = true;
+                        this._scale.x = x;
+                    } else if (x instanceof Cesium.Cartesian3) {
+                        if (x != this._scale.x
+                            || y != this._scale.y
+                            || z != this._scale.z) {
+                            changed = true;
+                        }
+
+                        this._scale.x = x.x;
+                        this._scale.y = x.y;
+                        this._scale.z = x.z;
+                    }
+                }
+                if (arguments.length == 2 && typeof y == 'number') {
+                    if (y != this._scale.y) changed = true;
+                    this._scale.y = y;
+                }
+                if (arguments.length == 3 && typeof z == 'number') {
+                    if (z != this._scale.z) changed = true;
+                    this._scale.z = z;
+                }
+                if (changed) {
+                    this._modelMatrixNeedsUpdate = true;
+                }
+            },
+
+            toWireframe: function (geometry) {
+                if (geometry.primitiveType !== Cesium.PrimitiveType.TRIANGLES
+                    && geometry.primitiveType !== Cesium.PrimitiveType.TRIANGLE_FAN
+                    && geometry.primitiveType !== Cesium.PrimitiveType.TRIANGLE_STRIP) {
+                    return geometry;
+                }
+                if (!geometry.triangleIndices) {
+                    geometry.triangleIndices = geometry.indices;
+                }
+                //if (geometry.lineIndices) {
+                //    geometry.indices = geometry.lineIndices;
+                //    return geometry;
+                //}
+                geometry = GeometryPipeline.toWireframe(geometry);
+                //geometry.lineIndices = geometry.indices;
+                return geometry;
+            },
+
+            restoreFromWireframe: function (geometry) {
+                if (geometry.triangleIndices) {
+                    geometry.indices = geometry.triangleIndices;
+                }
+                geometry.primitiveType = Cesium.PrimitiveType.TRIANGLES;
+                return geometry;
+            },
+
+            /**
+            * 
+            *@param {Cesium.Mesh} mesh
+            *@param {Cesium.FrameState} frameState
+            *@return {Cesium.DrawCommand} 
+            *@private
+            */
+            createDrawCommand: function (mesh, frameState) {
+                var that = this;
+                var context = frameState.context;
+                var geometry = mesh.geometry;
+                var material = mesh.material;
+
+                var command = new Cesium.DrawCommand({
+                    modelMatrix: Matrix4.clone(this.modelMatrix),
+                    owner: mesh,
+                    primitiveType: geometry.primitiveType,
+                    cull: material.cullFrustum,
+                    pass: material.translucent ? Cesium.Pass.TRANSLUCENT : Cesium.Pass.OPAQUE
+                    //,boundingVolume: geometry.boundingSphere
+                });
+
+                var attributeLocations = GeometryPipeline.createAttributeLocations(geometry);
+
+                command.vertexArray = VertexArray.fromGeometry({
+                    context: context,
+                    geometry: geometry,
+                    attributeLocations: attributeLocations,
+                    bufferUsage: BufferUsage.STATIC_DRAW
+                });
+                command.vertexArray._attributeLocations = attributeLocations;
+
+                var pickObject = {
+                    primitive: this,
+                    id: mesh
+                };
+
+
+                var pickId = context.createPickId(pickObject);
+                that._pickIds.push(pickId);
+
+                var pickColor = pickId.color;
+
+                var shader = {
+                    fragmentShader: this.getFragmentShaderSource(material),
+                    vertexShader: this.getVertexShaderSource(geometry, material)
+                };
+                if (material.material3js) {
+                    shader = ShaderUtils.processShader3js(material.material3js, shader);
+
+                }
+
+                command._sp = ShaderProgram.fromCache({
+                    context: context,
+                    fragmentShaderSource: shader.fragmentShader,//this.getFragmentShaderSource(material),
+                    vertexShaderSource: shader.vertexShader,//this.getVertexShaderSource(geometry, material),
+                    attributeLocations: attributeLocations
+                });
+                if (!Cesium.defined(mesh.material.allowPick)) {
+                    mesh.material.allowPick = true;
+                }
+                if (mesh.material.allowPick) {
+                    command._pickSp = ShaderProgram.fromCache({
+                        context: context,
+                        fragmentShaderSource: 'void main() {\n\tgl_FragColor = vec4(' + pickColor.red + ',' + pickColor.green + ',' + pickColor.blue + ',' + pickColor.alpha + ');\n}',
+                        vertexShaderSource: shader.vertexShader,
+                        attributeLocations: attributeLocations
+                    });
+
+                }
+                command.shaderProgram = command._sp;
+                command.renderState = this.getRenderState(material);
+
+                command.uniformMap = this.getUniformMap(material, frameState);
+
+                return command;
+            },
+
+            /**
+            *
+            *
+            *@param {THREE.Material}material 
+            *@return {Cesium.RenderState}frameState
+            *@private
+            */
+            getRenderState: function (material) {
+                var renderState = {
+                    blending: material.blending ? BlendingState.ALPHA_BLEND : BlendingState.DISABLED,
+                    depthTest: {
+                        enabled: material.depthTest,
+                        func: DepthFunction.LESS
+                    },
+                    cull: {
+                        enabled: true,
+                        face: CullFace.FRONT
+                    },
+                    depthRange: {
+                        near: 0,
+                        far: 1
+                    },
+                    colorMask: {
+                        red: true,
+                        green: true,
+                        blue: true,
+                        alpha: true
+                    },
+                    depthMask: material.depthMask
+                }
+                renderState.cull.enabled = true;
+                renderState.blending.color = {
+                    red: 0.0,
+                    green: 0.0,
+                    blue: 0.0,
+                    alpha: 0.0
+                };
+                switch (material.side) {
+                    case MeshMaterial.Sides.FRONT:
+                        renderState.cull.face = CullFace.BACK;
+                        break;
+                    case MeshMaterial.Sides.BACK:
+                        renderState.cull.face = CullFace.FRONT;
+                        break;
+                    default:
+                        renderState.cull.enabled = false;
+                        break;
+                }
+
+                renderState = RenderState.fromCache(renderState);
+
+                return renderState;
+            },
+            /**
+            *
+            *
+            *@param {THREE.Material}material 
+            *@param {Cesium.FrameState}frameState
+            *@private
+            */
+            getUniformMap: function (material, frameState) {
+                if (this._uniformMaps[material.uuid] && !material.needsUpdate) {
+                    return this._uniformMaps[material.uuid];
+
+                }
+                var uniformMap = {};
+                this._uniformMaps[material.uuid] = uniformMap;
+
+                material.needsUpdate = false;
+
+                uniformMap.cameraPosition = function () {
+                    return frameState.camera.position;
+                }
+                uniformMap.u_cameraPosition = function () {
+                    return frameState.camera.position;
+                }
+                //base matrix
+                uniformMap.u_normalMatrix = function () {
+                    return frameState.context.uniformState.normal;
+                }
+                uniformMap.u_projectionMatrix = function () {
+                    return frameState.context.uniformState.projection;
+                }
+
+                uniformMap.u_modelViewMatrix = function () {
+                    return frameState.context.uniformState.modelView;
+                }
+                //base matrix for threejs
+                uniformMap.normalMatrix = function () {
+                    return frameState.context.uniformState.normal;
+                }
+                uniformMap.projectionMatrix = function () {
+                    return frameState.context.uniformState.projection;
+                }
+
+                uniformMap.modelViewMatrix = function () {
+                    return frameState.context.uniformState.modelView;
+                }
+                uniformMap.modelMatrix = function () {
+                    return frameState.context.uniformState.model;
+                }
+                uniformMap.u_modelMatrix = function () {
+                    return frameState.context.uniformState.model;
+                }
+                uniformMap.u_viewMatrix = function () {
+                    return frameState.context.uniformState.view;
+                }
+                uniformMap.viewMatrix = function () {
+                    return frameState.context.uniformState.view;
+                }
+                uniformMap.logDepthBufFC = function () {
+                    return 2.0 / (Math.log(frameState.camera.frustum.far + 1.0) / Math.LN2)
+                }
+
+                if (material.uniformStateUsed && material.uniformStateUsed.length) {
+                    material.uniformStateUsed.forEach(function (item) {
+                        if (!uniformMap[item.glslVarName]) {
+                            if (!frameState.context.uniformState[item.uniformStateName]) {
+                                throw new Error(item.uniformStateName + "不是Cesium引擎的内置对象");
+                            }
+                            uniformMap[item.glslVarName] = function () {
+                                return frameState.context.uniformState[item.uniformStateName];
+                            }
+                        }
+                    });
+                }
+                var that = this;
+
+                function getCubeTextureCallback(name, item, mtl) {
+                    var callback = function () {
+                        if (!that._textureCache[item.uuid] || item.needsUpdate) {
+                            if (!callback.allLoaded && !callback.isLoading) {
+                                var promises = [];
+                                for (var i = 0; i < item.value.length; i++) {
+                                    if (item.value[i] instanceof HTMLCanvasElement
+                                        || item.value[i] instanceof HTMLVideoElement
+                                        || item.value[i] instanceof HTMLImageElement
+                                    ) {
+                                        var deferred = Cesium.when.defer();
+                                        requestAnimationFrame(function () {
+                                            deferred.resolve(item.value[i]);
+                                        });
+                                        promises.push(deferred);
+                                    } else if (typeof item.value[i] === 'string') {
+                                        promises.push(Cesium.loadImage(item.value[i]));
+                                    } else {
+                                        throw Error(name + "" + i + "给定值“ " + item[i] + "” 不是有效的纹理图片");
+                                    }
+                                }
+                                callback.isLoading = true;
+                                item.needsUpdate = false;
+                                Cesium.when.all(promises, function (images) {
+
+                                    that._textureCache[item.uuid] = new Cesium.CubeMap({
+                                        context: frameState.context,
+                                        source: {
+                                            positiveX: images[0],
+                                            negativeX: images[1],
+                                            positiveY: images[2],
+                                            negativeY: images[3],
+                                            positiveZ: images[4],
+                                            negativeZ: images[5]
+                                        }
+                                    });
+
+                                    callback.allLoaded = true;
+                                    callback.isLoading = false;
+                                });
+                            }
+                        }
+                        if (callback.allLoaded) {
+                            return that._textureCache[item.uuid];
+                        }
+                        else {
+                            if (!that.defaultCubeMap) {
+
+                                if (!that.defaultTextureImage) {
+                                    that.defaultTextureImage = document.createElement("canvas");
+                                    that.defaultTextureImage.width = 1;
+                                    that.defaultTextureImage.height = 1;
+                                }
+
+                                that.defaultCubeMap = new Cesium.CubeMap({
+                                    context: frameState.context,
+                                    source: {
+                                        positiveX: that.defaultTextureImage,
+                                        negativeX: that.defaultTextureImage,
+                                        positiveY: that.defaultTextureImage,
+                                        negativeY: that.defaultTextureImage,
+                                        positiveZ: that.defaultTextureImage,
+                                        negativeZ: that.defaultTextureImage
+                                    }
+                                });
+                            }
+                            return that.defaultCubeMap;
+                        }
+                    }
+                    if (callback.allLoaded) {
+                        callback.allLoaded = false;
+                        callback.isLoading = false;
+                    }
+                    return callback;
+                }
+
+
+                function createTexture(texture, context) {
+
+                    var TextureMinificationFilter = Cesium.TextureMinificationFilter;
+                    var TextureWrap = Cesium.TextureWrap;
+
+                    var sampler = texture.sampler;
+
+                    var mipmap =
+                        (sampler.minificationFilter === TextureMinificationFilter.NEAREST_MIPMAP_NEAREST) ||
+                        (sampler.minificationFilter === TextureMinificationFilter.NEAREST_MIPMAP_LINEAR) ||
+                        (sampler.minificationFilter === TextureMinificationFilter.LINEAR_MIPMAP_NEAREST) ||
+                        (sampler.minificationFilter === TextureMinificationFilter.LINEAR_MIPMAP_LINEAR);
+                    var requiresNpot = mipmap ||
+                        (sampler.wrapS === TextureWrap.REPEAT) ||
+                        (sampler.wrapS === TextureWrap.MIRRORED_REPEAT) ||
+                        (sampler.wrapT === TextureWrap.REPEAT) ||
+                        (sampler.wrapT === TextureWrap.MIRRORED_REPEAT);
+
+                    var source = texture.source;
+                    var npot = !CesiumMath.isPowerOfTwo(source.width) || !CesiumMath.isPowerOfTwo(source.height);
+
+                    if (requiresNpot && npot) {
+                        // WebGL requires power-of-two texture dimensions for mipmapping and REPEAT/MIRRORED_REPEAT wrap modes.
+                        var canvas = document.createElement('canvas');
+                        canvas.width = CesiumMath.nextPowerOfTwo(source.width);
+                        canvas.height = CesiumMath.nextPowerOfTwo(source.height);
+                        var canvasContext = canvas.getContext('2d');
+                        canvasContext.drawImage(source, 0, 0, source.width, source.height, 0, 0, canvas.width, canvas.height);
+                        source = canvas;
+                    }
+
+                    var tx;
+
+                    if (texture.target === WebGLConstants.TEXTURE_2D) {
+                        tx = new Texture({
+                            context: context,
+                            source: source,
+                            width: texture.width,
+                            height: texture.height,
+                            pixelFormat: texture.internalFormat,
+                            pixelDatatype: texture.type,
+                            sampler: sampler,
+                            flipY: texture.flipY
+                        });
+                    }
+                    // GLTF_SPEC: Support TEXTURE_CUBE_MAP.  https://github.com/KhronosGroup/glTF/issues/40
+
+                    if (mipmap) {
+                        tx.generateMipmap();
+                    }
+
+                    return tx;
+                }
+                var WebGLConstants = Cesium.WebGLConstants;
+                function onTextureImageLoaded(image, item) {
+                    var tex;
+                    if (defined(image.internalFormat)) {
+                        tex = new Texture({
+                            context: frameState.context,
+                            pixelFormat: image.internalFormat,
+                            width: image.width,
+                            height: image.height,
+                            source: {
+                                arrayBufferView: image.bufferView
+                            },
+                            flipY: item.flipY
+                        });
+                    } else {
+                        var format = Cesium.WebGLConstants.RGB;
+                        if (image instanceof HTMLCanvasElement
+                            || image instanceof HTMLVideoElement
+                            || (image.src && image.src.toLocaleLowerCase().indexOf(".png") >= 0)
+                        ) {
+                            format = Cesium.WebGLConstants.RGBA;
+                        }
+                        if (item.sampler) {
+                            tex = createTexture({
+                                context: frameState.context,
+                                source: image,
+                                target: WebGLConstants.TEXTURE_2D,
+                                width: item.width,
+                                height: item.height,
+                                pixelFormat: format,
+                                flipY: item.flipY,
+                                sampler: new Cesium.Sampler(item.sampler)
+                            }, frameState.context);
+                        } else {
+                            tex = new Texture({
+                                context: frameState.context,
+                                source: image,
+                                target: WebGLConstants.TEXTURE_2D,
+                                width: item.width,
+                                height: item.height,
+                                pixelFormat: format,
+                                flipY: Cesium.defined(item.flipY) ? item.flipY : true
+                            });
+                        }
+                    }
+                    return tex;
+                }
+
+                function getTextureCallback(item) {
+
+                    var callback = function () {
+
+                        if (!that._textureCache[item.value] || item.needsUpdate) {
+
+                            if (item.value instanceof HTMLImageElement
+                                || item.value instanceof HTMLCanvasElement
+                                || item.value instanceof HTMLVideoElement
+                            ) {
+                                var image = item.value;
+                                that._textureCache[item.value] = onTextureImageLoaded(image, item);
+                                item.needsUpdate = false;
+                                return that._textureCache[item.value];
+
+                            } else {
+                                if (typeof item.value === "string" && !callback.isLoading) {
+                                    callback.isLoading = true;
+                                    item.needsUpdate = false;
+                                    var url = item.value.toLocaleLowerCase();
+
+                                    var extension = Path.GetExtension(url).slice(1);
+                                    if (extension == 'tif') {//处理tif纹理
+
+                                        Cesium.loadArrayBuffer(url).then(function (imageArrayBuffer) {
+                                            var tiffParser = new TIFFParser();
+                                            var tiffCanvas = tiffParser.parseTIFF(imageArrayBuffer);
+                                            if (that._textureCache[item.value]) {
+                                                that._textureCache[item.value].destroy && that._textureCache[item.value].destroy();
+                                            }
+                                            that._textureCache[item.value] = onTextureImageLoaded(tiffCanvas, item);
+                                            callback.isLoading = false;
+
+                                        }).otherwise(function (err) {
+                                            console.log(err);
+                                        })
+
+                                    } else {
+                                        Cesium.loadImage(item.value).then(function (image) {
+                                            if (that._textureCache[item.value]) {
+                                                that._textureCache[item.value].destroy && that._textureCache[item.value].destroy();
+                                            }
+                                            that._textureCache[item.value] = onTextureImageLoaded(image, item);
+                                            callback.isLoading = false;
+                                        }).otherwise(function (err) {
+                                            console.log(err);
+                                        })
+                                    }
+                                }
+
+                                if (!that.defaultTextureImage) {
+                                    that.defaultTextureImage = document.createElement("canvas");
+                                    that.defaultTextureImage.width = 1;
+                                    that.defaultTextureImage.height = 1;
+                                }
+                                if (!that.defaultTexture) {
+                                    that.defaultTexture = new Texture({
+                                        context: frameState.context,
+                                        source: that.defaultTextureImage
+                                    });
+                                }
+
+                                return that.defaultTexture;
+                            }
+
+                        } else {
+                            return that._textureCache[item.value];
+                        }
+
+                    }
+
+                    return callback;
+                }
+
+                if (material.uniforms) {
+
+                    function setUniformCallbackFunc(name, item) {
+
+                        if (item !== undefined && item !== null) {//item may be 0
+                            var isImageUrl = typeof item.value === "string";
+                            var isCssColorString = typeof item.value === "string";
+                            if (typeof item.value === "string") {
+                                var itemLowerCase = item.value.toLocaleLowerCase();
+                                if (itemLowerCase.endsWith(".png")
+                                    || itemLowerCase.endsWith(".jpg")
+                                    || itemLowerCase.endsWith(".bmp")
+                                    || itemLowerCase.endsWith(".gif")
+                                    || itemLowerCase.endsWith(".tif")
+                                    || itemLowerCase.endsWith(".tiff")
+                                    || itemLowerCase.startsWith("data:")
+                                ) {
+                                    isImageUrl = true;
+                                    isCssColorString = false;
+                                } else {
+                                    try {
+                                        Cesium.Color.fromCssColorString(item.value);
+                                        isImageUrl = true;
+                                        isCssColorString = false;
+                                    } catch (e) {
+                                        isImageUrl = false;
+                                        isCssColorString = false;
+                                    }
+                                }
+                            }
+
+                            if (item.value instanceof Cesium.Cartesian2
+                                || item.value instanceof Cesium.Cartesian3
+                                || item.value instanceof Cesium.Cartesian4
+                                || item.value instanceof Cesium.Color
+                                || item.value instanceof Cesium.Matrix4
+                                || item.value instanceof Cesium.Matrix3
+                                || item.value instanceof Cesium.Matrix2
+                                || typeof item.value === "number"
+                                || isCssColorString
+                                || item.value instanceof Cesium.Texture
+                                || (item.value instanceof Array && (typeof item.value[0] === 'number'
+                                    || item.value[0] instanceof Cesium.Cartesian2
+                                    || item.value[0] instanceof Cesium.Cartesian3
+                                    || item.value[0] instanceof Cesium.Cartesian4))
+                            ) {
+                                if (!that._uniformValueCache) {
+                                    that._uniformValueCache = {};
+                                }
+                                that._uniformValueCache[item.uuid] = item;
+                                if (isCssColorString) {
+                                    item.value = Cesium.Color.fromCssColorString(item.value);
+                                }
+                                uniformMap[name] = function () {
+                                    return that._uniformValueCache[item.uuid].value;
+                                }
+                            } else if (item.value instanceof Array && item.value.length == 6) {
+                                uniformMap[name] = getCubeTextureCallback(name, item);
+                            } else if (isImageUrl
+                                || item.value instanceof HTMLImageElement
+                                || item.value instanceof HTMLCanvasElement
+                                || item.value instanceof HTMLVideoElement
+                            ) {
+                                uniformMap[name] = getTextureCallback(item, material);
+                            } else if (item.value instanceof FramebufferTexture) {
+                                if (!that._renderToTextureCommands) {
+                                    that._renderToTextureCommands = [];
+                                }
+                                if (!that._framebufferTextures[item.uuid]) {
+                                    that._framebufferTextures[item.uuid] = item;
+                                }
+                                uniformMap[name] = function () {
+                                    if (!that._framebufferTextures[item.uuid]
+                                        || !that._framebufferTextures[item.uuid].value.texture) {
+                                        return frameState.context.defaultTexture;
+                                    }
+                                    return that._framebufferTextures[item.uuid].value.texture;
+                                }
+                            }
+                        }
+                    }
+
+                    var uniforms = material.uniforms;
+                    for (var name in uniforms) {
+
+                        if (uniforms.hasOwnProperty(name) && Cesium.defined(uniforms[name].value) && uniforms[name].value != null) {
+                            if (Cesium.isArray(uniforms[name].value) && uniforms[name].value.length == 0) {
+                                continue;
+                            }
+                            var item = uniforms[name];
+                            if (item == undefined || item == null) {
+                                continue;
+                            }
+                            setUniformCallbackFunc(name, item);
+                        }
+                    }
+                }
+
+                return this._uniformMaps[material.uuid];
+            },
+            /**
+            *
+            *@param {Cesium.Geometry} geometry
+            *@param {Cesium.Material} material
+            *@return {String}
+            *@private  
+            */
+            getVertexShaderSource: function (geometry, material) {
+
+                function getAttributeDefineBlok(userDefine) {
+                    var glsl = "";
+                    var attrs = geometry.attributes;
+                    for (var name in attrs) {
+
+                        if (attrs.hasOwnProperty(name)) {
+                            var attr = attrs[name]
+                            if (attr) {
+
+                                var type = null;
+                                switch (attr.componentsPerAttribute) {
+                                    case 1:
+                                        type = "float";
+                                        break;
+                                    case 2:
+                                        type = "vec2";
+                                        break;
+                                    case 3:
+                                        type = "vec3";
+                                        break;
+                                    case 4:
+                                        type = "vec4";
+                                        break;
+                                    default:
+                                }
+
+                                if (type) {
+                                    if (userDefine.indexOf("attribute " + type + " " + name) >= 0) {
+                                        continue;
+                                    }
+                                    glsl += "attribute " + type + " " + name + ";\n";
+                                }
+
+                            }
+                        }
+                    }
+                    return glsl;
+                }
+
+                var uniforms = "\n\
+        uniform mat4 modelViewMatrix;\n\
+        uniform mat4 viewMatrix;\n\
+        uniform mat4 modelMatrix;\n\
+        uniform mat4 projectionMatrix;\n\
+        uniform mat3 normalMatrix;\n\
+        uniform mat4 u_modelViewMatrix;\n\
+        uniform mat4 u_viewMatrix;\n\
+        uniform mat4 u_modelMatrix;\n\
+        uniform mat4 u_projectionMatrix;\n\
+        uniform mat3 u_normalMatrix;\n\
+        uniform vec3 cameraPosition;\n\
+        uniform vec3 u_cameraPosition;\n";
+
+                var innerUniforms = [
+                    "uniform mat4 modelViewMatrix",
+                    "uniform mat4 modelMatrix",
+                    "uniform mat4 projectionMatrix",
+                    "uniform mat3 normalMatrix",
+                    "uniform mat4 u_modelViewMatrix",
+                    "uniform mat4 u_modelMatrix",
+                    "uniform mat4 u_projectionMatrix",
+                    "uniform mat3 u_normalMatrix",
+                    "uniform mat4 u_viewMatrix",
+                    "uniform mat4 viewMatrix",
+                    "uniform vec3 cameraPosition",
+                    "uniform vec3 u_cameraPosition"
+                ];
+                if (material.vertexShader) {
+                    uniforms = "";
+                    innerUniforms.forEach(function (item) {
+                        if (material.vertexShader.indexOf(item) < 0) {
+                            uniforms += item + ";\n";
+                        }
+                    });
+                    var vs = getAttributeDefineBlok(material.vertexShader) + uniforms +
+                        material.vertexShader;
+
+                    vs = ShaderChunk.parseIncludes(vs);
+
+                    return vs;
+                }
+                else {
+                    throw new Error("material.vertexShader 是必须参数");
+                }
+            },
+            /**
+             * 
+             *@param {Cesium.Material} material
+             *@return {String} 
+             *@private
+             */
+            getFragmentShaderSource: function (material) {
+
+                if (material.fragmentShader) {
+                    var fs = ShaderChunk.parseIncludes(material.fragmentShader);
+                    return fs;
+                } else {
+                    throw new Error("material.fragmentShader 是必须参数");
+                }
+            }
+        }
+
+        MeshVisualizer.prototype._computeModelMatrix = function (mesh, frameState) {
+            if (mesh._actualMesh) {
+                mesh = mesh._actualMesh;
+            }
+            var that = this;
+            if (mesh instanceof LOD || mesh instanceof ReferenceMesh || typeof mesh.update === 'function') {
+                if (mesh.parent) {
+                    if (mesh.parent == that) {
+                        mesh.update(that._actualModelMatrix, frameState);
+
+                    } else if (mesh.parent.modelMatrix) {
+                        mesh.update(mesh.parent.modelMatrix, frameState);
+                    } else {
+                        mesh.update(that._actualModelMatrix, frameState);
+                    }
+                } else {
+                    mesh.update(that._actualModelMatrix, frameState);
+                }
+            } else {
+                var position = mesh.position;
+                if (mesh.parent instanceof LOD) {
+                    Matrix4.clone(mesh.parent.modelMatrix, mesh.modelMatrix);
+
+                } else if (mesh._modelMatrixNeedsUpdate) {
+                    var rotation = mesh.quaternion ? mesh.quaternion : mesh.rotation;
+
+                    if (mesh.parent && mesh.parent.modelMatrix) {
+
+                        var actualModelMatrix = mesh.parent.modelMatrix ? mesh.parent.modelMatrix : mesh._drawCommand.modelMatrix;
+                        RendererUtils.computeModelMatrix(
+                            actualModelMatrix,
+                            mesh.position,
+                            rotation,
+                            mesh.scale,
+                            mesh.modelMatrix
+                        );
+
+                    } else {
+                        RendererUtils.computeModelMatrix(
+                            that._actualModelMatrix,
+                            mesh.position,
+                            rotation,
+                            mesh.scale,
+                            mesh.modelMatrix
+                        );
+                    }
+
+                    mesh._modelMatrixNeedsUpdate = false;
+                }
+            }
+        }
+        /**
+        *
+        *@param {Cesium.FrameState}frameState
+        */
+        MeshVisualizer.prototype.update = function (frameState) {
+            if (!this._scene) {
+                this._scene = frameState.camera._scene;
+            }
+            if (!this._ready || !this.show && this._chidren.length > 0) {//如果未准备好则不加入渲染队列
+                return;
+            }
+            this.beforeUpdate.raiseEvent(frameState);
+
+            var that = this;
+            var wireframeChanged = false;
+            var sysWireframe = frameState.camera._scene._globe._surface.tileProvider._debug.wireframe;
+            if (this.debug) {
+                sysWireframe = true;
+            }
+
+            if (sysWireframe != this._isWireframe) {
+                wireframeChanged = true;
+            }
+            if (this._modelMatrixNeedsUpdate) {
+                this._actualModelMatrix = RendererUtils.computeModelMatrix(
+                    this._modelMatrix,
+                    this._position,
+                    this._rotation,
+                    this._scale,
+                    this._actualModelMatrix
+                );
+                if (this._up && this._up.y) {
+                    this._actualModelMatrix = RendererUtils.yUp2Zup(this._actualModelMatrix, this._actualModelMatrix);
+                }
+                Cesium.Cartesian3.clone(this._scale, this._oldScale);
+                Cesium.Cartesian3.clone(this._position, this._oldPosition);
+                this._modelMatrixNeedsUpdate = false;
+            }
+
+            MeshVisualizer.traverse(this, function (mesh) {
+
+                if (MeshUtils.isMesh3js(mesh)) {
+                    var needsUpdate = !mesh._actualMesh
+                        || mesh.needsUpdate
+                        || mesh.geometry.needsUpdate;
+
+                    if (needsUpdate) {
+                        mesh._actualMesh = MeshUtils.fromMesh3js(mesh);
+                        mesh.modelMatrixNeedsUpdate = true;
+                    }
+                    if (!needsUpdate) {
+                        for (var pn in mesh.geometry.attributes) {
+                            if (mesh.geometry.attributes.hasOwnProperty(pn)) {
+                                mesh._actualMesh.geometry.attributes[pn].needsUpdate = mesh.geometry.attributes[pn].needsUpdate;
+                            }
+                        }
+                        var index = mesh.geometry.index;
+                        if (index && index.needsUpdate) {
+                            mesh._actualMesh.geometry.needsUpdate = true;
+                        }
+                    }
+
+                    mesh._actualMesh.quaternion = Cesium.Quaternion.clone(mesh.quaternion);
+                    mesh._actualMesh.position = mesh.position;
+                    mesh._actualMesh.scale = mesh.scale;
+                    mesh._actualMesh.modelMatrixNeedsUpdate = mesh.modelMatrixNeedsUpdate;
+                    mesh = mesh._actualMesh;
+                    MaterialUtils.updateMaterialFrom3js(mesh.material);
+                }
+
+
+                that._computeModelMatrix(mesh, frameState);
+
+                if (typeof mesh.update !== 'function') {
+                    if (frameState.passes.pick && !mesh.material.allowPick) {
+                        return;
+                    }
+
+                    if (!mesh._drawCommand
+                        || mesh.needsUpdate
+                        || mesh.geometry.needsUpdate
+                        || wireframeChanged
+                    ) {//重新构建绘图命令，比如geometry完全不同于之前一帧 或者顶点和索引数量都发生改变等时，执行这段
+
+                        if (sysWireframe || mesh.material.wireframe) {
+                            that.toWireframe(mesh.geometry);
+                        } else {
+                            that.restoreFromWireframe(mesh.geometry);
+                        }
+
+                        mesh._drawCommand = that.createDrawCommand(mesh, frameState);
+
+                        mesh.needsUpdate = false;
+                        mesh.geometry.needsUpdate = false;
+                    } else {//在不需要重新构建绘图命令时，检查各个属性和索引是否需要更新，需要则将更新相应的缓冲区
+
+                        //更新属性缓冲区
+                        for (var name in mesh.geometry.attributes) {
+                            if (mesh.geometry.attributes.hasOwnProperty(name)) {
+                                if (mesh.geometry.attributes[name] && mesh.geometry.attributes[name].needsUpdate) {
+                                    var attrLocation = mesh._drawCommand.vertexArray._attributeLocations[name]
+                                    var vb = mesh._drawCommand.vertexArray._attributes[attrLocation].vertexBuffer;
+                                    vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
+                                }
+                            }
+                        }
+                        //更新索引缓冲区
+                        if (mesh.geometry.indexNeedsUpdate) {
+                            var vb = mesh._drawCommand.vertexArray.indexBuffer;
+                            vb.copyFromArrayView(mesh.geometry.indices, 0);
+                        }
+                    }
+                    mesh._drawCommand.modelMatrix = mesh.modelMatrix;
+                    if (!mesh._drawCommand.boundingVolume) {
+                        if (!mesh.geometry.boundingSphere) {
+                            mesh.geometry.boundingSphere = Cesium.BoundingSphere.fromVertices(mesh.geometry.attributes.position.values);
+                        }
+                        mesh._drawCommand.boundingVolume = Cesium.BoundingSphere.clone(mesh.geometry.boundingSphere);
+                    }
+                    Cesium.Matrix4.getTranslation(mesh.modelMatrix, mesh._drawCommand.boundingVolume.center);
+
+                    mesh._drawCommand.uniformMap = that.getUniformMap(mesh.material, frameState);
+                    if (frameState.passes.pick) {
+
+                        mesh._drawCommand.shaderProgram = mesh._drawCommand._pickSp;
+                        frameState.commandList.push(mesh._drawCommand);
+
+
+                    } else {
+                        mesh._drawCommand.renderState.depthTest.enabled = mesh.material.depthTest;
+                        mesh._drawCommand.shaderProgram = mesh._drawCommand._sp;
+                        frameState.commandList.push(mesh._drawCommand);
+                    }
+
+
+                } else {
+                    mesh.needsUpdate = false;
+                }
+
+            }, true);
+
+            //执行帧缓冲绘图命令
+            for (var i in that._framebufferTextures) {
+                if (that._framebufferTextures.hasOwnProperty(i)) {
+                    var item = that._framebufferTextures[i].value;
+                    that.updateFrameBufferTexture(frameState, item);
+                }
+            }
+
+            this._isWireframe = sysWireframe;
+            wireframeChanged = false;
+            this._modelMatrixNeedsUpdate = false;
+            this._geometryChanged = false;
+
+        }
+
+        /**
+        *单独渲染frameBufferTexture中的mesh，最终更新frameBufferTexture中的texture
+        *@param {Cesium.FrameState}frameState
+        *@param {Cesium.FramebufferTexture}frameBufferTexture
+        */
+        MeshVisualizer.prototype.updateFrameBufferTexture = function (frameState, frameBufferTexture) {
+            var that = this;
+
+            var item = frameBufferTexture;
+            if (item instanceof FramebufferTexture) {
+
+                item.drawCommands = [];
+                MeshVisualizer.traverse(item.mesh, function (mesh) {
+                    if (MeshUtils.isMesh3js(mesh)) {
+                        var needsUpdate = !mesh._actualMesh
+                            || mesh.needsUpdate
+                            || mesh.geometry.needsUpdate;
+
+                        if (needsUpdate) {
+                            mesh._actualMesh = MeshUtils.fromMesh3js(mesh);
+                        }
+                        if (!needsUpdate) {
+                            for (var pn in mesh.geometry.attributes) {
+                                if (mesh.geometry.attributes.hasOwnProperty(pn)) {
+                                    mesh._actualMesh.geometry[pn].needsUpdate = mesh.geometry.attributes[pn].needsUpdate;
+                                }
+                            }
+                            var index = mesh.geometry.getIndex();
+                            if (index && index.needsUpdate) {
+                                mesh._actualMesh.geometry.needsUpdate = true;
+                            }
+                        }
+
+                        mesh._actualMesh.quaternion = Cesium.Quaternion.clone(mesh.quaternion);
+                        mesh._actualMesh.position = mesh.position;
+                        mesh._actualMesh.scale = mesh.scale;
+                        mesh._actualMesh.modelMatrixNeedsUpdate = mesh.modelMatrixNeedsUpdate;
+                        mesh = mesh._actualMesh;
+                        MaterialUtils.updateMaterialFrom3js(mesh.material);
+                    }
+                    that._computeModelMatrix(mesh, frameState);
+
+                    if (!mesh._textureCommand
+                        || mesh.needsUpdate
+                        || mesh.geometry.needsUpdate
+                    ) {
+                        if (mesh.material.wireframe) {
+                            that.toWireframe(mesh.geometry);
+                        } else {
+                            that.restoreFromWireframe(mesh.geometry);
+                        }
+
+                        mesh._textureCommand = that.createDrawCommand(mesh, frameState);
+                        //mesh._textureCommand.boundingVolume = mesh.geometry.boundingSphere;
+                        mesh.needsUpdate = false;
+                        mesh.material.needsUpdate = false;
+
+                    } else {//在不需要重新构建绘图命令时，检查各个属性和索引是否需要更新，需要则将更新相应的缓冲区
+
+                        //更新属性缓冲区
+                        for (var name in mesh.geometry.attributes) {
+                            if (mesh.geometry.attributes.hasOwnProperty(name)
+                                && mesh.geometry.attributes[name]) {
+
+                                if (mesh.geometry.attributes[name] && mesh.geometry.attributes[name].needsUpdate) {
+                                    var attrLocation = mesh._textureCommand.vertexArray._attributeLocations[name]
+                                    var vb = mesh._textureCommand.vertexArray._attributes[attrLocation].vertexBuffer;
+                                    vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
+                                }
+                            }
+                        }
+                        //更新索引缓冲区
+                        if (mesh.geometry.indexNeedsUpdate) {
+                            var vb = mesh._textureCommand.vertexArray.indexBuffer;
+                            vb.copyFromArrayView(mesh.geometry.indices, 0);
+                        }
+                    }
+
+                    mesh._textureCommand.modelMatrix = mesh.modelMatrix;
+
+                    var context = frameState.context;
+                    var drawingBufferWidth = context.drawingBufferWidth;
+                    var drawingBufferHeight = context.drawingBufferHeight;
+                    if (!item.texture
+                        || item.texture.width != drawingBufferWidth
+                        || item.texture.height != drawingBufferHeight
+                    ) {
+                        item.texture = new Texture({
+                            context: context,
+                            width: drawingBufferWidth,
+                            height: drawingBufferHeight,
+                            pixelFormat: PixelFormat.RGBA
+                        });
+                    }
+                    mesh._textureCommand.renderState.depthTest.enabled = mesh.depthTest;
+                    item.drawCommands.push(mesh._textureCommand);
+
+                }, true);
+
+                RendererUtils.renderToTexture(item.drawCommands, frameState, item.texture);
+            }
+
+        }
+        /**
+        *
+        *@param {Cesium.Mesh}mesh
+        */
+        MeshVisualizer.prototype.add = function (mesh) {
+            this._chidren.push(mesh);
+        }
+
+        /**
+        *
+        */
+        MeshVisualizer.prototype.destroy = function () {
+            this._ready = false;
+            MeshVisualizer.traverse(this, function (mesh) {
+                if (mesh._drawCommand) {
+                    delete mesh._drawCommand;
+                }
+            }, false);
+            for (var i in this._uniformValueCache) {
+                if (this._uniformValueCache.hasOwnProperty(i)) {
+                    delete this._uniformValueCache[i];
+                }
+            }
+            for (var i in this._textureCache) {
+                if (this._textureCache.hasOwnProperty(i)) {
+                    delete this._textureCache[i];
+                }
+            }
+            for (var i in this._uniformMaps) {
+                if (this._uniformMaps.hasOwnProperty(i)) {
+                    delete this._uniformMaps[i];
+                }
+            }
+            for (var i in this._framebufferTextures) {
+                if (this._framebufferTextures.hasOwnProperty(i)) {
+                    delete this._framebufferTextures[i];
+                }
+            }
+            this._uniformValueCache = {};
+            this._textureCache = {};
+            this._uniformMaps = {};
+            this._framebufferTextures = {};
+            if (this._pickIds) {
+                for (i = 0; i < this._pickIds.length; ++i) {
+                    this._pickIds[i].destroy && this._pickIds[i].destroy();
+                }
+            }
+        }
+
+        /**
+        *
+        *遍历节点
+        *@param {Cesium.MeshVisualizer|Cesium.Mesh}root
+        *@param {Cesium.MeshVisualizer~TraverseCallback}traverseFunc 访问每个节点时回调该函数，进行相关操作。回调函数包含一个参数，traverseArgs，其中封装了一个属性cancelCurrent，可以通过改变此属性达到终止遍历当前节点的子节点
+        *@param {Boolean}visibleOnly visibleOnly为true时仅遍历可见的节点，如果父级节点不可见则不再访问其子节点
+        */
+        MeshVisualizer.traverse = function (node, traverseFunc, visibleOnly, scratchTraverseArgs) {
+            if (!node) {
+                return;
+            }
+            if (!scratchTraverseArgs) {
+                scratchTraverseArgs = {
+                    cancelCurrent: false,
+                    cancelAll: false
+                };
+            }
+            scratchTraverseArgs.cancelCurrent = false;
+            if (visibleOnly && (!node.show && !node.visible)) {
+                return;
+            }
+            if ((node.geometry && node.material) || node instanceof LOD || node instanceof ReferenceMesh) {
+                traverseFunc(node, scratchTraverseArgs);
+            }
+
+            if (node.children) {
+                for (var i = 0; i < node.children.length; i++) {
+                    if (scratchTraverseArgs.cancelCurrent) {
+                        continue;
+                    }
+                    if (scratchTraverseArgs.cancelAll) {
+                        break;
+                    }
+                    MeshVisualizer.traverse(node.children[i], traverseFunc, visibleOnly, scratchTraverseArgs);
+                }
+            }
+        },
+
+            /**
+            *
+            *@Cesium.MeshVisualizer~TraverseCallback
+            *@param {Cesium.Mesh|Cesium.LOD|Cesium.MeshVisualizer|Object}node
+            *@param {Object}traverseArgs
+            *@param {Boolean}traverseArgs.cancelCurrent 为true时终止遍历当前节点的子节点
+            *@param {Boolean}traverseArgs.cancelAll 为true时终止遍历，退出遍历循环
+            */
+
+
+            Cesium.defineProperties(MeshVisualizer.prototype, {
+                scene: {
+                    set: function (val) {
+                        this._scene = val;
+                    },
+                    get: function () {
+                        return this._scene;
+                    }
+                },
+                frameState: {
+                    get: function () {
+                        if (!this._scene) {
+                            return undefined;
+                        }
+                        return this._scene.frameState;
+                    }
+                },
+                modelMatrixNeedsUpdate: {
+                    get: function () {
+                        return this._modelMatrixNeedsUpdate;
+                    },
+                    set: function (val) {
+                        this._modelMatrixNeedsUpdate = val;
+                        if (val) {
+                            MeshVisualizer.traverse(this, function (child) {
+                                child._modelMatrixNeedsUpdate = val;
+                            }, false);
+                        }
+                    }
+                },
+                showReference: {
+                    get: function () {
+                        return this.referenceMesh.show;
+                    },
+                    set: function (val) {
+                        this.referenceMesh.show = val;
+                    }
+                },
+                children: {
+                    get: function () {
+                        return this._chidren;
+                    },
+                    set: function (val) {
+                        this._chidren = val;
+                    }
+                },
+                show: {
+                    get: function () {
+                        return this._show;
+                    },
+                    set: function (val) {
+                        this._show = val;
+                    }
+                },
+                debug: {
+                    get: function () {
+                        return this._debug;
+                    },
+                    set: function (val) {
+                        this._debug = val;
+                    }
+                },
+                ready: {
+                    get: function () {
+                        return this._ready;
+                    }
+                },
+                modelMatrix: {
+                    get: function () {
+                        return this._modelMatrix;
+                    },
+                    set: function (val) {
+                        this._modelMatrix = val;
+                        this._modelMatrixNeedsUpdate = true;
+                    }
+                },
+                rotation: {
+                    get: function () {
+                        return this._rotation;
+                    },
+                    set: function (val) {
+                        if (val != this._rotation) {
+                            this._rotation = val;
+                            this._needUpdate = true;
+                        }
+                        this._rotation.paramChanged.removeEventListener(this._onNeedUpdateChanged);
+                        this._rotation = val;
+                        this._rotation.paramChanged.addEventListener(this._onNeedUpdateChanged);
+                    }
+                },
+                position: {
+                    get: function () {
+                        return this._position;
+                    },
+                    set: function (val) {
+                        if (val.x != this._position.x || val.y != this._position.y || val.z != this._position.z) {
+                            this._position = val;
+                            this._modelMatrixNeedsUpdate = true;
+                        }
+                        this._position = val;
+                    }
+                },
+                scale: {
+                    get: function () {
+                        return this._scale;
+                    },
+                    set: function (val) {
+                        if (val.x != this._scale.x || val.y != this._scale.y || val.z != this._scale.z) {
+                            this._scale = val;
+                            this._modelMatrixNeedsUpdate = true;
+                        }
+                        this._scale = val;
+                    }
+                }
+            });
+        return MeshVisualizer;
+    });
 define('Core/BasicMeshMaterial',[
     'Core/MeshMaterial',
     'Core/Shaders/ShaderChunk',
