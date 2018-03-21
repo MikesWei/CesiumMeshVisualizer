@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     
     var requirejs, require, define;
     (function (undef) {
@@ -2552,7 +2552,8 @@ define('Core/GeometryUtils',[
     }
 
     return GeometryUtils;
-});
+})
+;
 define('Core/Shaders/phong_frag',[],function () {
     var phong_frag = '\n\
 varying vec3 v_position;\n\
@@ -2568,7 +2569,7 @@ void main() {\n\
     vec3 normalEC =normalize(v_normal);\n\
     vec4 color=defaultColor;\n\
     if(picked!=0.0){\n\
-        gl_FragColor = pickedColor;\n\
+        color = pickedColor;\n\
     }\n\
     czm_material material;\n\
     material.specular = specular;\n\
@@ -2581,7 +2582,8 @@ void main() {\n\
 }';
 
     return phong_frag;
-});
+})
+;
 define('Core/Shaders/phong_vert',[],function () {
     var phong_vert = "\n\
 #ifdef GL_ES\n\
@@ -2639,7 +2641,8 @@ define('Core/MeshPhongMaterial',[
     }
     MeshPhongMaterial.prototype = new MeshMaterial();
     return MeshPhongMaterial;
-});
+})
+;
 define('Core/Mesh',[
     'Core/Rotation',
     'Util/CSG',
@@ -2899,7 +2902,8 @@ define('Core/Mesh',[
         this._children.push(mesh);
     }
     return Mesh;
-});
+})
+;
 define('Core/Shaders/none_frag',[],function () {
 
     var none_frag = "\n\
@@ -2933,7 +2937,8 @@ void main(void) \n\
 }";
     return none_frag;
 
-});
+})
+;
 define('Core/Shaders/none_vert',[],function () {
     var none_vert = "\n\
 #ifdef GL_ES\n\
@@ -3109,8 +3114,6 @@ varying vec3 v_light0Direction;\n\
 \n\
 void main(void) \n\
 {\n\
-    vec3 positionToEyeEC = -v_position; \n\
-    vec3 normalEC =normalize(v_normal);\n\
     vec3 normal = normalize(v_normal);\n\
     vec4 color = vec4(0.0, 0.0, 0.0, 0.0);\n\
     vec3 diffuseLight = vec3(0.0, 0.0, 0.0);\n\
@@ -3136,18 +3139,10 @@ void main(void) \n\
     color.xyz += diffuse.xyz;\n\
     color.xyz += specular.xyz;\n\
     color = vec4(diffuse.rgb * diffuse.a, diffuse.a);\n\
-    //gl_FragColor = color;\n\
+    gl_FragColor = color;\n\
     if(picked!=0.0){\n\
-        color = pickedColor*color;\n\
+        gl_FragColor = pickedColor*color;\n\
     }\n\
-    czm_material material;\n\
-    material.specular = 0.0;\n\
-    material.shininess = 1.0;\n\
-    material.normal =  normalEC;\n\
-    material.emission =vec3(0.2,0.2,0.2);\n\
-    material.diffuse = color.rgb ;\n\
-    material.alpha =  color.a;\n\
-    gl_FragColor =  czm_phong(normalize(positionToEyeEC), material);\n\
 }";
 
     return texture_normals_frag;
@@ -5278,7 +5273,8 @@ if (typeof module === "undefined") {
 }
 if (typeof define === "function") {
     define('Util/Path',[],function () { return Path; });
-};
+}
+;
 define('Core/MeshVisualizer',[
     'Core/Mesh',
     'Core/RendererUtils',
@@ -6866,7 +6862,8 @@ define('Core/MeshVisualizer',[
         }
     });
     return MeshVisualizer;
-});
+})
+;
 define('Core/Shaders/ShaderLib',[
     'Core/Shaders/ShaderChunk'
 ], function (
@@ -7353,12 +7350,6 @@ define('Core/BasicMeshMaterial',[
     Path
     ) {
     var WebGLConstants = Cesium.WebGLConstants;
-    /**
-    * 
-    *@consotructor
-    *@memberof Cesium
-    *@extends Cesium.MeshMaterial
-    */
     function BasicMeshMaterial(options) {
         options = options ? options : {};
 
@@ -7410,7 +7401,7 @@ define('Core/BasicMeshMaterial',[
                 this.translucent = true;
             }
             withTexture = true;
-            if (!Cesium.defined(this.uniforms.diffuseColorMap.flipY)) {
+            if (!Cesium.defined(this.uniforms.diffuseColorMap.flipY)) { 
                 this.uniforms.diffuseColorMap.flipY = false;
             }
 
@@ -7427,9 +7418,7 @@ define('Core/BasicMeshMaterial',[
         } else {
             withTexture = false;
         }
-        if (Cesium.defined(options.translucent)) {
-            this.translucent = options.translucent;
-        }
+
         var vertexShaderUri = null;// "texture_normals.vert"; 
         var fragmentShaderUri = null;  //"texture_normals.frag";
         if (withTexture && withNormals) {
@@ -7651,8 +7640,7 @@ define('Main',[
     'Core/BasicGeometry',
     'Core/Shaders/ShaderLib',
     'Core/PlaneBufferGeometry',
-    'Util/CSG',
-    'Core/MeshPhongMaterial' 
+    'Util/CSG'
 ], function (
     RendererUtils,
     Mesh,
@@ -7669,8 +7657,7 @@ define('Main',[
     BasicGeometry,
     ShaderLib,
     PlaneBufferGeometry,
-    CSG,
-    MeshPhongMaterial 
+    CSG
   ) {
     if (typeof Cesium==='undefined') {
         Cesium = {};
@@ -7691,7 +7678,6 @@ define('Main',[
     Cesium.BasicGeometry = BasicGeometry;
     Cesium.PlaneBufferGeometry = PlaneBufferGeometry;
     Cesium.CSG = CSG;
-    Cesium.MeshPhongMaterial = MeshPhongMaterial; 
     return Cesium;
 });
     require([
