@@ -13,7 +13,7 @@ void main() {\n\
     vec3 normalEC =normalize(v_normal);\n\
     vec4 color=defaultColor;\n\
     if(picked!=0.0){\n\
-        gl_FragColor = pickedColor;\n\
+        color = pickedColor;\n\
     }\n\
     czm_material material;\n\
     material.specular = specular;\n\
