@@ -1663,7 +1663,7 @@ define('Util/defineProperty',[],function () {
             },
             set: function (val) {
                 var changed = val != this["_" + name];
-                if (this["_" + name].equals) {
+                if (this["_" + name] && this["_" + name].equals && val) {
                     changed = this["_" + name].equals(val);
                 }
                 this["_" + name] = val;
@@ -9100,7 +9100,10 @@ define('Main',[
     'Core/BasicGeometry',
     'Core/Shaders/ShaderLib',
     'Core/PlaneBufferGeometry',
-    'Util/CSG'
+    'Util/CSG',
+    'Core/MeshPhongMaterial',
+    'Core/MaterialUtils',
+    'Core/ShaderUtils' 
 ], function (
     RendererUtils,
     Mesh,
@@ -9117,7 +9120,10 @@ define('Main',[
     BasicGeometry,
     ShaderLib,
     PlaneBufferGeometry,
-    CSG
+    CSG,
+    MeshPhongMaterial,
+    MaterialUtils,
+    ShaderUtils 
   ) {
     if (typeof Cesium==='undefined') {
         Cesium = {};
@@ -9138,6 +9144,9 @@ define('Main',[
     Cesium.BasicGeometry = BasicGeometry;
     Cesium.PlaneBufferGeometry = PlaneBufferGeometry;
     Cesium.CSG = CSG;
+    Cesium.MeshPhongMaterial = MeshPhongMaterial;
+    Cesium.MaterialUtils = MaterialUtils;
+    Cesium.ShaderUtils = ShaderUtils; 
     return Cesium;
 });
     require([

@@ -1,4 +1,5 @@
-#CesiumMeshVisualizer 
+#CesiumMeshVisualizer
+
 <a href="https://mikeswei.github.io/CesiumMeshVisualizer/Document/index.html" target="_blank">Document</a>
     <hr />
     demos（示例中常用操作有：左击发射，Q、A——左、右摆动，W、S、A、D——前进、后退、左转弯、右转弯）:<br /><br />
@@ -192,9 +193,9 @@ Primitive再创建一个。。。也许我没找到接口，但是真心难找�
 但是也太灵活，代码量大，还容易出错，所以决定自己模仿Threejs的Mesh、Geometry、Material并实现一个负责渲染和管理它们的更支持动态管理可渲染对象的
 Primitive；之前的思路是直接转换Threejs的Mesh，产物就是[Cesium3js](https://github.com/MikesWei/cesium3js)，但是名字太大，误以为是要完全整合Cesium和Threejs，这与我本意不符,遂重新整理优化：
 <br/>
-* 1、不直接支持threejs的mesh，但是支持Threejs的Geometry和BufferGeometry来构建几何体。内置了Threejs Geometry、BufferGeometry到Cesium.Geometry的转换接口，同时提供Cesium.Geometry到Threejs BufferGeometry的转换接口。这些接口由[GeometryUtils](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.GeometryUtils.html)类提供。
-* 2、定义Mesh，支持Cesium.Geometry、THREE.Geometry、THREE.BufferGeometry以及[CSG](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.CSG.html)运算结果模型。
-* 3、更方便的动态渲染和管理。同一个mesh，可以单独修改mesh的位置(position)、缩放(scale)、旋转角度(rotation/Quaternion)等属性；也可以单独修改
+*  1、不直接支持threejs的mesh，但是支持Threejs的Geometry和BufferGeometry来构建几何体。内置了Threejs Geometry、BufferGeometry到Cesium.Geometry的转换接口，同时提供Cesium.Geometry到Threejs BufferGeometry的转换接口。这些接口由[GeometryUtils](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.GeometryUtils.html)类提供。
+*  2、定义Mesh，支持Cesium.Geometry、THREE.Geometry、THREE.BufferGeometry以及[CSG](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.CSG.html)运算结果模型。
+*  3、更方便的动态渲染和管理。同一个mesh，可以单独修改mesh的位置(position)、缩放(scale)、旋转角度(rotation/Quaternion)等属性；也可以单独修改
 geometry和material；同一个geometry可以单独修改各个属性和索引。方便管理，且减少对象的局部变化带来的整个drawCommand重新构建次数，以期在更多动态渲染
 对象同时改变的情况下（比如结合物理引擎做模拟），仍然保持较高的帧率，当然也牺牲了一定的内存。
 * 4、定义[MeshMaterial](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.MeshMaterial.html)，目的是更方便的引用Threejs圈的那些炫酷特效Shader，减少整合所需的代码量。尤其是Cesium的Appearance从fragmentShader中分离出Material部分的Shader，并且作用域不一样之后，带来好多不便，引入网上那些炫酷特效Shader的时候真是头疼死了，谁做过谁才解其中味~   [MeshMaterial](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.MeshMaterial.html)区别于Cesium的Material，更像Threejs的Material,但不完全是。。。好像有点四不像~  

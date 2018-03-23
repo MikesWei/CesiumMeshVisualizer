@@ -14,7 +14,10 @@
     'Core/BasicGeometry',
     'Core/Shaders/ShaderLib',
     'Core/PlaneBufferGeometry',
-    'Util/CSG'
+    'Util/CSG',
+    'Core/MeshPhongMaterial',
+    'Core/MaterialUtils',
+    'Core/ShaderUtils' 
 ], function (
     RendererUtils,
     Mesh,
@@ -31,7 +34,10 @@
     BasicGeometry,
     ShaderLib,
     PlaneBufferGeometry,
-    CSG
+    CSG,
+    MeshPhongMaterial,
+    MaterialUtils,
+    ShaderUtils 
   ) {
     if (typeof Cesium==='undefined') {
         Cesium = {};
@@ -52,5 +58,8 @@
     Cesium.BasicGeometry = BasicGeometry;
     Cesium.PlaneBufferGeometry = PlaneBufferGeometry;
     Cesium.CSG = CSG;
+    Cesium.MeshPhongMaterial = MeshPhongMaterial;
+    Cesium.MaterialUtils = MaterialUtils;
+    Cesium.ShaderUtils = ShaderUtils; 
     return Cesium;
 })
