@@ -132,7 +132,7 @@
         function createObject(mass, halfExtents, pos, quat, material) {
 
             //y，z调换位置
-            var object = new THREE.Mesh(new THREE.BoxGeometry(halfExtents.x * 2, halfExtents.z * 2, halfExtents.y * 2), material);
+            var object = new THREE.Mesh(new THREE.BoxGeometry(halfExtents.x * 2, halfExtents.y * 2, halfExtents.z * 2), material);
             object.position.copy(pos);
             object.quaternion.copy(quat);
             //object.position.y += 3;
@@ -189,11 +189,11 @@
             quat.set(0, 0, 0, 1);
             var mountainPoints = [];
             //y，z调换位置
-            mountainPoints.push(new THREE.Vector3(mountainHalfExtents.x, mountainHalfExtents.z, -mountainHalfExtents.y));
-            mountainPoints.push(new THREE.Vector3(-mountainHalfExtents.x, mountainHalfExtents.z, -mountainHalfExtents.y));
-            mountainPoints.push(new THREE.Vector3(mountainHalfExtents.x, -mountainHalfExtents.z, -mountainHalfExtents.y));
-            mountainPoints.push(new THREE.Vector3(-mountainHalfExtents.x, -mountainHalfExtents.z, -mountainHalfExtents.y));
-            mountainPoints.push(new THREE.Vector3(0, 0, mountainHalfExtents.y));
+            mountainPoints.push(new THREE.Vector3(mountainHalfExtents.x, -mountainHalfExtents.y, mountainHalfExtents.z));
+            mountainPoints.push(new THREE.Vector3(-mountainHalfExtents.x, -mountainHalfExtents.y, mountainHalfExtents.z));
+            mountainPoints.push(new THREE.Vector3(mountainHalfExtents.x, -mountainHalfExtents.y, -mountainHalfExtents.z));
+            mountainPoints.push(new THREE.Vector3(-mountainHalfExtents.x, -mountainHalfExtents.y, -mountainHalfExtents.z));
+            mountainPoints.push(new THREE.Vector3(0, mountainHalfExtents.y, 0));
             var mountain = new THREE.Mesh(new THREE.ConvexGeometry(mountainPoints), createMaterial("rgb(247,174,68)"));
             mountain.position.copy(pos);
             mountain.quaternion.copy(quat);
@@ -252,13 +252,12 @@
 
             for (var i = 0, il = points.length; i < il; i++) {
                 var p = points[i];
-                tempBtVec3_1.setValue(p.x, p.z, p.y);//y,z调换位置
+                tempBtVec3_1.setValue(p.x, p.y, p.z);//y,z调换位置
                 var lastOne = (i === (il - 1));
                 shape.addPoint(tempBtVec3_1, lastOne);
             }
 
             return shape;
-
         }
 
         function createRigidBody(object, physicsShape, mass, pos, quat, vel, angVel) {
@@ -487,8 +486,8 @@
                 //ballBody.setFriction(0.5);
 
                 Cesium.Cartesian3.normalize(rayDir, rayDir);
-                Cesium.Cartesian3.multiplyByScalar(rayDir, 34, rayDir);
-                console.log(rayDir);
+                Cesium.Cartesian3.multiplyByScalar(rayDir, 50, rayDir);
+                //console.log(rayDir);
                 ballBody.setLinearVelocity(new Ammo.btVector3(rayDir.x, rayDir.y, rayDir.z));
 
                 clickRequest = false;
@@ -520,10 +519,10 @@
             }
             if (!start) {
                 startTime = new Date();
-                meshVisualizer.beforeUpate.addEventListener(update);
+                meshVisualizer.beforeUpdate.addEventListener(update);
                 start = true;
             } else {
-                meshVisualizer.beforeUpate.removeEventListener(update);
+                meshVisualizer.beforeUpdate.removeEventListener(update);
                 start = false;
 
             }

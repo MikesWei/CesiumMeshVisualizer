@@ -400,10 +400,10 @@ Ammo().then(function () {
             init = true;
         }
         if (!start) {
-            meshVisualizer.beforeUpate.addEventListener(update);
+            meshVisualizer.beforeUpdate.addEventListener(update);
             start = true;
         } else {
-            meshVisualizer.beforeUpate.removeEventListener(update);
+            meshVisualizer.beforeUpdate.removeEventListener(update);
             start = false;
 
         }

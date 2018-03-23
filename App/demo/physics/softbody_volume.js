@@ -409,7 +409,7 @@
                     }
                 }
             } catch (e) {
-                meshVisualizer.beforeUpate.removeEventListener(update);
+                meshVisualizer.beforeUpdate.removeEventListener(update);
                 console.log("崩溃了兄弟，你这是神马操作");
             }
 
@@ -491,10 +491,10 @@
                 init = true;
             }
             if (!start) {
-                meshVisualizer.beforeUpate.addEventListener(update);
+                meshVisualizer.beforeUpdate.addEventListener(update);
                 start = true;
             } else {
-                meshVisualizer.beforeUpate.removeEventListener(update);
+                meshVisualizer.beforeUpdate.removeEventListener(update);
                 start = false;
 
             }
