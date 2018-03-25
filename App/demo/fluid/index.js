@@ -58,7 +58,12 @@ var shaders = {
 //    main();
 //});
 requestAnimationFrame(function () {
-    main();
+    try {
+        main();
+    } catch (e) {
+        alert(e.message);
+    }
+
 })
 function main() {
 
@@ -66,8 +71,8 @@ function main() {
     var dx = 1;
     var nu = 0.00000030;//viscosity
     var rho = 0.21;//density
-    var actualWidth = document.body.clientWidth;
-    var actualHeight = document.body.clientHeight;
+    var actualWidth = viewer.scene.canvas.clientWidth; //document.body.clientWidth;
+    var actualHeight = viewer.scene.canvas.clientHeight; // document.body.clientHeight;
     var obstaclePosition = [0, 0];
     var obstacleRad = 84;  //球的直径
     var movingObstacle = true;
@@ -86,7 +91,7 @@ function main() {
     height = Math.floor(actualHeight / scale);
 
     var gl = viewer.scene.frameState.context._gl;
-    //var ext = gl.getExtension("OES_texture_half_float") || gl.getExtension("EXT_color_buffer_half_float");
+    var ext = gl.getExtension("OES_texture_half_float") || gl.getExtension("EXT_color_buffer_half_float");
 
 
     function createEmptyTexture(frameState, width, height, id) {
@@ -96,12 +101,12 @@ function main() {
             source: {
                 width: width,
                 height: height,
-                arrayBufferView: new Float32Array(width * height * 4)
+                arrayBufferView: ext ? new Float32Array(width * height * 4) : new Uint8Array(width * height * 4)
             },
             target: Cesium.WebGLConstants.TEXTURE_2D,
             width: width,
             height: height,
-            pixelDatatype: Cesium.PixelDatatype.FLOAT,
+            pixelDatatype: ext ? Cesium.PixelDatatype.FLOAT : void (0),
             sampler: new Cesium.Sampler({
                 minificationFilter: Cesium.TextureMinificationFilter.NEAREST,
                 magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST
@@ -339,17 +344,17 @@ uniform sampler2D u_material; //值为0-1的一个灰度映射  存放在  r 通
             vec3 rgb = clamp( abs(mod((mat1*0.9+0.5)*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0 );//lsh\n\
             // vec3 rgb = mix(vec3(1.0,1.0,1.0),vec3(0.0,0.0,1.0),mat1*color);//lsh\n\
             //vec3 rgb = mat1*color;\n\
-            gl_FragColor = vec4(rgb, 1);\n\
+            gl_FragColor =  vec4(rgb, 1);\n\
         }"
         /*"varying vec2 v_st;\
-        uniform sampler2D u_textureMap;\
-        void main()\
-        {\n\
-        vec4 color=texture2D(u_textureMap,v_st);\n\
-        gl_FragColor = vec4(color.rgb,1.0);\n\
-        \
-        }\
-        "*/
+       uniform sampler2D u_textureMap;\
+       void main()\
+       {\n\
+       vec4 color=texture2D(u_textureMap,v_st);\n\
+       gl_FragColor = vec4(color.rgb,1.0);\n\
+       \
+       }\
+       " */
     });
     var customMesh = new Mesh(createGeometry(west, south, east, north, height), customMeshMtl);
     meshVisualizer.add(customMesh);
@@ -501,8 +506,8 @@ uniform sampler2D u_material; //值为0-1的一个灰度映射  存放在  r 通
 
     function resetWindow() {
 
-        actualWidth = document.body.clientWidth;
-        actualHeight = document.body.clientHeight;
+        actualWidth = viewer.scene.canvas.clientWidth; //document.body.clientWidth;
+        actualHeight = viewer.scene.canvas.clientHeight; // document.body.clientHeight;
 
         var maxDim = Math.max(actualHeight, actualWidth);
         var scale = maxDim / gridSize;
