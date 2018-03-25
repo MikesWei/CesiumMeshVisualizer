@@ -1,17 +1,17 @@
 ﻿/// <reference path="../common.js" />
 /// <reference path="../../../build/CesiumMeshVisualizer.js" />
 
-requirejs([
-       "../../../requirejs.config.js",
-       "../../../appconfig.js",
-       '../../../Source/Main',
-       '../common.js'
-], function (
-       config,
-       appconfig,
-       Cesium,
-       common
-       ) {
+//requirejs([
+//       "../../../requirejs.config.js",
+//       "../../../appconfig.js",
+//       '../../../Source/Main',
+//       '../common.js'
+//], function (
+//       config,
+//       appconfig,
+//       Cesium,
+//       common
+//       ) {
 
     MeshVisualizer = Cesium.MeshVisualizer;
     Mesh = Cesium.Mesh;
@@ -97,4 +97,4 @@ requirejs([
 
     var meshSecondPass = new Mesh(boxGeometry, materialSecondPass);
     meshVisualizer.add(meshSecondPass);
-});
+//});

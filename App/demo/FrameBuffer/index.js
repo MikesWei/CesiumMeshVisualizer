@@ -1,16 +1,16 @@
 ﻿/// <reference path="../common.js" />
 
-requirejs([
-       "../../../requirejs.config.js",
-       "../../../appconfig.js",
-       '../../../Source/Main',
-       '../common.js'
-], function (
-       config,
-       appconfig,
-       Cesium,
-       common
-       ) {
+//requirejs([
+//       "../../../requirejs.config.js",
+//       "../../../appconfig.js",
+//       '../../../Source/Main',
+//       '../common.js'
+//], function (
+//       config,
+//       appconfig,
+//       Cesium,
+//       common
+//       ) {
     MeshVisualizer = Cesium.MeshVisualizer;
     Mesh = Cesium.Mesh;
     MeshMaterial = Cesium.MeshMaterial;
@@ -129,4 +129,4 @@ requirejs([
     meshVisualizer.beforeUpdate.addEventListener(function (frameState) {
         meshVisualizer.updateFrameBufferTexture(frameState, framebufferTex);
     });
-});
+//});
