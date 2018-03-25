@@ -1,16 +1,16 @@
 ﻿/// <reference path="../common.js" /> 
 
-requirejs([
-    "../../../requirejs.config.js",
-    "../../../appconfig.js",
-    '../../../Source/Main',
-    '../common.js'
-], function (
-    config,
-    appconfig,
-    Cesium,
-    common
-) {
+//requirejs([
+//    "../../../requirejs.config.js",
+//    "../../../appconfig.js",
+//    '../../../Source/Main',
+//    '../common.js'
+//], function (
+//    config,
+//    appconfig,
+//    Cesium,
+//    common
+//) {
     MeshVisualizer = Cesium.MeshVisualizer;
     Mesh = Cesium.Mesh;
     MeshMaterial = Cesium.MeshMaterial;
@@ -684,4 +684,4 @@ uniform sampler2D u_material; //值为0-1的一个灰度映射  存放在  r 通
             }
         }, Cesium.ScreenSpaceEventType.LEFT_UP);
     }
-});
+//});
