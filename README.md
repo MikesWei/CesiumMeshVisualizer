@@ -49,6 +49,10 @@
      <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/screenshot.jpg" /> 
    </a><br />
  <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html">VolumeRendering</a><br />
+<a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/fluid/index.html">
+     <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/fluid/fluid2d.jpg" /> 
+   </a><br />
+ <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/fluid/index.html">fluid2d</a><br />
 
 Example<br/>
 

@@ -94,7 +94,7 @@
     */
     function FramebufferTexture(mesh,renderTarget) {
         this.mesh = mesh; 
-        this.texture = null;
+        this.texture = renderTarget;
     }
 
     return FramebufferTexture;

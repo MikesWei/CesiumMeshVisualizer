@@ -98,13 +98,14 @@
 
         }
   
-        return BasicGeometry.createGeometry({
+        var geom= BasicGeometry.createGeometry({
             positions: new Float32Array(vertices),
             normals: new Float32Array(normals),
             uvs: new Float32Array(uvs),
             indices: new Int32Array(indices)
         })
-
+        
+         return geom;
     }
 
     return PlaneBufferGeometry;

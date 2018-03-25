@@ -20,19 +20,28 @@
     function RendererUtils() { }
     /**
     *使用帧缓冲技术，执行渲染命令，渲染到纹理  
-    *@param {Cesium.DrawCommand|Array<Cesium.DrawCommand>}drawCommand 渲染命令
+    *@param {Cesium.DrawCommand|Array<Cesium.DrawCommand>}drawCommand 渲染命令（集合）
     *@param {Cesium.FrameState}frameState 帧状态对象，可以从Cesium.Scene中获取
     *@param {Cesium.Texture}outpuTexture 将渲染到的目标纹理对象
+    *@param {Cesium.Texture}[outputDepthTexture] 可选，输出的深度纹理
     */
-    RendererUtils.renderToTexture = function (drawCommand, frameState, outputTexture) {
+    RendererUtils.renderToTexture = function (drawCommand, frameState, outputTexture, outputDepthTexture) {
         var drawCommands = Cesium.isArray(drawCommand) ? drawCommand : [drawCommand];
         var context = frameState.context;
 
-        var framebuffer = new Cesium.Framebuffer({
-            context: context,
-            colorTextures: [outputTexture],
-            destroyAttachments: false
-        });
+        var framebuffer = null, destroy = false;
+        if (outputTexture instanceof Cesium.Framebuffer) {
+            framebuffer = outputTexture;
+        }
+        if (!framebuffer) {
+            framebuffer = new Cesium.Framebuffer({
+                context: context,
+                colorTextures: [outputTexture],
+                destroyAttachments: false,
+                depthTexture: outputDepthTexture
+            });
+            destroy = true;
+        }
 
         var clearCommand = clearCommandScratch;
         clearCommand.framebuffer = framebuffer;
@@ -43,8 +52,9 @@
             drawCommand.framebuffer = framebuffer;
             drawCommand.execute(context);
         });
-
-        framebuffer.destroy();
+        if (destroy) {
+            framebuffer.destroy();
+        }
     }
 
     /**
