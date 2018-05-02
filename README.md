@@ -56,7 +56,7 @@
 
 Example<br/>
 
-
+```javascript
         MeshVisualizer = Cesium.MeshVisualizer;
         Mesh = Cesium.Mesh;
         MeshMaterial = Cesium.MeshMaterial; 
