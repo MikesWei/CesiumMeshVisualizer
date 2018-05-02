@@ -189,7 +189,7 @@ Example<br/>
         meshVisualizer.add(customMesh);
 
  
-    
+```
 携源码示例和文档，诚意奉献，https://github.com/MikesWei/CesiumMeshVisualizer ， 名字不重要。 <br/>
     个人觉得Threejs里的Mesh、Geometry、Material极好，尤其是各个属性可以独立地、动态地编辑的特点，是目前在Cesium的Primitive中没有充分体现的。比如
 你渲染一个立方体，想要旋转，竟然还需要自己去算新的ModelMatrix；再比如画个波动的水面竟然不能只修改顶点位置属性，修改完顶点位置后竟然需要移除旧的
