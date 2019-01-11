@@ -34,6 +34,18 @@
             framebuffer = outputTexture;
         }
         if (!framebuffer) {
+            if (!outputDepthTexture
+                || outputDepthTexture.width != outputTexture.width
+                || outputDepthTexture.height != outputTexture.height) {
+                outputDepthTexture = new Cesium.Texture({
+                    context: context,
+                    width: outputTexture.width,
+                    height: outputTexture.height,
+                    pixelFormat: Cesium.PixelFormat.DEPTH_COMPONENT,
+                    pixelDatatype: Cesium.PixelDatatype.UNSIGNED_SHORT
+                })
+
+            }
             framebuffer = new Cesium.Framebuffer({
                 context: context,
                 colorTextures: [outputTexture],
