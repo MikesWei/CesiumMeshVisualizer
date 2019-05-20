@@ -73,6 +73,7 @@
         vertexShader: document.getElementById("vertexShaderFirstPass").textContent,
         fragmentShader: document.getElementById("fragmentShaderFirstPass").textContent,
         side: MeshMaterial.Sides.BACK,
+        depthTest:false,
         uniforms: {
             dimensions: dimensions
         }
