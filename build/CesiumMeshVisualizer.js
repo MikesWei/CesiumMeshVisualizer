@@ -533,6 +533,158 @@ define('Core/RendererUtils',[],function () {
             framebuffer.destroy();
         }
     }
+   
+    /**
+    *使用帧缓冲技术，执行渲染命令，渲染到纹理并读取像素值，可以用于实现并行计算  
+    *@param {Cesium.DrawCommand|Array<Cesium.DrawCommand>}drawCommand 渲染命令（集合）
+    *@param {Cesium.FrameState}frameState 帧状态对象，可以从Cesium.Scene中获取
+    *@param {Cesium.Texture}outpuTexture 将渲染到的目标纹理对象
+    *@param {Object}[options] 
+    *@param {Array.<Number>}outputPixels 
+    *@return {Array.<Number>}outputPixels  输出的像素
+    */
+    RendererUtils.renderToPixels = function (drawCommand, frameState, outputTexture, options, pixels) {
+        var drawCommands = Cesium.isArray(drawCommand) ? drawCommand : [drawCommand];
+        var context = frameState.context;
+
+        var framebuffer = null, destroy = false;
+        if (outputTexture instanceof Cesium.Framebuffer) {
+            framebuffer = outputTexture;
+        }
+
+        if (!framebuffer) {
+
+            var outputDepthTexture = new Cesium.Texture({
+                context: context,
+                width: outputTexture.width,
+                height: outputTexture.height,
+                pixelFormat: Cesium.PixelFormat.DEPTH_COMPONENT,
+                pixelDatatype: Cesium.PixelDatatype.UNSIGNED_SHORT
+            })
+
+            framebuffer = new Cesium.Framebuffer({
+                context: context,
+                colorTextures: [outputTexture],
+                depthTexture: context.depthTexture ? outputDepthTexture : undefined,
+                destroyAttachments: false
+            });
+            destroy = true;
+        }
+
+        var clearCommand = clearCommandScratch;
+        clearCommand.framebuffer = framebuffer;
+        clearCommand.renderState = frameState.renderState;
+        clearCommand.execute(context);
+
+        drawCommands.forEach(function (drawCommand) {
+            drawCommand.framebuffer = framebuffer;
+            drawCommand.execute(context);
+        });
+        options = options ? options : {};
+
+        pixels = RendererUtils.readPixels(frameState, Object.assign(options, {
+            framebuffer: framebuffer
+        }), pixels);
+        delete options.framebuffer;
+        if (destroy) {
+            framebuffer.destroy();
+        }
+        return pixels;
+    }
+
+    var scratchBackBufferArray;
+    // this check must use typeof, not defined, because defined doesn't work with undeclared variables.
+    if (typeof WebGLRenderingContext !== 'undefined') {
+        scratchBackBufferArray = [Cesium.WebGLConstants.BACK];
+    }
+    /**
+     * Validates a framebuffer.
+     * Available in debug builds only.
+     * @private
+     */
+    function validateFramebuffer(context) {
+            }
+    function bindFramebuffer(context, framebuffer) {
+        if (framebuffer !== context._currentFramebuffer) {
+            context._currentFramebuffer = framebuffer;
+            var buffers = scratchBackBufferArray;
+
+            if (Cesium.defined(framebuffer)) {
+                framebuffer._bind();
+                validateFramebuffer(context);
+
+                // TODO: Need a way for a command to give what draw buffers are active.
+                buffers = framebuffer._getActiveColorAttachments();
+            } else {
+                var gl = context._gl;
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            }
+
+            if (context.drawBuffers) {
+                context.glDrawBuffers(buffers);
+            }
+        }
+    }
+    //var pixels;
+    var scratchPixelFormat;
+    var scratchPixelDatatype;
+    /**
+     * @param {Cesium.FrameState}frameState
+     * @param {Object}[readState]
+     * @param {number}readState.x
+     * @param {number}readState.y
+     * @param {number}readState.width
+     * @param {number}readState.height
+     * @param {Cesium.PixelDatatype}readState.pixelDatatype
+     * @param {Cesium.PixelFormat}readState.pixelFormat
+     * @param {ArrayBufferView}pixels
+     * @return {ArrayBufferView}
+     */
+    RendererUtils.readPixels = function (frameState, readState, pixels) {
+        var gl = frameState.context._gl;
+
+        readState = readState || {};
+        var x = Math.max(readState.x || 0, 0);
+        var y = Math.max(readState.y || 0, 0);
+        var width = readState.width || gl.drawingBufferWidth;
+        var height = readState.height || gl.drawingBufferHeight;
+        var pixelDatatype = readState.pixelDatatype || Cesium.PixelDatatype.UNSIGNED_BYTE;
+        var pixelFormat = readState.pixelFormat || Cesium.PixelFormat.RGBA;
+        var framebuffer = readState.framebuffer;
+
+        if (width <= 0) {
+            throw new Cesium.DeveloperError('readState.width must be greater than zero.');
+        }
+
+        if (height <= 0) {
+            throw new Cesium.DeveloperError('readState.height must be greater than zero.');
+        }
+
+        bindFramebuffer(this, framebuffer);
+        var size = 4;
+        if (pixelFormat == Cesium.PixelFormat.RGB) {
+            size = 3;
+        } else if (pixelFormat == Cesium.PixelFormat.ALPHA) {
+            size = 1;
+        }
+
+        if (!pixels) {//|| pixels.length !== size * width * height
+            //|| scratchPixelFormat != pixelFormat || scratchPixelDatatype != pixelDatatype) {
+
+            if (pixelDatatype == Cesium.PixelDatatype.FLOAT) {
+                pixelDatatype = gl.FLOAT;
+                pixels = new Float32Array(size * width * height);
+            } else if (pixelDatatype == Cesium.PixelDatatype.UNSIGNED_BYTE) {
+                pixels = new Uint8Array(size * width * height);
+            } else {
+                pixels = new Uint16Array(size * width * height);
+            }
+        }
+        gl.readPixels(x, y, width, height, pixelFormat, pixelDatatype, pixels);
+        scratchPixelFormat = pixelFormat;
+        scratchPixelDatatype = pixelDatatype;
+        return pixels;
+    };
 
     /**
     *
@@ -587,10 +739,10 @@ define('Core/RendererUtils',[],function () {
             var axis = rotation.axis;
             var angle = rotation.angle;
             Cesium.Quaternion.fromAxisAngle(
-                    new Cartesian3(axis.x, axis.y, axis.z),//axis.y=1 y是旋转轴
-                    CesiumMath.toRadians(angle),
-                    scratchQuaternion
-                );
+                new Cartesian3(axis.x, axis.y, axis.z),//axis.y=1 y是旋转轴
+                CesiumMath.toRadians(angle),
+                scratchQuaternion
+            );
         }
 
         //translate,rotate,scale
@@ -1852,9 +2004,11 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
         defineProperty(this, "vertexShader", defaultValue(options.vertexShader, this._vertexShader), onPropertyChanged);
         defineProperty(this, "fragmentShader", defaultValue(options.fragmentShader, this._fragmentShader), onPropertyChanged);
 
-        this.depthTest =defaultValue(options.depthTest, true);
+        this.depthTest = defaultValue(options.depthTest, true);
         this.depthMask = defaultValue(options.depthMask, true);
         this.blending = defaultValue(options.blending, true);
+
+        this.allowPick = defaultValue(options.allowPick, true);
 
         this.needsUpdate = true;
     }
@@ -7672,13 +7826,21 @@ define('Core/MeshVisualizer',[
             var geometry = mesh.geometry;
             var material = mesh.material;
 
+            var pickObject = {
+                primitive: this,
+                id: mesh
+            };
+            var pickId = context.createPickId(pickObject);
+            that._pickIds.push(pickId);
+
             var command = new Cesium.DrawCommand({
+                // pickId: mesh.material.allowPick ? pickId : undefined,
                 modelMatrix: Matrix4.clone(this.modelMatrix),
                 owner: mesh,
                 primitiveType: geometry.primitiveType,
                 cull: material.cullFrustum,
                 pass: material.translucent ? Cesium.Pass.TRANSLUCENT : Cesium.Pass.OPAQUE
-                //,boundingVolume: geometry.boundingSphere
+                // , boundingVolume: geometry.boundingSphere
             });
 
             var attributeLocations = GeometryPipeline.createAttributeLocations(geometry);
@@ -7691,15 +7853,6 @@ define('Core/MeshVisualizer',[
             });
             command.vertexArray._attributeLocations = attributeLocations;
 
-            var pickObject = {
-                primitive: this,
-                id: mesh
-            };
-
-
-            var pickId = context.createPickId(pickObject);
-            that._pickIds.push(pickId);
-
             var pickColor = pickId.color;
 
             var shader = {
@@ -7711,28 +7864,100 @@ define('Core/MeshVisualizer',[
 
             }
 
+            var vs = new Cesium.ShaderSource({
+                sources: [shader.vertexShader]
+            });
+            var fs = new Cesium.ShaderSource({
+                sources: [shader.fragmentShader]
+            });
+            // if (this.onlySunLighting) {
+            //fs.defines.push('ONLY_SUN_LIGHTING');
+            // }
+            var translucent = material.translucent;
+            if (!translucent && context.fragmentDepth) {
+                fs.defines.push('WRITE_DEPTH');
+            }
+            var logDepthExtension =
+                '#ifdef GL_EXT_frag_depth \n' +
+                '#extension GL_EXT_frag_depth : enable \n' +
+                '#endif \n\n';
+
+            // if (this._useLogDepth) {
+            vs.defines.push('LOG_DEPTH');
+            fs.defines.push('LOG_DEPTH');
+            //fs.sources.push(logDepthExtension);
+            // }
+
             command._sp = ShaderProgram.fromCache({
                 context: context,
-                fragmentShaderSource: shader.fragmentShader,//this.getFragmentShaderSource(material),
-                vertexShaderSource: shader.vertexShader,//this.getVertexShaderSource(geometry, material),
+                fragmentShaderSource: fs,//shader.fragmentShader,//this.getFragmentShaderSource(material),
+                vertexShaderSource: vs,//shader.vertexShader,//this.getVertexShaderSource(geometry, material),
                 attributeLocations: attributeLocations
             });
             if (!Cesium.defined(mesh.material.allowPick)) {
                 mesh.material.allowPick = true;
             }
             if (mesh.material.allowPick) {
-                command._pickSp = ShaderProgram.fromCache({
-                    context: context,
-                    fragmentShaderSource: 'void main() {\n\tgl_FragColor = vec4(' + pickColor.red + ',' + pickColor.green + ',' + pickColor.blue + ',' + pickColor.alpha + ');\n}',
-                    vertexShaderSource: shader.vertexShader,
-                    attributeLocations: attributeLocations
-                });
+
 
             }
             command.shaderProgram = command._sp;
             command.renderState = this.getRenderState(material);
 
+            command._renderStateOptions = material._renderStateOptions;
+
             command.uniformMap = this.getUniformMap(material, frameState);
+            command.uniformMap.czm_pickColor = function () {
+                return pickId.color;
+            }
+
+
+            var pickCommand = new Cesium.DrawCommand({
+                owner: mesh,
+                pickOnly: true,
+                modelMatrix: Matrix4.clone(this.modelMatrix),
+                primitiveType: geometry.primitiveType,
+                cull: material.cullFrustum,
+                pass: material.translucent ? Cesium.Pass.TRANSLUCENT : Cesium.Pass.OPAQUE
+            });
+            // Recompile shader when material changes
+
+            vs = new Cesium.ShaderSource({
+                sources: [shader.vertexShader]
+            });
+            fs = new Cesium.ShaderSource({
+                sources: [shader.fragmentShader],
+                pickColorQualifier: 'uniform'
+            });
+            // if (this.onlySunLighting) {
+            fs.defines.push('ONLY_SUN_LIGHTING');
+            // }
+            translucent = material.translucent;
+            if (!translucent && context.fragmentDepth) {
+                fs.defines.push('WRITE_DEPTH');
+            }
+
+
+            // if (this._useLogDepth) {
+            vs.defines.push('LOG_DEPTH');
+            fs.defines.push('LOG_DEPTH');
+            fs.sources.push(logDepthExtension);
+            // }
+
+            var _pickSP = ShaderProgram.replaceCache({
+                context: context,
+                shaderProgram: _pickSP,
+                vertexShaderSource: vs,
+                fragmentShaderSource: fs,
+                attributeLocations: attributeLocations
+            });
+
+            pickCommand.vertexArray = command.vertexArray;
+            pickCommand.renderState = this.getRenderState(material);
+            pickCommand.shaderProgram = _pickSP;
+            pickCommand.uniformMap = command.uniformMap;
+            pickCommand.executeInClosestFrustum = translucent;
+            mesh._pickCommand = pickCommand;
 
             return command;
         },
@@ -7744,12 +7969,12 @@ define('Core/MeshVisualizer',[
         *@return {Cesium.RenderState}frameState
         *@private
         */
-        getRenderState: function (material) {
+        getRenderState_old: function (material) {
             var renderState = {
                 blending: material.blending ? BlendingState.ALPHA_BLEND : BlendingState.DISABLED,
                 depthTest: {
                     enabled: material.depthTest,
-                    func: DepthFunction.LESS
+                    func: DepthFunction.GREATER//LESS
                 },
                 cull: {
                     enabled: true,
@@ -7790,6 +8015,62 @@ define('Core/MeshVisualizer',[
 
             return renderState;
         },
+
+        /**
+        *
+        *
+        *@param {THREE.Material}material 
+        *@return {Cesium.RenderState}frameState
+        *@private
+        */
+        getRenderState: function (material) {
+            var renderStateOpts = {
+                blending: material.blending ? BlendingState.ALPHA_BLEND : BlendingState.DISABLED,
+                depthTest: {
+                    enabled: material.depthTest,
+                    func: DepthFunction.LESS
+                },
+                cull: {
+                    enabled: false,
+                    face: CullFace.FRONT
+                },
+                depthRange: {
+                    near: 0,
+                    far: 1
+                },
+                colorMask: {
+                    red: true,
+                    green: true,
+                    blue: true,
+                    alpha: true
+                },
+                depthMask: material.depthMask
+            }
+            renderStateOpts.cull.enabled = true;
+            renderStateOpts.blending.color = {
+                red: 0.0,
+                green: 0.0,
+                blue: 0.0,
+                alpha: 0.0
+            };
+            switch (material.side) {
+                case MeshMaterial.Sides.FRONT:
+                    renderStateOpts.cull.face = CullFace.BACK;
+                    break;
+                case MeshMaterial.Sides.BACK:
+                    renderStateOpts.cull.face = CullFace.FRONT;
+                    break;
+                default:
+                    renderStateOpts.cull.enabled = false;
+                    break;
+            }
+
+            material._renderStateOptions = renderStateOpts;
+            var renderState = RenderState.fromCache(renderStateOpts);
+
+            return renderState;
+        },
+
         /**
         *
         *
@@ -8501,15 +8782,39 @@ define('Core/MeshVisualizer',[
                 }
                 Cesium.Matrix4.getTranslation(mesh.modelMatrix, mesh._drawCommand.boundingVolume.center);
 
+                mesh._pickCommand.boundingVolume = mesh._drawCommand.boundingVolume;
+
                 mesh._drawCommand.uniformMap = that.getUniformMap(mesh.material, frameState);
                 if (frameState.passes.pick) {
 
-                    mesh._drawCommand.shaderProgram = mesh._drawCommand._pickSp;
-                    frameState.commandList.push(mesh._drawCommand);
+                    var command = mesh._pickCommand//_drawCommand;
+                    // var rs = mesh.material._renderStateOptions;
+                    // rs.blending.enabled = false;
+                    // rs.depthMask = true;
 
+                    // command.renderState = RenderState.fromCache(mesh.material._renderStateOptions);
+
+
+                    // command.shaderProgram = command._pickSp;
+                    // if (command.derivedCommands) {
+                    //     command.derivedCommands.picking = {
+                    //         pickCommand: command
+                    //     };
+                    //     if (command.derivedCommands.logDepth
+                    //         && command.derivedCommands.logDepth.command
+                    //         && command.derivedCommands.logDepth.command.derivedCommands) {
+                    //         command.derivedCommands.logDepth.command.derivedCommands.picking = {
+                    //             pickCommand: command
+                    //         };
+                    //     }
+                    // }
+                    frameState.commandList.push(command);
 
                 } else {
-                    mesh._drawCommand.renderState.depthTest.enabled = mesh.material.depthTest;
+                    mesh.material._renderStateOptions.depthTest.enabled = mesh.material.depthTest;
+                    mesh._drawCommand.renderState = RenderState.fromCache(mesh.material._renderStateOptions);
+                    // mesh._drawCommand.renderState.depthTest.enabled = mesh.material.depthTest;
+
                     mesh._drawCommand.shaderProgram = mesh._drawCommand._sp;
                     frameState.commandList.push(mesh._drawCommand);
                 }
@@ -8541,12 +8846,12 @@ define('Core/MeshVisualizer',[
     *@param {Cesium.FrameState}frameState
     *@param {Cesium.FramebufferTexture}frameBufferTexture
     */
-    MeshVisualizer.prototype.updateFrameBufferTexture = function (frameState, frameBufferTexture,viewport) {
+    MeshVisualizer.prototype.updateFrameBufferTexture = function (frameState, frameBufferTexture, viewport) {
         var that = this;
 
         var item = frameBufferTexture;
         if (item instanceof FramebufferTexture) {
-             
+
             item.drawCommands = [];
             MeshVisualizer.traverse(item.mesh, function (mesh) {
                 if (MeshUtils.isMesh3js(mesh)) {
@@ -8631,7 +8936,7 @@ define('Core/MeshVisualizer',[
                             height: drawingBufferHeight,
                             pixelFormat: PixelFormat.RGBA
                         });
-                    } 
+                    }
                     item._notFullScreen = notFullScreen;
                 }
                 mesh._textureCommand.renderState.depthTest.enabled = mesh.depthTest;
@@ -8646,6 +8951,208 @@ define('Core/MeshVisualizer',[
         }
 
     }
+
+    ///////2020.04.20  --start
+
+    /**
+    *
+    */
+    MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, frameBufferTexture, viewport) {
+        var that = this;
+
+        var item = frameBufferTexture;
+        if (item instanceof FramebufferTexture) {
+
+            item.drawCommands = [];
+            MeshVisualizer.traverse(item.mesh, function (mesh) {
+                if (MeshUtils.isMesh3js(mesh)) {
+                    var needsUpdate = !mesh._actualMesh
+                        || mesh.needsUpdate
+                        || mesh.geometry.needsUpdate;
+
+                    if (needsUpdate) {
+                        mesh._actualMesh = MeshUtils.fromMesh3js(mesh);
+                    }
+                    if (!needsUpdate) {
+                        for (var pn in mesh.geometry.attributes) {
+                            if (mesh.geometry.attributes.hasOwnProperty(pn)) {
+                                mesh._actualMesh.geometry[pn].needsUpdate = mesh.geometry.attributes[pn].needsUpdate;
+                            }
+                        }
+                        var index = mesh.geometry.getIndex();
+                        if (index && index.needsUpdate) {
+                            mesh._actualMesh.geometry.needsUpdate = true;
+                        }
+                    }
+
+                    mesh._actualMesh.quaternion = Cesium.Quaternion.clone(mesh.quaternion);
+                    mesh._actualMesh.position = mesh.position;
+                    mesh._actualMesh.scale = mesh.scale;
+                    mesh._actualMesh.modelMatrixNeedsUpdate = mesh.modelMatrixNeedsUpdate;
+                    mesh = mesh._actualMesh;
+                    MaterialUtils.updateMaterialFrom3js(mesh.material);
+                }
+                that._computeModelMatrix(mesh, frameState);
+
+                if (!mesh._textureCommand
+                    || mesh.needsUpdate
+                    || mesh.geometry.needsUpdate
+                ) {
+                    if (mesh.material.wireframe) {
+                        that.toWireframe(mesh.geometry);
+                    } else {
+                        that.restoreFromWireframe(mesh.geometry);
+                    }
+
+                    mesh._textureCommand = that.createDrawCommand(mesh, frameState);
+                    //mesh._textureCommand.boundingVolume = mesh.geometry.boundingSphere;
+                    mesh.needsUpdate = false;
+                    mesh.material.needsUpdate = false;
+
+                } else {//在不需要重新构建绘图命令时，检查各个属性和索引是否需要更新，需要则将更新相应的缓冲区
+
+                    //更新属性缓冲区
+                    for (var name in mesh.geometry.attributes) {
+                        if (mesh.geometry.attributes.hasOwnProperty(name)
+                            && mesh.geometry.attributes[name]) {
+
+                            if (mesh.geometry.attributes[name] && mesh.geometry.attributes[name].needsUpdate) {
+                                var attrLocation = mesh._textureCommand.vertexArray._attributeLocations[name]
+                                var vb = mesh._textureCommand.vertexArray._attributes[attrLocation].vertexBuffer;
+                                vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
+                            }
+                        }
+                    }
+                    //更新索引缓冲区
+                    if (mesh.geometry.indexNeedsUpdate) {
+                        var vb = mesh._textureCommand.vertexArray.indexBuffer;
+                        vb.copyFromArrayView(mesh.geometry.indices, 0);
+                    }
+                }
+
+                mesh._textureCommand.modelMatrix = mesh.modelMatrix;
+
+                var context = frameState.context;
+                var drawingBufferWidth = context.drawingBufferWidth;
+                var drawingBufferHeight = context.drawingBufferHeight;
+                if (!item.texture
+                    || item.texture.width != drawingBufferWidth
+                    || item.texture.height != drawingBufferHeight
+                ) {
+                    var notFullScreen = item._notFullScreen || Cesium.defined(item.texture);
+                    if (!notFullScreen) {
+                        item.texture = new Texture({
+                            context: context,
+                            width: drawingBufferWidth,
+                            height: drawingBufferHeight,
+                            pixelFormat: PixelFormat.RGBA
+                        });
+                    }
+                    item._notFullScreen = notFullScreen;
+                }
+
+                mesh.material._renderStateOptions.depthTest.enabled = mesh.material.depthTest;
+                //mesh._textureCommand.renderState.depthTest.enabled = mesh.depthTest;
+                if (viewport) {
+                    mesh.material._renderStateOptions.viewport = viewport;
+                }
+                mesh._textureCommand.renderState = RenderState.fromCache(mesh.material._renderStateOptions);
+
+                item.drawCommands.push(mesh._textureCommand);
+
+            }, true);
+
+
+        }
+    }
+    /**
+    *单独渲染frameBufferTexture中的mesh，最终更新frameBufferTexture中的texture
+    *@param {Cesium.FrameState}frameState
+    *@param {MeteoLib.Render.FramebufferTexture}frameBufferTexture
+    */
+    MeshVisualizer.prototype.updateFrameBufferTexture = function (frameState, frameBufferTexture, viewport) {
+        this._prepareFrameBufferTexture(frameState, frameBufferTexture, viewport);
+        var item = frameBufferTexture;
+        if (item.drawCommands && item.drawCommands.length > 0) {
+            item.depthTexture = RendererUtils.renderToTexture(item.drawCommands, frameState, item.texture, item.depthTexture);
+            for (var i = 0; i < item.drawCommands.length; i++) {
+
+                item.drawCommands[i]._renderStateOptions.viewport = void (0);
+                item.drawCommands[i].renderState = RenderState.fromCache(item.drawCommands[i]._renderStateOptions);
+
+            }
+        }
+    }
+
+
+    /**
+    *单独渲染frameBufferTexture中的mesh，最终更新frameBufferTexture中的texture，并读取缓冲区的像素,可以用于实现并行计算(参看MeshVisualizer.prototype.compute)
+    *@param {Cesium.FrameState}frameState
+    *@param {Cesium.FramebufferTexture}frameBufferTexture
+    *@param {Object}[viewport] 可选，视口设置
+    *@param {Number}viewport.x 视口位置x坐标（屏幕坐标系，左上角为原点）
+    *@param {Number}viewport.y 视口位置y坐标（屏幕坐标系，左上角为原点）
+    *@param {Number}viewport.width 视口宽度
+    *@param {Number}viewport.height 视口高度
+    *@param {Cesium.PixelDatatype}[viewport.pixelDatatype=Cesium.PixelDatatype.UNSIGNED_BYTE] 输出数据中像素值的rgba各项的数据类型，注意：有的移动设备不支持浮点型 
+    *@param {Object}[readState] 可选，读取设置
+    *@param {Number}readState.x 读取区域位置x坐标（屏幕坐标系，左上角为原点）
+    *@param {Number}readState.y 读取区域位置y坐标（屏幕坐标系，左上角为原点）
+    *@param {Number}readState.width 读取区域宽度
+    *@param {Number}readState.height 读取区域高度
+    *@param {Cesium.PixelDatatype}[readState.pixelDatatype=Cesium.PixelDatatype.UNSIGNED_BYTE] 输出数据中像素值的rgba各项的数据类型，注意：有的移动设备不支持浮点型 
+    *@param {Array.<Number>}outputPixels 
+    *@return {Array.<Number>}outputPixels  输出的像素
+    */
+    MeshVisualizer.prototype.getPixels = function (frameState, frameBufferTexture, viewport, readState, pixels) {
+        viewport = viewport ? viewport : {};
+        viewport.x = viewport.x ? viewport.x : 0;
+        viewport.y = viewport.y ? viewport.y : 0;
+        if (!viewport.width) {
+            viewport.width = frameState.context._canvas.width;
+        }
+        if (!viewport.height) {
+            viewport.height = frameState.context._canvas.height;
+        }
+
+        this._prepareFrameBufferTexture(frameState, frameBufferTexture, viewport)
+        var item = frameBufferTexture;
+        if (item.drawCommands && item.drawCommands.length > 0) {
+            if (!item._computeTexture
+                || (item._computeTexture
+                    && (item._computeTexture.width != viewport.width
+                        || item._computeTexture.height != viewport.height)
+                )) {
+                var pixelDatatype = viewport.pixelDatatype;
+                var pixelFormat = viewport.pixelFormat;
+                if (pixelDatatype == Cesium.PixelDatatype.FLOAT && !frameState.context._gl.getExtension('OES_texture_float')) {
+                    throw new Cesium.DeveloperError("此设备不支持浮点型纹理");
+                }
+                if (item._computeTexture) {
+                    item._computeTexture.destroy();
+                    item._computeTexture = null;
+                }
+                item._computeTexture = new Cesium.Texture({
+                    context: frameState.context,
+                    width: viewport.width,
+                    height: viewport.height,
+                    pixelFormat: pixelFormat,//PixelFormat.RGBA,
+                    pixelDatatype: pixelDatatype
+                });
+            }
+
+            pixels = RendererUtils.renderToPixels(item.drawCommands, frameState, item._computeTexture, readState ? readState : viewport, pixels);
+            for (var i = 0; i < item.drawCommands.length; i++) {
+                item.drawCommands[i].renderState.viewport = void (0);
+            }
+            return pixels;
+        }
+        else {
+            return null;
+        }
+    }
+    ///////2020.04.20  --end
+
     /**
     *
     *@param {Cesium.Mesh}mesh
@@ -8733,14 +9240,14 @@ define('Core/MeshVisualizer',[
         }
     },
 
-    /**
-    *
-    *@Cesium.MeshVisualizer~TraverseCallback
-    *@param {Cesium.Mesh|Cesium.LOD|Cesium.MeshVisualizer|Object}node
-    *@param {Object}traverseArgs
-    *@param {Boolean}traverseArgs.cancelCurrent 为true时终止遍历当前节点的子节点
-    *@param {Boolean}traverseArgs.cancelAll 为true时终止遍历，退出遍历循环
-    */
+        /**
+        *
+        *@Cesium.MeshVisualizer~TraverseCallback
+        *@param {Cesium.Mesh|Cesium.LOD|Cesium.MeshVisualizer|Object}node
+        *@param {Object}traverseArgs
+        *@param {Boolean}traverseArgs.cancelCurrent 为true时终止遍历当前节点的子节点
+        *@param {Boolean}traverseArgs.cancelAll 为true时终止遍历，退出遍历循环
+        */
 
 
         Cesium.defineProperties(MeshVisualizer.prototype, {

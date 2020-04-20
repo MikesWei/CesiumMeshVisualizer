@@ -117,9 +117,11 @@
         defineProperty(this, "vertexShader", defaultValue(options.vertexShader, this._vertexShader), onPropertyChanged);
         defineProperty(this, "fragmentShader", defaultValue(options.fragmentShader, this._fragmentShader), onPropertyChanged);
 
-        this.depthTest =defaultValue(options.depthTest, true);
+        this.depthTest = defaultValue(options.depthTest, true);
         this.depthMask = defaultValue(options.depthMask, true);
         this.blending = defaultValue(options.blending, true);
+
+        this.allowPick = defaultValue(options.allowPick, true);
 
         this.needsUpdate = true;
     }
