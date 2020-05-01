@@ -779,7 +779,7 @@ define('Core/Rotation',[],function () {
         this._angle = angle;
         this.paramChanged = new Cesium.Event();
     }
-    Cesium.defineProperties(Rotation.prototype, {
+    Object.defineProperties(Rotation.prototype, {
         axis: {
             set: function (val) {
                 if (val.x != this._axis.x
@@ -2014,7 +2014,7 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
     }
 
 
-    Cesium.defineProperties(MeshMaterial.prototype, {
+    Object.defineProperties(MeshMaterial.prototype, {
         uuid: {
             get: function () {
                 return this._uuid;
@@ -2995,7 +2995,7 @@ define('Core/Mesh',[
      * @param {Cesium.Mesh|Cesium.LOD}node
      */
 
-    Cesium.defineProperties(Mesh.prototype, {
+    Object.defineProperties(Mesh.prototype, {
 
         modelMatrix: {
             get: function () {
@@ -4213,7 +4213,7 @@ define('Core/LOD',[
         }
     };
 
-    Cesium.defineProperties(LOD.prototype, {
+    Object.defineProperties(LOD.prototype, {
         modelMatrix: {
             get: function () {
                 return this._modelMatrix;
@@ -4583,7 +4583,7 @@ define('Core/ReferenceMesh',[
             }
         }
     }
-    Cesium.defineProperties(ReferenceMesh.prototype, {
+    Object.defineProperties(ReferenceMesh.prototype, {
         modelMatrix: {
             get: function () {
                 return this._modelMatrix;
@@ -9250,7 +9250,7 @@ define('Core/MeshVisualizer',[
         */
 
 
-        Cesium.defineProperties(MeshVisualizer.prototype, {
+        Object.defineProperties(MeshVisualizer.prototype, {
             scene: {
                 set: function (val) {
                     this._scene = val;

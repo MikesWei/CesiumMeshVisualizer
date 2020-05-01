@@ -336,7 +336,7 @@
         }
     };
 
-    Cesium.defineProperties(LOD.prototype, {
+    Object.defineProperties(LOD.prototype, {
         modelMatrix: {
             get: function () {
                 return this._modelMatrix;

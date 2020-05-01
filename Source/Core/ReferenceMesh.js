@@ -111,7 +111,7 @@
             }
         }
     }
-    Cesium.defineProperties(ReferenceMesh.prototype, {
+    Object.defineProperties(ReferenceMesh.prototype, {
         modelMatrix: {
             get: function () {
                 return this._modelMatrix;

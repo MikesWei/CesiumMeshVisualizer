@@ -137,7 +137,7 @@ define([
      * @param {Cesium.Mesh|Cesium.LOD}node
      */
 
-    Cesium.defineProperties(Mesh.prototype, {
+    Object.defineProperties(Mesh.prototype, {
 
         modelMatrix: {
             get: function () {

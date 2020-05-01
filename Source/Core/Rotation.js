@@ -16,7 +16,7 @@
         this._angle = angle;
         this.paramChanged = new Cesium.Event();
     }
-    Cesium.defineProperties(Rotation.prototype, {
+    Object.defineProperties(Rotation.prototype, {
         axis: {
             set: function (val) {
                 if (val.x != this._axis.x

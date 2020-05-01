@@ -127,7 +127,7 @@
     }
 
 
-    Cesium.defineProperties(MeshMaterial.prototype, {
+    Object.defineProperties(MeshMaterial.prototype, {
         uuid: {
             get: function () {
                 return this._uuid;

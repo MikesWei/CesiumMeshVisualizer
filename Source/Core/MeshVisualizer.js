@@ -1927,7 +1927,7 @@ define([
         */
 
 
-        Cesium.defineProperties(MeshVisualizer.prototype, {
+        Object.defineProperties(MeshVisualizer.prototype, {
             scene: {
                 set: function (val) {
                     this._scene = val;
