@@ -483,6 +483,9 @@ define([
         },
 
         restoreFromWireframe: function (geometry) {
+            if (geometry.primitiveType == Cesium.PrimitiveType.POINTS) {
+                return geometry;
+            }
             if (geometry.triangleIndices) {
                 geometry.indices = geometry.triangleIndices;
             }
