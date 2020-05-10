@@ -27,7 +27,7 @@
         };
         var properties = {};
         properties[name] = value;
-        Cesium.defineProperties(owner, properties)
+        Object.defineProperties(owner, properties)
     }
 
     return defineProperty;

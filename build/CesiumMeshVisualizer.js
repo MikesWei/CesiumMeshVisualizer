@@ -1880,7 +1880,7 @@ define('Util/defineProperty',[],function () {
         };
         var properties = {};
         properties[name] = value;
-        Cesium.defineProperties(owner, properties)
+        Object.defineProperties(owner, properties)
     }
 
     return defineProperty;
