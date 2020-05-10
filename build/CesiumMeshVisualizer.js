@@ -1898,7 +1898,7 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
     *@param {String|Cesium.Color}[options.defaultColor=Cesium.Color.WHITE]
     *@param {String}[options.vertexShader]
     *@param {String}[options.fragmentShader]
-    *@param {boolean}[options.hasCustomPickHandler]
+    *@param {string}[options.pickColorQualifier]
     *
     *
     *@property {Object}uniforms
@@ -2010,8 +2010,7 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
         this.blending = defaultValue(options.blending, true);
 
         this.allowPick = defaultValue(options.allowPick, true);
-
-        this.hasCustomPickHandler = defaultValue(options.hasCustomPickHandler, false);
+        this.pickColorQualifier = defaultValue(options.pickColorQualifier, 'uniform'); 
         this.needsUpdate = true;
     }
 
@@ -7932,7 +7931,7 @@ define('Core/MeshVisualizer',[
             });
             fs = new Cesium.ShaderSource({
                 sources: [shader.fragmentShader],
-                pickColorQualifier: 'uniform'
+                pickColorQualifier: material.pickColorQualifier || 'uniform'
             });
             // if (this.onlySunLighting) {
             fs.defines.push('ONLY_SUN_LIGHTING');
@@ -8790,7 +8789,7 @@ define('Core/MeshVisualizer',[
                 mesh._pickCommand.boundingVolume = mesh._drawCommand.boundingVolume;
 
                 mesh._drawCommand.uniformMap = that.getUniformMap(mesh.material, frameState);
-                if (frameState.passes.pick&&!material.hasCustomPickHandler) {
+                if (frameState.passes.pick) {
 
                     var command = mesh._pickCommand//_drawCommand;
                     // var rs = mesh.material._renderStateOptions;

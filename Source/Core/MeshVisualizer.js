@@ -607,7 +607,7 @@ define([
             });
             fs = new Cesium.ShaderSource({
                 sources: [shader.fragmentShader],
-                pickColorQualifier: 'uniform'
+                pickColorQualifier: material.pickColorQualifier || 'uniform'
             });
             // if (this.onlySunLighting) {
             fs.defines.push('ONLY_SUN_LIGHTING');
@@ -1465,7 +1465,7 @@ define([
                 mesh._pickCommand.boundingVolume = mesh._drawCommand.boundingVolume;
 
                 mesh._drawCommand.uniformMap = that.getUniformMap(mesh.material, frameState);
-                if (frameState.passes.pick&&!material.hasCustomPickHandler) {
+                if (frameState.passes.pick) {
 
                     var command = mesh._pickCommand//_drawCommand;
                     // var rs = mesh.material._renderStateOptions;
