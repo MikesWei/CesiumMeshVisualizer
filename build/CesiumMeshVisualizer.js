@@ -1898,6 +1898,7 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
     *@param {String|Cesium.Color}[options.defaultColor=Cesium.Color.WHITE]
     *@param {String}[options.vertexShader]
     *@param {String}[options.fragmentShader]
+    *@param {boolean}[options.hasCustomPickHandler]
     *
     *
     *@property {Object}uniforms
@@ -2010,6 +2011,7 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
 
         this.allowPick = defaultValue(options.allowPick, true);
 
+        this.hasCustomPickHandler = defaultValue(options.hasCustomPickHandler, false);
         this.needsUpdate = true;
     }
 
@@ -8788,7 +8790,7 @@ define('Core/MeshVisualizer',[
                 mesh._pickCommand.boundingVolume = mesh._drawCommand.boundingVolume;
 
                 mesh._drawCommand.uniformMap = that.getUniformMap(mesh.material, frameState);
-                if (frameState.passes.pick) {
+                if (frameState.passes.pick&&!material.hasCustomPickHandler) {
 
                     var command = mesh._pickCommand//_drawCommand;
                     // var rs = mesh.material._renderStateOptions;

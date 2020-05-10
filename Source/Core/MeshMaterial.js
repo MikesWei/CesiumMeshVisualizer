@@ -11,6 +11,7 @@
     *@param {String|Cesium.Color}[options.defaultColor=Cesium.Color.WHITE]
     *@param {String}[options.vertexShader]
     *@param {String}[options.fragmentShader]
+    *@param {boolean}[options.hasCustomPickHandler]
     *
     *
     *@property {Object}uniforms
@@ -123,6 +124,7 @@
 
         this.allowPick = defaultValue(options.allowPick, true);
 
+        this.hasCustomPickHandler = defaultValue(options.hasCustomPickHandler, false);
         this.needsUpdate = true;
     }
 
