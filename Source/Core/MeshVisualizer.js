@@ -46,6 +46,8 @@ define([
     var PixelFormat = Cesium.PixelFormat;
     var BoxGeometry = Cesium.BoxGeometry;
     var Cartesian3 = Cesium.Cartesian3;
+    var Cartesian2 = Cesium.Cartesian2;
+    var Cartesian4 = Cesium.Cartesian4;
     var VertexFormat = Cesium.VertexFormat;
     var CubeMap = Cesium.CubeMap;
     var loadCubeMap = Cesium.loadCubeMap;
@@ -160,6 +162,141 @@ define([
         return pickIdBuffer;
     }
 
+    function getInstancedAttribTypedArray(collection, instancedAttribute) {
+        var i;
+        var instances = collection._availableInstances;
+        var instancesLength = instances.length;
+        var name = instancedAttribute.name;
+        var componentsPerAttribute;
+        var isColorValue = instancedAttribute.default instanceof Color
+        if (typeof instancedAttribute.default == 'number') {
+            componentsPerAttribute = 1;
+        }
+        else if (instancedAttribute.default instanceof Cartesian2) {
+            componentsPerAttribute = 2;
+        }
+        else if (instancedAttribute.default instanceof Cartesian3) {
+            componentsPerAttribute = 3;
+        }
+        else if (instancedAttribute.default instanceof Cartesian4) {
+            componentsPerAttribute = 4;
+        } else if (isColorValue) {
+            componentsPerAttribute = 4;
+        }
+
+        var bufferData = collection['_' + name + 'BufferTypedArray'];
+        if (!bufferData || instancesLength * componentsPerAttribute > bufferData.length) {
+            if (isColorValue) {
+                bufferData = new Uint8Array(instancesLength * componentsPerAttribute);
+            }
+            else {
+                bufferData = new Float32Array(instancesLength * componentsPerAttribute);
+            }
+        }
+        collection['_' + name + 'BufferTypedArray'] = bufferData;
+
+        if (isColorValue) {
+            for (i = 0; i < instancesLength; ++i) {
+                var instance = instances[i];
+                var val = instance[name];
+                var offset = i * componentsPerAttribute;
+
+                bufferData[offset] = Color.floatToByte(val.red);
+                bufferData[offset + 1] = Color.floatToByte(val.green);
+                bufferData[offset + 2] = Color.floatToByte(val.blue);
+                bufferData[offset + 3] = Color.floatToByte(val.alpha);
+            }
+        } else if (typeof instancedAttribute.default == 'number') {
+            for (i = 0; i < instancesLength; ++i) {
+                var instance = instances[i];
+                var val = instance[name];
+                bufferData[i] = val;
+            }
+        }
+        else if (instancedAttribute.default instanceof Cartesian2) {
+
+            for (i = 0; i < instancesLength; ++i) {
+                var instance = instances[i];
+                var val = instance[name];
+                var offset = i * componentsPerAttribute;
+                bufferData[offset] = val.x;
+                bufferData[offset + 1] = val.y;
+            }
+        }
+        else if (instancedAttribute.default instanceof Cartesian3) {
+
+            for (i = 0; i < instancesLength; ++i) {
+                var instance = instances[i];
+                var val = instance[name];
+                var offset = i * componentsPerAttribute;
+                bufferData[offset] = val.x;
+                bufferData[offset + 1] = val.y;
+                bufferData[offset + 2] = val.z;
+            }
+        }
+        else if (instancedAttribute.default instanceof Cartesian4) {
+            for (i = 0; i < instancesLength; ++i) {
+                var instance = instances[i];
+                var val = instance[name];
+                var offset = i * componentsPerAttribute;
+                bufferData[offset] = val.x;
+                bufferData[offset + 1] = val.y;
+                bufferData[offset + 2] = val.z;
+                bufferData[offset + 3] = val.w;
+            }
+        }
+        return bufferData;
+
+    }
+
+    function createInstancedAttributes(collection, context, vertexArrayAttributes, attributeLocations, maxAttribLocation) {
+        var instancedAttributes = collection.instancedAttributes;
+        instancedAttributes.forEach(function (instancedAttribute) {
+
+            var name = instancedAttribute.name
+            attributeLocations[name] = ++maxAttribLocation
+
+            var buffer = Buffer.createVertexBuffer({
+                context: context,
+                typedArray: getInstancedAttribTypedArray(collection, instancedAttribute),
+                usage: BufferUsage.STATIC_DRAW
+            });
+            instancedAttribute._buffer = buffer;
+
+            var attribute = {
+                index: attributeLocations[instancedAttribute.name],
+                vertexBuffer: buffer,
+                componentsPerAttribute: 4,
+                componentDatatype: ComponentDatatype.FLOAT,
+                normalize: true,
+                offsetInBytes: 0,
+                strideInBytes: 0,
+                instanceDivisor: 1
+            }
+            if (typeof instancedAttribute.default == 'number') {
+                attribute.componentsPerAttribute = 1;
+            }
+            else if (instancedAttribute.default instanceof Cartesian2) {
+                attribute.componentsPerAttribute = 2;
+            }
+            else if (instancedAttribute.default instanceof Cartesian3) {
+                attribute.componentsPerAttribute = 3;
+            }
+            else if (instancedAttribute.default instanceof Cartesian4) {
+                attribute.componentsPerAttribute = 4;
+            } else if (instancedAttribute.default instanceof Color) {
+                attribute.componentDatatype = ComponentDatatype.UNSIGNED_BYTE;
+                attribute.componentsPerAttribute = 4;
+            }
+
+            vertexArrayAttributes.push(attribute);
+
+        })
+
+        return maxAttribLocation;
+
+    }
+
     function createVertexBuffer(collection, context) {
         var pickIdBuffer = getPickIdBufferTypedArray(collection, context);
         collection._pickIdBuffer = Buffer.createVertexBuffer({
@@ -180,19 +317,22 @@ define([
         var gl = vertexBuffer._gl;
         var target = vertexBuffer._bufferTarget;
         gl.bindBuffer(target, vertexBuffer._buffer);
-        // gl.bufferSubData(target, offsetInBytes, arrayView);
         gl.bufferData(target, arrayView, gl.DYNAMIC_DRAW);
         gl.bindBuffer(target, null);
 
     }
     function updateVertexBuffer(collection, context) {
         var vertexBufferTypedArray = getVertexBufferTypedArray(collection);
-        // collection._vertexBuffer.copyFromArrayView(vertexBufferTypedArray);
         copyFromBufferView(collection._vertexBuffer, vertexBufferTypedArray);
 
         var pickIdBufferTypedArray = getPickIdBufferTypedArray(collection, context);
-        // collection._pickIdBuffer.copyFromArrayView(pickIdBufferTypedArray);
         copyFromBufferView(collection._pickIdBuffer, pickIdBufferTypedArray);
+
+        var instancedAttributes = collection.instancedAttributes;
+        instancedAttributes.forEach(function (instancedAttribute) {
+            var bufferTypedArray = getInstancedAttribTypedArray(collection, instancedAttribute);
+            copyFromBufferView(instancedAttribute._buffer, bufferTypedArray);
+        })
     }
 
     function createPickIds(collection, context) {
@@ -652,7 +792,7 @@ define([
 
             var command = new Cesium.DrawCommand({
                 // pickId: mesh.material.allowPick ? pickId : undefined,
-                // modelMatrix: Matrix4.clone(this.modelMatrix),
+                modelMatrix: mesh._instances && mesh._instances.length > 0 ? undefined : Matrix4.clone(this.modelMatrix),
                 owner: mesh,
                 primitiveType: geometry.primitiveType,
                 cull: false,// material.cullFrustum,
@@ -727,12 +867,15 @@ define([
                     instanceDivisor: 1
                 };
 
+
                 for (var location in instancedAttributes) {
                     if (instancedAttributes.hasOwnProperty(location)) {
                         attributeLocations[location] = ++maxAttribLocation;
                         vertexArrayAttributes.push(instancedAttributes[location])
                     }
                 }
+
+                maxAttribLocation = createInstancedAttributes(mesh, frameState.context, vertexArrayAttributes, attributeLocations, maxAttribLocation);
             }
 
             command.vertexArray = VertexArray.fromGeometry({

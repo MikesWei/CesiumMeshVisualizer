@@ -24,6 +24,7 @@ define([
     *@param {{modelMatrix:Cesium.Matrix4,show:boolean}[]}[options.instances]
     *@param {Cesium.MeshMaterial}[material]
     *@param {{modelMatrix:Cesium.Matrix4,show:boolean}[]}[instances]
+    *@param {{name:string,default:number|Cesium.Cartesian2|Cesium.Cartesian3|Cesium.Cartesian4|Cesium.Color}[]}[instancedAttributes]
     *
     *@property {Cesium.Geometry}geometry  
     *@property {Cesium.MeshMaterial}material
@@ -50,14 +51,14 @@ define([
 
     */
     function Mesh(options) {
-
         if (Mesh.isGeometrySupported(options)) {
             var geometry = options;
 
             options = {
                 geometry: geometry,
                 material: arguments[1],
-                instances: arguments[2]
+                instances: arguments[2],
+                instancedAttributes: arguments[3]
             };
         }
         if (!options || !options.geometry) {
@@ -102,6 +103,7 @@ define([
         this._children = [];
         this._parent = null;
         this._instances = [];
+        this.instancedAttributes = options.instancedAttributes || [];
         if (options.instances && options.instances.length) {
 
             options.instances.forEach(function (instance) {
@@ -138,12 +140,20 @@ define([
         instance.show = defaultValue(instance.show, true);
         instance.primitive = this;
         instance.boundingSphere = new Cesium.BoundingSphere(new Cesium.Cartesian3(), this.geometry.boundingSphere ? this.geometry.boundingSphere.radius : 0)
-        
+
         Cesium.Matrix4.getTranslation(instance.modelMatrix, instance.boundingSphere.center)
 
         instance.id = instance.id || Cesium.createGuid();
         instance.instanceId = this._instances.length;
+
+        this.instancedAttributes.forEach(function (attr) {
+            if (!instance[attr.name]) {
+                instance[attr.name] = attr.default;
+            }
+        })
+
         this._instances.push(instance);
+
         return instance;
     }
 
