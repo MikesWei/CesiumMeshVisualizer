@@ -1930,7 +1930,7 @@ define('Core/MeshMaterial',['Util/defineProperty'], function (defineProperty) {
                     var val = {};
                     val.needsUpdate = true;
 
-                    if (Cesium.isArray(item) && item.length >= 3 && item.length <= 4 && typeof item[0] === 'number') {
+                    if (Array.isArray(item) && item.length >= 3 && item.length <= 4 && typeof item[0] === 'number') {
                         srcUniforms[i] = new Cesium.Color(srcUniforms[i][0], srcUniforms[i][1], srcUniforms[i][2], srcUniforms[i][3]);
                     } else if (Cesium.defined(item.value)) {
                         for (var n in item) {
@@ -2344,7 +2344,7 @@ define('Core/GeometryUtils',[
     *@param {Cesium.Cartesian3}offset
     */
     GeometryUtils.translate = function (geometry, offset) {
-        if (Cesium.isArray(offset)) {
+        if (Array.isArray(offset)) {
             scratchOffset.x = offset[0];
             scratchOffset.y = offset[1];
             scratchOffset.z = offset[2];
@@ -2869,7 +2869,7 @@ define('Core/Mesh',[
     MeshMaterial,
     GeometryUtils,
     MeshPhongMaterial
-    ) {
+) {
     var defaultValue = Cesium.defaultValue;
     /**
     *
@@ -2880,7 +2880,9 @@ define('Core/Mesh',[
     *@param {Cesium.Cartesian3}[options.position]
     *@param {Cesium.Rotation}[options.rotation]
     *@param {Cesium.Cartesian3}[options.scale]   
+    *@param {{modelMatrix:Cesium.Matrix4,show:boolean}[]}[options.instances]
     *@param {Cesium.MeshMaterial}[material]
+    *@param {{modelMatrix:Cesium.Matrix4,show:boolean}[]}[instances]
     *
     *@property {Cesium.Geometry}geometry  
     *@property {Cesium.MeshMaterial}material
@@ -2890,6 +2892,7 @@ define('Core/Mesh',[
     *@property {Cesium.Cartesian3}scale   
     *@property {Boolean}needUpdate 
     *@property {Cesium.Mesh|Cesium.LOD}parent 
+    *@property {{modelMatrix:Cesium.Matrix4}[]}instances
     *
     *@constructor
     *@memberof Cesium
@@ -2912,7 +2915,8 @@ define('Core/Mesh',[
 
             options = {
                 geometry: geometry,
-                material: arguments[1]
+                material: arguments[1],
+                instances: arguments[2]
             };
         }
         if (!options || !options.geometry) {
@@ -2956,11 +2960,20 @@ define('Core/Mesh',[
         this._drawCommand = null;
         this._children = [];
         this._parent = null;
+        this._instances = [];
+        if (options.instances && options.instances.length) {
+
+            options.instances.forEach(function (instance) {
+                this.addInstance(instance);
+            }, this);
+        }
+
         this.userData = {};
+
         if (!this._geometry.attributes.normal
             && this.material instanceof MeshPhongMaterial
             && this._geometry.primitiveType == Cesium.PrimitiveType.TRIANGLES
-            ) {
+        ) {
             Cesium.GeometryPipeline.computeNormal(this._geometry);
             //GeometryUtils.computeVertexNormals(this._geometry);
         }
@@ -2974,6 +2987,24 @@ define('Core/Mesh',[
         return supported;
     }
 
+    /**
+     * 
+     * @param {object}instance
+     * @param {Cesium.Matrix4}instance.modelMatrix
+     * @param {boolean}[instance.show=true]
+     */
+    Mesh.prototype.addInstance = function (instance) {
+        instance.show = defaultValue(instance.show, true);
+        instance.primitive = this;
+        instance.boundingSphere = new Cesium.BoundingSphere(new Cesium.Cartesian3(), this.geometry.boundingSphere ? this.geometry.boundingSphere.radius : 0)
+        
+        Cesium.Matrix4.getTranslation(instance.modelMatrix, instance.boundingSphere.center)
+
+        instance.id = instance.id || Cesium.createGuid();
+        instance.instanceId = this._instances.length;
+        this._instances.push(instance);
+        return instance;
+    }
 
     /**
     *
@@ -2997,7 +3028,11 @@ define('Core/Mesh',[
      */
 
     Object.defineProperties(Mesh.prototype, {
-
+        instances: {
+            get: function () {
+                return this._instances;
+            }
+        },
         modelMatrix: {
             get: function () {
                 return this._modelMatrix;
@@ -7376,6 +7411,8 @@ define('Core/MeshVisualizer',[
     var Matrix3 = Cesium.Matrix3;
     var CesiumMath = Cesium.Math;
     var Color = Cesium.Color;
+    var Buffer = Cesium.Buffer;
+    var ComponentDatatype = Cesium.ComponentDatatype;
 
     var scratchTranslation = new Cartesian3();
     var scratchQuaternion = new Cesium.Quaternion();
@@ -7405,6 +7442,132 @@ define('Core/MeshVisualizer',[
     Cesium.Quaternion.prototype.copy = function (src) {
         this.x = src.x; this.y = src.y; this.z = src.z; this.w = src.w;
     }
+
+
+    var scratchMatrix = new Matrix4();
+    function getVertexBufferTypedArray(collection) {
+
+        var instances = collection._availableInstances;
+        var instancesLength = instances.length;
+        var collectionCenter = collection._center;
+
+        var vertexSizeInFloats = 12;
+
+        var bufferData = collection._vertexBufferTypedArray;
+        if (!defined(bufferData) || instancesLength * vertexSizeInFloats > bufferData.length) {
+            bufferData = new Float32Array(instancesLength * vertexSizeInFloats);
+        }
+
+        // Hold onto the buffer data so we don't have to allocate new memory every frame.
+        collection._vertexBufferTypedArray = bufferData;
+
+        for (var i = 0; i < instancesLength; ++i) {
+
+            var modelMatrix = instances[i].modelMatrix;
+
+            // Instance matrix is relative to center
+            var instanceMatrix = Matrix4.clone(modelMatrix, scratchMatrix);
+            instanceMatrix[12] -= collectionCenter.x;
+            instanceMatrix[13] -= collectionCenter.y;
+            instanceMatrix[14] -= collectionCenter.z;
+
+            var offset = i * vertexSizeInFloats;
+
+            // First three rows of the model matrix
+            bufferData[offset + 0] = instanceMatrix[0];
+            bufferData[offset + 1] = instanceMatrix[4];
+            bufferData[offset + 2] = instanceMatrix[8];
+            bufferData[offset + 3] = instanceMatrix[12];
+            bufferData[offset + 4] = instanceMatrix[1];
+            bufferData[offset + 5] = instanceMatrix[5];
+            bufferData[offset + 6] = instanceMatrix[9];
+            bufferData[offset + 7] = instanceMatrix[13];
+            bufferData[offset + 8] = instanceMatrix[2];
+            bufferData[offset + 9] = instanceMatrix[6];
+            bufferData[offset + 10] = instanceMatrix[10];
+            bufferData[offset + 11] = instanceMatrix[14];
+        }
+
+        return bufferData;
+    }
+
+    function getPickIdBufferTypedArray(collection, context) {
+        var i;
+        var instances = collection._availableInstances;
+        var instancesLength = instances.length
+
+        var pickIdBuffer = collection._pickIdBufferTypedArray;
+        if (!pickIdBuffer || instancesLength * 4 > pickIdBuffer.length) {
+            pickIdBuffer = new Uint8Array(instancesLength * 4);
+        }
+        collection._pickIdBufferTypedArray = pickIdBuffer;
+
+        for (i = 0; i < instancesLength; ++i) {
+            var instance = instances[i];
+            var pickId = collection._pickIds[instance.instanceId];
+            if (!pickId) {
+                pickId = context.createPickId(instance);
+                collection._pickIds[instance.instanceId] = pickId;
+            }
+            var pickColor = pickId.color;
+            var offset = i * 4;
+            pickIdBuffer[offset] = Color.floatToByte(pickColor.red);
+            pickIdBuffer[offset + 1] = Color.floatToByte(pickColor.green);
+            pickIdBuffer[offset + 2] = Color.floatToByte(pickColor.blue);
+            pickIdBuffer[offset + 3] = Color.floatToByte(pickColor.alpha);
+        }
+        return pickIdBuffer;
+    }
+
+    function createVertexBuffer(collection, context) {
+        var pickIdBuffer = getPickIdBufferTypedArray(collection, context);
+        collection._pickIdBuffer = Buffer.createVertexBuffer({
+            context: context,
+            typedArray: pickIdBuffer,
+            usage: BufferUsage.STATIC_DRAW
+        });
+        var vertexBufferTypedArray = getVertexBufferTypedArray(collection);
+        collection._vertexBuffer = Buffer.createVertexBuffer({
+            context: context,
+            typedArray: vertexBufferTypedArray,
+            usage: BufferUsage.STATIC_DRAW
+        });
+    }
+
+    function copyFromBufferView(vertexBuffer, arrayView, offsetInBytes) {
+        offsetInBytes = offsetInBytes || 0;
+        var gl = vertexBuffer._gl;
+        var target = vertexBuffer._bufferTarget;
+        gl.bindBuffer(target, vertexBuffer._buffer);
+        // gl.bufferSubData(target, offsetInBytes, arrayView);
+        gl.bufferData(target, arrayView, gl.DYNAMIC_DRAW);
+        gl.bindBuffer(target, null);
+
+    }
+    function updateVertexBuffer(collection, context) {
+        var vertexBufferTypedArray = getVertexBufferTypedArray(collection);
+        // collection._vertexBuffer.copyFromArrayView(vertexBufferTypedArray);
+        copyFromBufferView(collection._vertexBuffer, vertexBufferTypedArray);
+
+        var pickIdBufferTypedArray = getPickIdBufferTypedArray(collection, context);
+        // collection._pickIdBuffer.copyFromArrayView(pickIdBufferTypedArray);
+        copyFromBufferView(collection._pickIdBuffer, pickIdBufferTypedArray);
+    }
+
+    function createPickIds(collection, context) {
+        // PERFORMANCE_IDEA: we could skip the pick buffer completely by allocating
+        // a continuous range of pickIds and then converting the base pickId + batchId
+        // to RGBA in the shader.  The only consider is precision issues, which might
+        // not be an issue in WebGL 2.
+        var instances = collection._instances;
+        var instancesLength = instances.length;
+        var pickIds = new Array(instancesLength);
+        for (var i = 0; i < instancesLength; ++i) {
+            pickIds[i] = context.createPickId(instances[i]);
+        }
+        return pickIds;
+    }
+
     /**
     *
     *
@@ -7816,7 +7979,16 @@ define('Core/MeshVisualizer',[
             geometry.primitiveType = Cesium.PrimitiveType.TRIANGLES;
             return geometry;
         },
+        createBoundingSphere: function (mesh) {
+            var instancesLength = mesh._instances.length;
+            var points = new Array(instancesLength);
+            for (var i = 0; i < instancesLength; ++i) {
+                points[i] = Matrix4.getTranslation(mesh._instances[i].modelMatrix, new Cartesian3());
+            }
 
+            mesh._boundingSphere = Cesium.BoundingSphere.fromPoints(points);
+            mesh._center = Cartesian3.clone(mesh._boundingSphere.center);
+        },
         /**
         * 
         *@param {Cesium.Mesh} mesh
@@ -7839,21 +8011,96 @@ define('Core/MeshVisualizer',[
 
             var command = new Cesium.DrawCommand({
                 // pickId: mesh.material.allowPick ? pickId : undefined,
-                modelMatrix: Matrix4.clone(this.modelMatrix),
+                // modelMatrix: Matrix4.clone(this.modelMatrix),
                 owner: mesh,
                 primitiveType: geometry.primitiveType,
-                cull: material.cullFrustum,
+                cull: false,// material.cullFrustum,
+                instanceCount: mesh._instances && mesh._availableInstances.length,
                 pass: material.translucent ? Cesium.Pass.TRANSLUCENT : Cesium.Pass.OPAQUE
                 // , boundingVolume: geometry.boundingSphere
             });
 
             var attributeLocations = GeometryPipeline.createAttributeLocations(geometry);
+            var vertexArrayAttributes;
+            if (mesh._instances && mesh._instances.length) {
+                this.createBoundingSphere(mesh);
+
+                vertexArrayAttributes = []
+                var maxAttribLocation = 0;
+                for (var location in attributeLocations) {
+                    if (attributeLocations.hasOwnProperty(location)) {
+                        maxAttribLocation = Math.max(maxAttribLocation, attributeLocations[location])
+                    }
+                }
+                // command.instanceCount = mesh._instances.length;
+                var collection = mesh;
+
+                collection._pickIds = createPickIds(collection, frameState.context);
+
+                createVertexBuffer(collection, frameState.context);
+
+                var vertexSizeInFloats = 12;
+                var componentSizeInBytes = ComponentDatatype.getSizeInBytes(ComponentDatatype.FLOAT);
+
+                var instancedAttributes = {
+                    czm_modelMatrixRow0: {
+                        index: maxAttribLocation + 1,
+                        vertexBuffer: collection._vertexBuffer,
+                        componentsPerAttribute: 4,
+                        componentDatatype: ComponentDatatype.FLOAT,
+                        normalize: false,
+                        offsetInBytes: 0,
+                        strideInBytes: componentSizeInBytes * vertexSizeInFloats,
+                        instanceDivisor: 1
+                    },
+                    czm_modelMatrixRow1: {
+                        index: maxAttribLocation + 2,
+                        vertexBuffer: collection._vertexBuffer,
+                        componentsPerAttribute: 4,
+                        componentDatatype: ComponentDatatype.FLOAT,
+                        normalize: false,
+                        offsetInBytes: componentSizeInBytes * 4,
+                        strideInBytes: componentSizeInBytes * vertexSizeInFloats,
+                        instanceDivisor: 1
+                    },
+                    czm_modelMatrixRow2: {
+                        index: maxAttribLocation + 3,
+                        vertexBuffer: collection._vertexBuffer,
+                        componentsPerAttribute: 4,
+                        componentDatatype: ComponentDatatype.FLOAT,
+                        normalize: false,
+                        offsetInBytes: componentSizeInBytes * 8,
+                        strideInBytes: componentSizeInBytes * vertexSizeInFloats,
+                        instanceDivisor: 1
+                    }
+                };
+
+                instancedAttributes.a_pickColor = {
+                    index: maxAttribLocation + 4,
+                    vertexBuffer: collection._pickIdBuffer,
+                    componentsPerAttribute: 4,
+                    componentDatatype: ComponentDatatype.UNSIGNED_BYTE,
+                    normalize: true,
+                    offsetInBytes: 0,
+                    strideInBytes: 0,
+                    instanceDivisor: 1
+                };
+
+                for (var location in instancedAttributes) {
+                    if (instancedAttributes.hasOwnProperty(location)) {
+                        attributeLocations[location] = ++maxAttribLocation;
+                        vertexArrayAttributes.push(instancedAttributes[location])
+                    }
+                }
+            }
 
             command.vertexArray = VertexArray.fromGeometry({
                 context: context,
                 geometry: geometry,
                 attributeLocations: attributeLocations,
-                bufferUsage: BufferUsage.STATIC_DRAW
+                bufferUsage: BufferUsage.STATIC_DRAW,
+
+                vertexArrayAttributes: vertexArrayAttributes
             });
             command.vertexArray._attributeLocations = attributeLocations;
 
@@ -7861,12 +8108,40 @@ define('Core/MeshVisualizer',[
 
             var shader = {
                 fragmentShader: this.getFragmentShaderSource(material),
-                vertexShader: this.getVertexShaderSource(geometry, material)
+                vertexShader: this.getVertexShaderSource(mesh, material)
             };
             if (material.material3js) {
                 shader = ShaderUtils.processShader3js(material.material3js, shader);
-
             }
+
+            if (mesh._instances && mesh._instances.length) {
+
+                var vs = shader.vertexShader;
+                var renamedSource = Cesium.ShaderSource.replaceMain(vs, 'czm_instancing_main');
+
+                var pickAttribute = 'attribute vec4 a_pickColor;\n' +
+                    'varying vec4 czm_pickColor;\n';
+                var pickVarying = '    czm_pickColor = a_pickColor;\n';
+
+                vs = //'mat4 czm_instanced_modelView;\n' +
+                    'attribute vec4 czm_modelMatrixRow0;\n' +
+                    'attribute vec4 czm_modelMatrixRow1;\n' +
+                    'attribute vec4 czm_modelMatrixRow2;\n' +
+                    'uniform mat4 czm_instanced_modifiedModelView;\n' +
+                    // batchIdAttribute +
+                    pickAttribute +
+                    renamedSource +
+                    'void main()\n' +
+                    '{\n' +
+                    '    modelMatrix = mat4(czm_modelMatrixRow0.x, czm_modelMatrixRow1.x, czm_modelMatrixRow2.x, 0.0, czm_modelMatrixRow0.y, czm_modelMatrixRow1.y, czm_modelMatrixRow2.y, 0.0, czm_modelMatrixRow0.z, czm_modelMatrixRow1.z, czm_modelMatrixRow2.z, 0.0, czm_modelMatrixRow0.w, czm_modelMatrixRow1.w, czm_modelMatrixRow2.w, 1.0);\n' +
+                    '    modelViewMatrix = czm_instanced_modifiedModelView * modelMatrix ;\n' +
+                    // globalVarsMain +
+                    '    czm_instancing_main();\n' +
+                    pickVarying +
+                    '}\n';
+                shader.vertexShader = vs;
+            }
+
 
             var vs = new Cesium.ShaderSource({
                 sources: [shader.vertexShader]
@@ -7892,6 +8167,7 @@ define('Core/MeshVisualizer',[
             //fs.sources.push(logDepthExtension);
             // }
 
+
             command._sp = ShaderProgram.fromCache({
                 context: context,
                 fragmentShaderSource: fs,//shader.fragmentShader,//this.getFragmentShaderSource(material),
@@ -7914,24 +8190,38 @@ define('Core/MeshVisualizer',[
             command.uniformMap.czm_pickColor = function () {
                 return pickId.color;
             }
+            command.uniformMap.czm_instanced_modifiedModelView = function () {
+                if (!mesh._rtcTransform) {
+                    mesh._rtcTransform = new Matrix4()
+                }
+                if (!mesh._rtcModelView) {
+                    mesh._rtcModelView = new Matrix4()
+                }
+                Matrix4.multiplyByTranslation(mesh.modelMatrix, mesh._center, mesh._rtcTransform);
+
+                return Matrix4.multiply(context.uniformState.view, mesh._rtcTransform, mesh._rtcModelView);
+            }
 
 
             var pickCommand = new Cesium.DrawCommand({
                 owner: mesh,
                 pickOnly: true,
-                modelMatrix: Matrix4.clone(this.modelMatrix),
+                instanceCount: mesh._instances && mesh._availableInstances.length,
+                // modelMatrix: Matrix4.clone(this.modelMatrix),
                 primitiveType: geometry.primitiveType,
                 cull: material.cullFrustum,
                 pass: material.translucent ? Cesium.Pass.TRANSLUCENT : Cesium.Pass.OPAQUE
             });
             // Recompile shader when material changes
 
+
+
             vs = new Cesium.ShaderSource({
                 sources: [shader.vertexShader]
             });
             fs = new Cesium.ShaderSource({
                 sources: [shader.fragmentShader],
-                pickColorQualifier: material.pickColorQualifier || 'uniform'
+                pickColorQualifier: mesh._instances && mesh._instances.length ? 'varying' : (material.pickColorQualifier || 'uniform')
             });
             // if (this.onlySunLighting) {
             fs.defines.push('ONLY_SUN_LIGHTING');
@@ -7947,6 +8237,8 @@ define('Core/MeshVisualizer',[
             fs.defines.push('LOG_DEPTH');
             fs.sources.push(logDepthExtension);
             // }
+
+
 
             var _pickSP = ShaderProgram.replaceCache({
                 context: context,
@@ -8489,7 +8781,7 @@ define('Core/MeshVisualizer',[
                 for (var name in uniforms) {
 
                     if (uniforms.hasOwnProperty(name) && Cesium.defined(uniforms[name].value) && uniforms[name].value != null) {
-                        if (Cesium.isArray(uniforms[name].value) && uniforms[name].value.length == 0) {
+                        if (Array.isArray(uniforms[name].value) && uniforms[name].value.length == 0) {
                             continue;
                         }
                         var item = uniforms[name];
@@ -8510,10 +8802,11 @@ define('Core/MeshVisualizer',[
         *@return {String}
         *@private  
         */
-        getVertexShaderSource: function (geometry, material) {
-
+        getVertexShaderSource: function (mesh, material) {
+            var geometry = mesh.geometry;
             function getAttributeDefineBlok(userDefine) {
                 var glsl = "";
+
                 var attrs = geometry.attributes;
                 for (var name in attrs) {
 
@@ -8566,8 +8859,9 @@ define('Core/MeshVisualizer',[
         uniform vec3 u_cameraPosition;\n";
 
             var innerUniforms = [
-                "uniform mat4 modelViewMatrix",
-                "uniform mat4 modelMatrix",
+
+                mesh._instances && mesh._instances.length > 0 ? 'mat4 modelViewMatrix' : "uniform mat4 modelViewMatrix",
+                mesh._instances && mesh._instances.length > 0 ? 'mat4 modelMatrix' : "uniform mat4 modelMatrix",
                 "uniform mat4 projectionMatrix",
                 "uniform mat3 normalMatrix",
                 "uniform mat4 u_modelViewMatrix",
@@ -8705,7 +8999,25 @@ define('Core/MeshVisualizer',[
         }
 
         MeshVisualizer.traverse(this, function (mesh) {
+            if (mesh._instances && mesh._instances.length) {
+                mesh._availableInstances = mesh._availableInstances || [];
+                mesh._availableInstances.splice(0);
 
+                if (!mesh.geometry.boundingSphere) {
+                    mesh.geometry.boundingSphere = Cesium.BoundingSphere.fromVertices(mesh.geometry.attributes.position.values);
+                }
+
+                mesh._instances.forEach(function (instance) {
+                    if (!instance.show) return;
+                    Matrix4.getTranslation(instance.modelMatrix, instance.boundingSphere.center);
+                    instance.boundingSphere.radius = mesh.geometry.boundingSphere.radius;
+                    var intersect = frameState.cullingVolume.computeVisibility(instance.boundingSphere)
+                    if (intersect != Cesium.Intersect.OUTSIDE) {
+                        mesh._availableInstances.push(instance)
+                    }
+                });
+                if (mesh._availableInstances.length == 0) return;
+            }
             if (MeshUtils.isMesh3js(mesh)) {
                 var needsUpdate = !mesh._actualMesh
                     || mesh.needsUpdate
@@ -8776,16 +9088,28 @@ define('Core/MeshVisualizer',[
                         var vb = mesh._drawCommand.vertexArray.indexBuffer;
                         vb.copyFromArrayView(mesh.geometry.indices, 0);
                     }
-                }
-                mesh._drawCommand.modelMatrix = mesh.modelMatrix;
-                if (!mesh._drawCommand.boundingVolume) {
-                    if (!mesh.geometry.boundingSphere) {
-                        mesh.geometry.boundingSphere = Cesium.BoundingSphere.fromVertices(mesh.geometry.attributes.position.values);
-                    }
-                    mesh._drawCommand.boundingVolume = Cesium.BoundingSphere.clone(mesh.geometry.boundingSphere);
-                }
-                Cesium.Matrix4.getTranslation(mesh.modelMatrix, mesh._drawCommand.boundingVolume.center);
 
+                    if (mesh._instances && mesh._instances.length) {
+                        updateVertexBuffer(mesh, frameState.context);
+                    }
+                }
+
+                mesh._drawCommand.modelMatrix = mesh.modelMatrix;
+
+                if (mesh._instances && mesh._instances.length) {
+                    mesh._drawCommand.boundingVolume = mesh._boundingSphere;
+                    mesh._drawCommand.instanceCount = mesh._availableInstances.length;
+                    mesh._pickCommand && (mesh._pickCommand.instanceCount = mesh._availableInstances.length);
+                }
+                else {
+                    if (!mesh._drawCommand.boundingVolume) {
+                        if (!mesh.geometry.boundingSphere) {
+                            mesh.geometry.boundingSphere = Cesium.BoundingSphere.fromVertices(mesh.geometry.attributes.position.values);
+                        }
+                        mesh._drawCommand.boundingVolume = Cesium.BoundingSphere.clone(mesh.geometry.boundingSphere);
+                    }
+                    Cesium.Matrix4.getTranslation(mesh.modelMatrix, mesh._drawCommand.boundingVolume.center);
+                }
                 mesh._pickCommand.boundingVolume = mesh._drawCommand.boundingVolume;
 
                 mesh._drawCommand.uniformMap = that.getUniformMap(mesh.material, frameState);
