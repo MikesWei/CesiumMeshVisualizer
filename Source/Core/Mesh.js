@@ -10,7 +10,7 @@ define([
     MeshMaterial,
     GeometryUtils,
     MeshPhongMaterial
-    ) {
+) {
     var defaultValue = Cesium.defaultValue;
     /**
     *
@@ -21,7 +21,9 @@ define([
     *@param {Cesium.Cartesian3}[options.position]
     *@param {Cesium.Rotation}[options.rotation]
     *@param {Cesium.Cartesian3}[options.scale]   
+    *@param {{modelMatrix:Cesium.Matrix4,show:boolean}[]}[options.instances]
     *@param {Cesium.MeshMaterial}[material]
+    *@param {{modelMatrix:Cesium.Matrix4,show:boolean}[]}[instances]
     *
     *@property {Cesium.Geometry}geometry  
     *@property {Cesium.MeshMaterial}material
@@ -31,6 +33,7 @@ define([
     *@property {Cesium.Cartesian3}scale   
     *@property {Boolean}needUpdate 
     *@property {Cesium.Mesh|Cesium.LOD}parent 
+    *@property {{modelMatrix:Cesium.Matrix4}[]}instances
     *
     *@constructor
     *@memberof Cesium
@@ -53,7 +56,8 @@ define([
 
             options = {
                 geometry: geometry,
-                material: arguments[1]
+                material: arguments[1],
+                instances: arguments[2]
             };
         }
         if (!options || !options.geometry) {
@@ -97,11 +101,20 @@ define([
         this._drawCommand = null;
         this._children = [];
         this._parent = null;
+        this._instances = [];
+        if (options.instances && options.instances.length) {
+
+            options.instances.forEach(function (instance) {
+                this.addInstance(instance);
+            }, this);
+        }
+
         this.userData = {};
+
         if (!this._geometry.attributes.normal
             && this.material instanceof MeshPhongMaterial
             && this._geometry.primitiveType == Cesium.PrimitiveType.TRIANGLES
-            ) {
+        ) {
             Cesium.GeometryPipeline.computeNormal(this._geometry);
             //GeometryUtils.computeVertexNormals(this._geometry);
         }
@@ -115,6 +128,24 @@ define([
         return supported;
     }
 
+    /**
+     * 
+     * @param {object}instance
+     * @param {Cesium.Matrix4}instance.modelMatrix
+     * @param {boolean}[instance.show=true]
+     */
+    Mesh.prototype.addInstance = function (instance) {
+        instance.show = defaultValue(instance.show, true);
+        instance.primitive = this;
+        instance.boundingSphere = new Cesium.BoundingSphere(new Cesium.Cartesian3(), this.geometry.boundingSphere ? this.geometry.boundingSphere.radius : 0)
+        
+        Cesium.Matrix4.getTranslation(instance.modelMatrix, instance.boundingSphere.center)
+
+        instance.id = instance.id || Cesium.createGuid();
+        instance.instanceId = this._instances.length;
+        this._instances.push(instance);
+        return instance;
+    }
 
     /**
     *
@@ -138,7 +169,11 @@ define([
      */
 
     Object.defineProperties(Mesh.prototype, {
-
+        instances: {
+            get: function () {
+                return this._instances;
+            }
+        },
         modelMatrix: {
             get: function () {
                 return this._modelMatrix;

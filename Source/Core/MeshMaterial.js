@@ -43,7 +43,7 @@
                     var val = {};
                     val.needsUpdate = true;
 
-                    if (Cesium.isArray(item) && item.length >= 3 && item.length <= 4 && typeof item[0] === 'number') {
+                    if (Array.isArray(item) && item.length >= 3 && item.length <= 4 && typeof item[0] === 'number') {
                         srcUniforms[i] = new Cesium.Color(srcUniforms[i][0], srcUniforms[i][1], srcUniforms[i][2], srcUniforms[i][3]);
                     } else if (Cesium.defined(item.value)) {
                         for (var n in item) {

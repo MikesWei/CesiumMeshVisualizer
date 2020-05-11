@@ -294,7 +294,7 @@
     *@param {Cesium.Cartesian3}offset
     */
     GeometryUtils.translate = function (geometry, offset) {
-        if (Cesium.isArray(offset)) {
+        if (Array.isArray(offset)) {
             scratchOffset.x = offset[0];
             scratchOffset.y = offset[1];
             scratchOffset.z = offset[2];
