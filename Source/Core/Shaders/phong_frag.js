@@ -8,6 +8,7 @@ uniform vec4  defaultColor;\n\
 uniform float specular;\n\
 uniform float shininess;\n\
 uniform vec3  emission;\n\
+uniform vec3  u_cameraPosition;\n\
 void main() {\n\
     vec3 positionToEyeEC = -v_position; \n\
     vec3 normalEC =normalize(v_normal);\n\
@@ -22,7 +23,8 @@ void main() {\n\
     material.emission =emission;//vec3(0.2,0.2,0.2);\n\
     material.diffuse = color.rgb ;\n\
     material.alpha =  color.a;\n\
-    gl_FragColor =  czm_phong(normalize(positionToEyeEC), material);\n\
+    vec3 lightDirectionEC=-u_cameraPosition;\n\
+    gl_FragColor =  czm_phong(normalize(positionToEyeEC), material,lightDirectionEC);\n\
 }';
 
     return phong_frag;

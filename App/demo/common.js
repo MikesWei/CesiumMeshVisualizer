@@ -1,7 +1,7 @@
 var appConfig = {  
     BaseURL: "../../../" 
 }
-window.CESIUM_BASE_URL = appConfig.BaseURL + "ThirdParty/Cesium/";
+// window.CESIUM_BASE_URL = appConfig.BaseURL + "ThirdParty/Cesium/";
 //准备
 var homePosition = [109.88, 38.18, 300000];//初始位置
 var viewer = null;
@@ -28,8 +28,8 @@ function init() {
     })
     navigationHelpButtonLang();
     //设置操作习惯
-    viewer.scene.screenSpaceCameraController.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
-    viewer.scene.screenSpaceCameraController.tiltEventTypes = [Cesium.CameraEventType.PINCH, Cesium.CameraEventType.RIGHT_DRAG];
+    // viewer.scene.screenSpaceCameraController.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
+    // viewer.scene.screenSpaceCameraController.tiltEventTypes = [Cesium.CameraEventType.PINCH, Cesium.CameraEventType.RIGHT_DRAG];
 
     look(homePosition[0], homePosition[1], homePosition[2]);
 

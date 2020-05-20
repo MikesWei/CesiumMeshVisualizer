@@ -102,10 +102,11 @@ define([
         this._drawCommand = null;
         this._children = [];
         this._parent = null;
-        this._instances = [];
+        this._instances = null;
+        this._center=this._position.clone();
         this.instancedAttributes = options.instancedAttributes || [];
         if (options.instances && options.instances.length) {
-
+            this._instances = [];
             options.instances.forEach(function (instance) {
                 this.addInstance(instance);
             }, this);
@@ -137,6 +138,7 @@ define([
      * @param {boolean}[instance.show=true]
      */
     Mesh.prototype.addInstance = function (instance) {
+        this._instances = this._instances || [];
         instance.show = defaultValue(instance.show, true);
         instance.primitive = this;
         instance.boundingSphere = new Cesium.BoundingSphere(new Cesium.Cartesian3(), this.geometry.boundingSphere ? this.geometry.boundingSphere.radius : 0)

@@ -1,10 +1,10 @@
 
-function startApp(
-    config,
-    appconfig,
-    Cesium,
-    common
-) {
+// function startApp(
+//     config,
+//     appconfig,
+//     Cesium,
+//     common
+// ) {
     homePosition = [109.88, 30.18, 3000000];//初始位置
 
     MeshVisualizer = Cesium.MeshVisualizer;
@@ -114,13 +114,11 @@ function startApp(
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
     viewer.extend(Cesium.viewerCesiumInspectorMixin);
-}
+// }
 
-requirejs([
-    "../../../requirejs.config.js",
-    "../../../appconfig.js",
-    '../../../Source/Main',
-    '../common.js'
-], startApp);
-
-
+// requirejs([
+//     "../../../requirejs.config.js",
+//     "../../../appconfig.js",
+//     '../../../Source/Main',
+//     '../common.js'
+// ], startApp); 

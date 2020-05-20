@@ -2778,6 +2778,7 @@ uniform vec4  defaultColor;\n\
 uniform float specular;\n\
 uniform float shininess;\n\
 uniform vec3  emission;\n\
+uniform vec3  u_cameraPosition;\n\
 void main() {\n\
     vec3 positionToEyeEC = -v_position; \n\
     vec3 normalEC =normalize(v_normal);\n\
@@ -2792,7 +2793,8 @@ void main() {\n\
     material.emission =emission;//vec3(0.2,0.2,0.2);\n\
     material.diffuse = color.rgb ;\n\
     material.alpha =  color.a;\n\
-    gl_FragColor =  czm_phong(normalize(positionToEyeEC), material);\n\
+    vec3 lightDirectionEC=-u_cameraPosition;\n\
+    gl_FragColor =  czm_phong(normalize(positionToEyeEC), material,lightDirectionEC);\n\
 }';
 
     return phong_frag;
@@ -2961,10 +2963,11 @@ define('Core/Mesh',[
         this._drawCommand = null;
         this._children = [];
         this._parent = null;
-        this._instances = [];
+        this._instances = null;
+        this._center=this._position.clone();
         this.instancedAttributes = options.instancedAttributes || [];
         if (options.instances && options.instances.length) {
-
+            this._instances = [];
             options.instances.forEach(function (instance) {
                 this.addInstance(instance);
             }, this);
@@ -2996,6 +2999,7 @@ define('Core/Mesh',[
      * @param {boolean}[instance.show=true]
      */
     Mesh.prototype.addInstance = function (instance) {
+        this._instances = this._instances || [];
         instance.show = defaultValue(instance.show, true);
         instance.primitive = this;
         instance.boundingSphere = new Cesium.BoundingSphere(new Cesium.Cartesian3(), this.geometry.boundingSphere ? this.geometry.boundingSphere.radius : 0)
@@ -7637,7 +7641,7 @@ define('Core/MeshVisualizer',[
                 vertexBuffer: buffer,
                 componentsPerAttribute: 4,
                 componentDatatype: ComponentDatatype.FLOAT,
-                normalize: true,
+                normalize: false,
                 offsetInBytes: 0,
                 strideInBytes: 0,
                 instanceDivisor: 1
@@ -7655,6 +7659,7 @@ define('Core/MeshVisualizer',[
                 attribute.componentsPerAttribute = 4;
             } else if (instancedAttribute.default instanceof Color) {
                 attribute.componentDatatype = ComponentDatatype.UNSIGNED_BYTE;
+                attribute.normalize = true;
                 attribute.componentsPerAttribute = 4;
             }
 
@@ -8137,7 +8142,7 @@ define('Core/MeshVisualizer',[
             }
 
             mesh._boundingSphere = Cesium.BoundingSphere.fromPoints(points);
-            mesh._center = Cartesian3.clone(mesh._boundingSphere.center);
+            Cartesian3.clone(mesh._boundingSphere.center, mesh._center);
         },
         /**
         * 
@@ -8165,7 +8170,7 @@ define('Core/MeshVisualizer',[
                 owner: mesh,
                 primitiveType: geometry.primitiveType,
                 cull: false,// material.cullFrustum,
-                instanceCount: mesh._instances && mesh._availableInstances.length,
+                instanceCount: mesh._instances && mesh._instances.length > 0 ? mesh._availableInstances.length : undefined,
                 pass: material.translucent ? Cesium.Pass.TRANSLUCENT : Cesium.Pass.OPAQUE
                 // , boundingVolume: geometry.boundingSphere
             });
@@ -8287,8 +8292,10 @@ define('Core/MeshVisualizer',[
                     'void main()\n' +
                     '{\n' +
                     '    modelMatrix = mat4(czm_modelMatrixRow0.x, czm_modelMatrixRow1.x, czm_modelMatrixRow2.x, 0.0, czm_modelMatrixRow0.y, czm_modelMatrixRow1.y, czm_modelMatrixRow2.y, 0.0, czm_modelMatrixRow0.z, czm_modelMatrixRow1.z, czm_modelMatrixRow2.z, 0.0, czm_modelMatrixRow0.w, czm_modelMatrixRow1.w, czm_modelMatrixRow2.w, 1.0);\n' +
-                    '    modelViewMatrix = czm_instanced_modifiedModelView * modelMatrix ;\n' +
-                    // globalVarsMain +
+                    '    modelViewMatrix = czm_instanced_modifiedModelView * modelMatrix;\n' +
+                    '    u_modelMatrix =modelMatrix;\n'+
+                    '    u_modelViewMatrix = modelViewMatrix ;\n' +
+                   // globalVarsMain +
                     '    czm_instancing_main();\n' +
                     pickVarying +
                     '}\n';
@@ -8343,24 +8350,13 @@ define('Core/MeshVisualizer',[
             command.uniformMap.czm_pickColor = function () {
                 return pickId.color;
             }
-            command.uniformMap.czm_instanced_modifiedModelView = function () {
-                if (!mesh._rtcTransform) {
-                    mesh._rtcTransform = new Matrix4()
-                }
-                if (!mesh._rtcModelView) {
-                    mesh._rtcModelView = new Matrix4()
-                }
-                Matrix4.multiplyByTranslation(mesh.modelMatrix, mesh._center, mesh._rtcTransform);
-
-                return Matrix4.multiply(context.uniformState.view, mesh._rtcTransform, mesh._rtcModelView);
-            }
-
+            command.uniformMap.czm_instanced_modifiedModelView = this.getModifiedModelViewCallback(context, mesh);
 
             var pickCommand = new Cesium.DrawCommand({
                 owner: mesh,
                 pickOnly: true,
-                instanceCount: mesh._instances && mesh._availableInstances.length,
-                // modelMatrix: Matrix4.clone(this.modelMatrix),
+                instanceCount: mesh._instances && mesh._instances.length > 0 ? mesh._availableInstances.length : undefined,
+                modelMatrix: mesh._instances && mesh._instances.length > 0 ? undefined : Matrix4.clone(this.modelMatrix),
                 primitiveType: geometry.primitiveType,
                 cull: material.cullFrustum,
                 pass: material.translucent ? Cesium.Pass.TRANSLUCENT : Cesium.Pass.OPAQUE
@@ -8411,6 +8407,19 @@ define('Core/MeshVisualizer',[
             return command;
         },
 
+        getModifiedModelViewCallback: function (context, mesh) {
+            return function () {
+                if (!mesh._rtcTransform) {
+                    mesh._rtcTransform = new Matrix4()
+                }
+                if (!mesh._rtcModelView) {
+                    mesh._rtcModelView = new Matrix4()
+                }
+                Matrix4.multiplyByTranslation(mesh.modelMatrix, mesh._center, mesh._rtcTransform);
+
+                return Matrix4.multiply(context.uniformState.view, mesh._rtcTransform, mesh._rtcModelView);
+            }
+        },
         /**
         *
         *
@@ -9017,8 +9026,8 @@ define('Core/MeshVisualizer',[
                 mesh._instances && mesh._instances.length > 0 ? 'mat4 modelMatrix' : "uniform mat4 modelMatrix",
                 "uniform mat4 projectionMatrix",
                 "uniform mat3 normalMatrix",
-                "uniform mat4 u_modelViewMatrix",
-                "uniform mat4 u_modelMatrix",
+                mesh._instances && mesh._instances.length > 0 ? 'mat4 u_modelViewMatrix' :"uniform mat4 u_modelViewMatrix",
+                mesh._instances && mesh._instances.length > 0 ? 'mat4 u_modelMatrix' : "uniform mat4 u_modelMatrix",
                 "uniform mat4 u_projectionMatrix",
                 "uniform mat3 u_normalMatrix",
                 "uniform mat4 u_viewMatrix",
@@ -9152,6 +9161,8 @@ define('Core/MeshVisualizer',[
         }
 
         MeshVisualizer.traverse(this, function (mesh) {
+            if (!mesh.show) return;
+
             if (mesh._instances && mesh._instances.length) {
                 mesh._availableInstances = mesh._availableInstances || [];
                 mesh._availableInstances.splice(0);
@@ -9171,6 +9182,7 @@ define('Core/MeshVisualizer',[
                 });
                 if (mesh._availableInstances.length == 0) return;
             }
+
             if (MeshUtils.isMesh3js(mesh)) {
                 var needsUpdate = !mesh._actualMesh
                     || mesh.needsUpdate
@@ -9199,7 +9211,6 @@ define('Core/MeshVisualizer',[
                 mesh = mesh._actualMesh;
                 MaterialUtils.updateMaterialFrom3js(mesh.material);
             }
-
 
             that._computeModelMatrix(mesh, frameState);
 
@@ -9232,7 +9243,14 @@ define('Core/MeshVisualizer',[
                             if (mesh.geometry.attributes[name] && mesh.geometry.attributes[name].needsUpdate) {
                                 var attrLocation = mesh._drawCommand.vertexArray._attributeLocations[name]
                                 var vb = mesh._drawCommand.vertexArray._attributes[attrLocation].vertexBuffer;
-                                vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
+                                var arrayView = mesh.geometry.attributes[name].values;
+                                var gl = vb._gl;
+                                var target = vb._bufferTarget;
+                                gl.bindBuffer(target, vb._buffer);
+                                gl.bufferData(target, arrayView, BufferUsage.STATIC_DRAW);
+                                gl.bindBuffer(target, null);
+
+                                // vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
                             }
                         }
                     }
@@ -9268,27 +9286,7 @@ define('Core/MeshVisualizer',[
                 mesh._drawCommand.uniformMap = that.getUniformMap(mesh.material, frameState);
                 if (frameState.passes.pick) {
 
-                    var command = mesh._pickCommand//_drawCommand;
-                    // var rs = mesh.material._renderStateOptions;
-                    // rs.blending.enabled = false;
-                    // rs.depthMask = true;
-
-                    // command.renderState = RenderState.fromCache(mesh.material._renderStateOptions);
-
-
-                    // command.shaderProgram = command._pickSp;
-                    // if (command.derivedCommands) {
-                    //     command.derivedCommands.picking = {
-                    //         pickCommand: command
-                    //     };
-                    //     if (command.derivedCommands.logDepth
-                    //         && command.derivedCommands.logDepth.command
-                    //         && command.derivedCommands.logDepth.command.derivedCommands) {
-                    //         command.derivedCommands.logDepth.command.derivedCommands.picking = {
-                    //             pickCommand: command
-                    //         };
-                    //     }
-                    // }
+                    var command = mesh._pickCommand;
                     frameState.commandList.push(command);
 
                 } else {
@@ -9299,7 +9297,6 @@ define('Core/MeshVisualizer',[
                     mesh._drawCommand.shaderProgram = mesh._drawCommand._sp;
                     frameState.commandList.push(mesh._drawCommand);
                 }
-
 
             } else {
                 mesh.needsUpdate = false;

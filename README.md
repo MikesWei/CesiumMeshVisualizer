@@ -53,7 +53,10 @@
      <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/fluid/fluid2d.jpg" /> 
    </a><br />
  <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/fluid/index.html">fluid2d</a><br />
-
+<a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/c/index.html">
+     <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/instance/screenshot.jpg" /> 
+   </a><br />
+ <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/instance/index.html">instancing</a><br />
 Example<br/>
 
 ```javascript

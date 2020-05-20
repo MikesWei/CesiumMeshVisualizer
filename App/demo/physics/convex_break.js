@@ -45,11 +45,11 @@
 
 
     function createRandomColor() {
-        return Cesium.Color.fromRandom({ alpha: 1 })//fromRgba(Math.floor(Math.random() * (1 << 24)));
+        return Cesium.Color.fromRandom({ alpha: 255 })//fromRgba(Math.floor(Math.random() * (1 << 24)));
     }
     function createMaterial(color) {
         if (typeof  color==='string') {
-
+           color = Cesium.Color.fromCssColorString(color)
         }else if (Cesium.defined(color)) {
             color = Cesium.Color.fromRgba(color).withAlpha(1);
         } else {
@@ -155,19 +155,19 @@
             var towerHalfExtents = new THREE.Vector3(2, 5, 2);
             pos.set(-8, 5, 0);
             quat.set(0, 0, 0, 1);
-            createObject(towerMass, towerHalfExtents, pos, quat, createMaterial("rgb(247,174,68)"));
+            createObject(towerMass, towerHalfExtents, pos, quat, createMaterial("rgb(247,174,255)"));
 
             // Tower 2
             pos.set(8, 5, 0);
             quat.set(0, 0, 0, 1);
-            createObject(towerMass, towerHalfExtents, pos, quat, createMaterial("rgb(247,174,68)"));
+            createObject(towerMass, towerHalfExtents, pos, quat, createMaterial("rgb(247,174,255)"));
 
             //Bridge
             var bridgeMass = 100;
             var bridgeHalfExtents = new THREE.Vector3(7, 0.2, 1.5);
             pos.set(0, 10.2, 0);
             quat.set(0, 0, 0, 1);
-            createObject(bridgeMass, bridgeHalfExtents, pos, quat, createMaterial("rgb(247,174,68)"));
+            createObject(bridgeMass, bridgeHalfExtents, pos, quat, createMaterial("rgb(247,174,255)"));
 
             // Stones
             var stoneMass = 120;
