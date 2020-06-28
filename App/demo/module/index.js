@@ -1,6 +1,6 @@
  
-// import CesiumMeshVisualizer from '../../../Source/Main.js'
-// console.log(CesiumMeshVisualizer);
+import CesiumMeshVisualizer from '../../../Source/Main.js'
+console.log(CesiumMeshVisualizer);
 
 //准备
 var homePosition = [109.88, 38.18, 300000];//初始位置
