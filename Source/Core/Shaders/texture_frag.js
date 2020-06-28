@@ -1,5 +1,5 @@
-define(function () {
-    var texture_frag = "\n\
+
+var texture_frag = "\n\
 #ifdef GL_ES\n\
     precision highp float;\n\
 #endif\n\
@@ -33,5 +33,4 @@ void main(void) \n\
         gl_FragColor =mix(color, pickedColor*0.5,1.0);\n\
     }\n\
 }";
-    return texture_frag;
-})
+export default texture_frag; 

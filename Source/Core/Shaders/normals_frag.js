@@ -1,5 +1,5 @@
-define(function () {
-    var normals_frag = "\n\
+
+var normals_frag = "\n\
 #ifdef GL_ES\n\
     precision highp float;\n\
 #endif\n\
@@ -49,5 +49,4 @@ vec4 ambient = ambientColor;\n\
         gl_FragColor =mix(color, pickedColor*0.5,1.0);\n\
     }\n\
 }";
-    return normals_frag;
-})
+export default normals_frag; 

@@ -1,0 +1,7 @@
+ThirdParty/
+node_modules/
+App/
+Document/
+build/
+.vs/
+.git/

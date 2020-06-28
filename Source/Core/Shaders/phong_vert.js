@@ -1,5 +1,5 @@
-﻿define(function () {
-    var phong_vert = "\n\
+﻿
+var phong_vert = "\n\
 #ifdef GL_ES\n\
     precision highp float;\n\
 #endif\n\
@@ -20,5 +20,4 @@ void main(void) \n\
     gl_Position =  projectionMatrix * pos;\n\
 }";
 
-    return phong_vert;
-})
+export default phong_vert; 

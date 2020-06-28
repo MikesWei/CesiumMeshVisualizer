@@ -1,6 +1,5 @@
-define(function () {
 
-    var none_frag = "\n\
+var none_frag = "\n\
 #ifdef GL_ES\n\
     precision highp float;\n\
 #endif\n\
@@ -29,6 +28,4 @@ void main(void) \n\
         gl_FragColor =mix(color, pickedColor*0.5,1.0);\n\
     }\n\
 }";
-    return none_frag;
-
-})
+export default none_frag; 

@@ -1,5 +1,5 @@
-define(function () {
-    var phong_frag = '\n\
+
+var phong_frag = '\n\
 varying vec3 v_position;\n\
 varying vec3 v_normal;\n\
 uniform float picked;\n\
@@ -27,5 +27,4 @@ void main() {\n\
     gl_FragColor =  czm_phong(normalize(positionToEyeEC), material,lightDirectionEC);\n\
 }';
 
-    return phong_frag;
-})
+export default phong_frag; 

@@ -1,0 +1,43 @@
+{
+  "name": "cesiummeshvisualizer",
+  "version": "1.0.2",
+  "description": "Make you can use three.js geometry in Cesium,and use mesh,geometry,material like three.js to manage renderable object in Cesium.",
+  "main": "dist/CesiumMeshVisualizer.js",
+  "module": "SourceES6/Main.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build":"node bundle.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MikesWei/CesiumMeshVisualizer.git"
+  },
+  "keywords": [
+    "Cesium",
+    "Mesh",
+    "MeshVis",
+    "MeshVisualizer",
+    "CesiumMeshVisualizer"
+  ],
+  "author": {
+    "name": "MikesWei",
+    "email": "695034525@qq.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MikesWei/CesiumMeshVisualizer/issues"
+  },
+  "homepage": "http://os.mesh-3d.com/meshvis",
+  "dependencies": {
+    "csg": "^1.0.1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-preset-es2015": "^6.24.1",
+    "babelify": "^8.0.0",
+    "browserify": "^16.5.1",
+    "exorcist": "^1.0.1",
+    "uglify-js": "^2.8.13"
+  }
+}

@@ -1,5 +1,5 @@
 ﻿/// <reference path="../common.js" />
-/// <reference path="../../../build/CesiumMeshVisualizer.js" />
+/// <reference path="../../../dist/CesiumMeshVisualizer.js" />
 
 //requirejs([
 //       "../../../requirejs.config.js",

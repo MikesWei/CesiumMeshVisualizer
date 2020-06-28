@@ -1,5 +1,5 @@
-define(function () {
-    var texture_normals_vert = "\n\
+
+var texture_normals_vert = "\n\
 #ifdef GL_ES\n\
     precision highp float;\n\
 #endif\n\
@@ -21,5 +21,4 @@ void main(void) \n\
     v_light0Direction = mat3( modelViewMatrix) * vec3(1.0,1.0,1.0);\n\
     gl_Position =  projectionMatrix * pos;\n\
 }";
-    return texture_normals_vert;
-})
+export default texture_normals_vert; 

@@ -1,5 +1,5 @@
-define(function () {
-    var texture_normals_frag = "\n\
+
+var texture_normals_frag = "\n\
 #ifdef GL_ES\n\
     precision highp float;\n\
 #endif\n\
@@ -50,5 +50,4 @@ void main(void) \n\
     }\n\
 }";
 
-    return texture_normals_frag;
-})
+export default texture_normals_frag; 

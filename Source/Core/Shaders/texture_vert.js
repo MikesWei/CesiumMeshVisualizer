@@ -1,5 +1,5 @@
-define(function () {
-    var texture_vert = "\n\
+
+var texture_vert = "\n\
 #ifdef GL_ES\n\
     precision highp float;\n\
 #endif\n\
@@ -17,5 +17,4 @@ void main(void) \n\
     gl_Position =  projectionMatrix * pos;\n\
 }";
 
-    return texture_vert;
-})
+export default texture_vert; 

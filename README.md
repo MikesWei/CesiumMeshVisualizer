@@ -1,63 +1,69 @@
-#CesiumMeshVisualizer
+# CesiumMeshVisualizer
+Make you can use three.js geometry in Cesium,and use mesh,geometry,material like three.js to manage renderable object in Cesium.
+# Build
+``` shell
+npm install --save-dev
+npm run build
+```
 
-<a href="https://mikeswei.github.io/CesiumMeshVisualizer/Document/index.html" target="_blank">Document</a>
-    <hr />
-    demos（示例中常用操作有：左击发射，Q、A——左、右摆动，W、S、A、D——前进、后退、左转弯、右转弯）:<br /><br />
-    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/CSG/index.html">
-           <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/CSG/screenshot.jpg" /> 
-    </a><br />
-    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/CSG/index.html">CSG</a><br /><br />
-    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/LOD/index.html">
-       <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/LOD/screenshot.jpg" /> 
-    </a><br />
-    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/LOD/index.html">LOD</a><br /><br />
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/MeshVisualizer/index.html">MeshVisualizer</a><br /><br />
-<a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/helloworld.html">physics/helloworld</a><br/><br />
-  <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/cloth.html">
-        <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/cloth.jpg" />
-     </a><br /> 
-    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/cloth.html">physics/cloth</a><br /><br />
-    <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/vehicle.html">
-       <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/vehicle.jpg" />
-    </a><br /> 
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/vehicle.html">physics/vehicle</a><br /><br />
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/terrain.html">
-       <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/terrain.jpg" />
-    </a><br /> 
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/terrain.html">physics/terrain</a><br /><br />  
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/softbody_volume.html">
-       <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/soft_volume.jpg" />
-    </a><br /> 
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/softbody_volume.html">physics/softbody_volume</a><br /><br />
-      <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/softbody_volume2.html">
-       <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/soft_volume2.jpg" />
-    </a><br /> 
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/softbody_volume2.html">physics/softbody_volume2</a><br /><br />
-   
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/softbody_rope.html">
-       <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/soft_rope.jpg" />
-    </a><br /> 
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/softbody_rope.html">physics/softbody_rope</a><br /><br />
-       
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/convex_break.html">
-       <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/convex_break.jpg" />
-    </a><br /> 
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/convex_break.html">physics/convex_break</a><br /><br />
-   
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/ReferenceMesh/index.html">ReferenceMesh</a><br /><br />
-   <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html">
-     <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/screenshot.jpg" /> 
-   </a><br />
- <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html">VolumeRendering</a><br />
-<a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/fluid/index.html">
-     <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/fluid/fluid2d.jpg" /> 
-   </a><br />
- <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/fluid/index.html">fluid2d</a><br />
-<a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/c/index.html">
-     <img src="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/instance/screenshot.jpg" /> 
-   </a><br />
- <a target="_blank" href="https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/instance/index.html">instancing</a><br />
-Example<br/>
+# Install 
+```shell
+npm install cesiummeshvisualizer
+```
+
+# Download
+<a href="http://os.mesh-3d.com/meshvis/dist/CesiumMeshVisualizer.js">CesiumMeshVisualizer.js</a>
+
+<a href="http://os.mesh-3d.com/meshvis/dist/CesiumMeshVisualizer.min.js">CesiumMeshVisualizer.min.js</a>
+
+# Usage
+## 1.commonjs
+html:
+```html
+<script src="./ThirdParty/Cesium/Cesium.js"></script>
+```
+js:
+``` javascript
+var CesiumMeshVisualizer=require('./dist/CesiumMeshVisualizer.js')
+//...
+//npm install
+//var CesiumMeshVisualizer=require('cesiummeshvisualizer')
+//...
+```
+## 2.module
+
+``` javascript
+var g=typeof(window)!='undefined'?window:(typeof(global)!='undefined'?global:globalThis);
+import Cesium from 'cesium/Source/Cesium.js'
+g.Cesium=Cesium;
+import CesiumMeshVisualizer from './Source/Main.js'
+
+//npm install
+//import CesiumMeshVisualizer from 'cesiummeshvisualizer/Source/Main.js'
+//...
+```
+
+or 
+
+```html
+<script src="./ThirdParty/Cesium/Cesium.js"></script>
+```
+```javascript
+import CesiumMeshVisualizer from './Source/Main.js'
+```
+
+## 3.script element
+```html
+<script src="./ThirdParty/Cesium/Cesium.js"></script>
+<script src="./dist/CesiumMeshVisualizer.js"></script>
+<script>
+  console.log(CesiumMeshVisualizer,Cesium)
+  //...
+</script>
+```
+
+
+# Example
 
 ```javascript
         MeshVisualizer = Cesium.MeshVisualizer;
@@ -193,6 +199,75 @@ Example<br/>
 
  
 ```
+
+# Document
+<a href="http://os.mesh-3d.com/meshvis/Document/index.html" target="_blank">Document</a>
+   
+# Online Demos
+
+  <hr />
+
+  demos（示例中常用操作有：左击发射，Q、A——左、右摆动，W、S、A、D——前进、后退、左转弯、右转弯）:
+ <br /><br/>
+  <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/CSG/index.html">
+           <img src="http://os.mesh-3d.com/meshvis/App/demo/CSG/screenshot.jpg" /> 
+  </a><br/>
+
+  <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/CSG/index.html">CSG</a><br /><br />
+  
+  <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/LOD/index.html">
+       <img src="http://os.mesh-3d.com/meshvis/App/demo/LOD/screenshot.jpg" /> 
+    </a><br />
+<a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/LOD/index.html">LOD</a><br /><br />
+   
+<a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/MeshVisualizer/index.html">MeshVisualizer</a><br /><br />
+<a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/helloworld.html">physics/helloworld</a><br/><br />
+  <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/cloth.html">
+        <img src="http://os.mesh-3d.com/meshvis/App/demo/physics/cloth.jpg" />
+     </a><br /> 
+    <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/cloth.html">physics/cloth</a><br /><br />
+    <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/vehicle.html">
+       <img src="http://os.mesh-3d.com/meshvis/App/demo/physics/vehicle.jpg" />
+    </a><br /> 
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/vehicle.html">physics/vehicle</a><br /><br />
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/terrain.html">
+       <img src="http://os.mesh-3d.com/meshvis/App/demo/physics/terrain.jpg" />
+    </a><br /> 
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/terrain.html">physics/terrain</a><br /><br />  
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/softbody_volume.html">
+       <img src="http://os.mesh-3d.com/meshvis/App/demo/physics/soft_volume.jpg" />
+    </a><br /> 
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/softbody_volume.html">physics/softbody_volume</a><br /><br />
+      <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/softbody_volume2.html">
+       <img src="http://os.mesh-3d.com/meshvis/App/demo/physics/soft_volume2.jpg" />
+    </a><br /> 
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/softbody_volume2.html">physics/softbody_volume2</a><br /><br />
+   
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/softbody_rope.html">
+       <img src="http://os.mesh-3d.com/meshvis/App/demo/physics/soft_rope.jpg" />
+    </a><br /> 
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/softbody_rope.html">physics/softbody_rope</a><br /><br />
+       
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/convex_break.html">
+       <img src="http://os.mesh-3d.com/meshvis/App/demo/physics/convex_break.jpg" />
+    </a><br /> 
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/physics/convex_break.html">physics/convex_break</a><br /><br />
+   
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/ReferenceMesh/index.html">ReferenceMesh</a><br /><br />
+   <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/VolumeRendering/index.html">
+     <img src="http://os.mesh-3d.com/meshvis/App/demo/VolumeRendering/screenshot.jpg" /> 
+   </a><br />
+ <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/VolumeRendering/index.html">VolumeRendering</a><br />
+<a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/fluid/index.html">
+     <img src="http://os.mesh-3d.com/meshvis/App/demo/fluid/fluid2d.jpg" /> 
+   </a><br />
+ <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/fluid/index.html">fluid2d</a><br />
+<a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/c/index.html">
+     <img src="http://os.mesh-3d.com/meshvis/App/demo/instance/screenshot.jpg" /> 
+   </a><br />
+ <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/instance/index.html">instancing</a><br />
+
+# 当初的想法，啰嗦几句
 携源码示例和文档，诚意奉献，https://github.com/MikesWei/CesiumMeshVisualizer ， 名字不重要。 <br/>
     个人觉得Threejs里的Mesh、Geometry、Material极好，尤其是各个属性可以独立地、动态地编辑的特点，是目前在Cesium的Primitive中没有充分体现的。比如
 你渲染一个立方体，想要旋转，竟然还需要自己去算新的ModelMatrix；再比如画个波动的水面竟然不能只修改顶点位置属性，修改完顶点位置后竟然需要移除旧的
@@ -200,16 +275,16 @@ Primitive再创建一个。。。也许我没找到接口，但是真心难找�
 但是也太灵活，代码量大，还容易出错，所以决定自己模仿Threejs的Mesh、Geometry、Material并实现一个负责渲染和管理它们的更支持动态管理可渲染对象的
 Primitive；之前的思路是直接转换Threejs的Mesh，产物就是[Cesium3js](https://github.com/MikesWei/cesium3js)，但是名字太大，误以为是要完全整合Cesium和Threejs，这与我本意不符,遂重新整理优化：
 <br/>
-*  1、不直接支持threejs的mesh，但是支持Threejs的Geometry和BufferGeometry来构建几何体。内置了Threejs Geometry、BufferGeometry到Cesium.Geometry的转换接口，同时提供Cesium.Geometry到Threejs BufferGeometry的转换接口。这些接口由[GeometryUtils](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.GeometryUtils.html)类提供。
-*  2、定义Mesh，支持Cesium.Geometry、THREE.Geometry、THREE.BufferGeometry以及[CSG](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.CSG.html)运算结果模型。
+*  1、不直接支持threejs的mesh，但是支持Threejs的Geometry和BufferGeometry来构建几何体。内置了Threejs Geometry、BufferGeometry到Cesium.Geometry的转换接口，同时提供Cesium.Geometry到Threejs BufferGeometry的转换接口。这些接口由[GeometryUtils](http://os.mesh-3d.com/meshvis/Document/Cesium.GeometryUtils.html)类提供。
+*  2、定义Mesh，支持Cesium.Geometry、THREE.Geometry、THREE.BufferGeometry以及[CSG](http://os.mesh-3d.com/meshvis/Document/Cesium.CSG.html)运算结果模型。
 *  3、更方便的动态渲染和管理。同一个mesh，可以单独修改mesh的位置(position)、缩放(scale)、旋转角度(rotation/Quaternion)等属性；也可以单独修改
 geometry和material；同一个geometry可以单独修改各个属性和索引。方便管理，且减少对象的局部变化带来的整个drawCommand重新构建次数，以期在更多动态渲染
 对象同时改变的情况下（比如结合物理引擎做模拟），仍然保持较高的帧率，当然也牺牲了一定的内存。
-* 4、定义[MeshMaterial](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.MeshMaterial.html)，目的是更方便的引用Threejs圈的那些炫酷特效Shader，减少整合所需的代码量。尤其是Cesium的Appearance从fragmentShader中分离出Material部分的Shader，并且作用域不一样之后，带来好多不便，引入网上那些炫酷特效Shader的时候真是头疼死了，谁做过谁才解其中味~   [MeshMaterial](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.MeshMaterial.html)区别于Cesium的Material，更像Threejs的Material,但不完全是。。。好像有点四不像~  
-* 5、定义[FramebufferTexture](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.FramebufferTexture.html)，启发于Threejs的RenderTarget，暂且叫帧缓存纹理类吧，反正名字不重要~ MeshVisualizer和MeshMaterial一起支持此类纹
-理，就当是普通的一张图片纹理就好了。它的用处就是，把Mesh渲染到帧缓存中，作为纹理参与其他Mesh的渲染。可以参考[VolumeRendering示例](https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/VolumeRendering/index.html)。另外RendererUtils
-提供了一个单次执行渲染到纹理的接口[RendererUtils](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.RendererUtils.html).renderToTexture。在不使用[MeshVisualizer](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.MeshVisualizer.html)的时候，也就是自己基于drawCommand自定义一个Primitive的时
+* 4、定义[MeshMaterial](http://os.mesh-3d.com/meshvis/Document/Cesium.MeshMaterial.html)，目的是更方便的引用Threejs圈的那些炫酷特效Shader，减少整合所需的代码量。尤其是Cesium的Appearance从fragmentShader中分离出Material部分的Shader，并且作用域不一样之后，带来好多不便，引入网上那些炫酷特效Shader的时候真是头疼死了，谁做过谁才解其中味~   [MeshMaterial](http://os.mesh-3d.com/meshvis/Document/Cesium.MeshMaterial.html)区别于Cesium的Material，更像Threejs的Material,但不完全是。。。好像有点四不像~  
+* 5、定义[FramebufferTexture](http://os.mesh-3d.com/meshvis/Document/Cesium.FramebufferTexture.html)，启发于Threejs的RenderTarget，暂且叫帧缓存纹理类吧，反正名字不重要~ MeshVisualizer和MeshMaterial一起支持此类纹
+理，就当是普通的一张图片纹理就好了。它的用处就是，把Mesh渲染到帧缓存中，作为纹理参与其他Mesh的渲染。可以参考[VolumeRendering示例](http://os.mesh-3d.com/meshvis/App/demo/VolumeRendering/index.html)。另外RendererUtils
+提供了一个单次执行渲染到纹理的接口[RendererUtils](http://os.mesh-3d.com/meshvis/Document/Cesium.RendererUtils.html).renderToTexture。在不使用[MeshVisualizer](http://os.mesh-3d.com/meshvis/Document/Cesium.MeshVisualizer.html)的时候，也就是自己基于drawCommand自定义一个Primitive的时
 候也可以用得上。
-* 6、整合[CSG.js](https://github.com/evanw/csg.js)，支持使用Cesium.Geometry、THREE.Geometry、THREE.BufferGeometry做交、并、补等运算，并提供将运算结果CSG对象转成Cesium.Geometry、THREE.Geometry的接口。参考[CSG示例](https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/CSG/index.html)。
-* 7、提供基于[ammo.js](https://github.com/kripken/ammo.js)物理引擎的示例，[示例](https://mikeswei.github.io/CesiumMeshVisualizer/App/demo/physics/helloworld.html)源码源于Threejs，使用[MeshVisualizer](https://mikeswei.github.io/CesiumMeshVisualizer/Document/Cesium.MeshVisualizer.html)，可以在更少的代码修改情况下完成迁移整合，甚合我意。
+* 6、整合[CSG.js](https://github.com/evanw/csg.js)，支持使用Cesium.Geometry、THREE.Geometry、THREE.BufferGeometry做交、并、补等运算，并提供将运算结果CSG对象转成Cesium.Geometry、THREE.Geometry的接口。参考[CSG示例](http://os.mesh-3d.com/meshvis/App/demo/CSG/index.html)。
+* 7、提供基于[ammo.js](https://github.com/kripken/ammo.js)物理引擎的示例，[示例](http://os.mesh-3d.com/meshvis/App/demo/physics/helloworld.html)源码源于Threejs，使用[MeshVisualizer](http://os.mesh-3d.com/meshvis/Document/Cesium.MeshVisualizer.html)，可以在更少的代码修改情况下完成迁移整合，甚合我意。
     

@@ -1,5 +1,5 @@
-define(function () {
-    var none_vert = "\n\
+
+var none_vert = "\n\
 #ifdef GL_ES\n\
     precision highp float;\n\
 #endif\n\
@@ -14,5 +14,4 @@ void main(void) \n\
     v_position = pos.xyz;\n\
     gl_Position =  projectionMatrix * pos;\n\
 }";
-    return none_vert;
-})
+export default none_vert; 

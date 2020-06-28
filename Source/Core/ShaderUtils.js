@@ -1,29 +1,25 @@
-﻿define([ ], function (
+﻿
+/**
+*
+*@memberof Cesium
+*@constructor
+*/
+function ShaderUtils() {
 
-    ) {
-    /**
-   *
-   *@memberof Cesium
-   *@constructor
-   */
-    function ShaderUtils() {
+}
 
-    }
+/**
+*
+*
+*/
+ShaderUtils.processShader3js = function (material3js, shader) {
+    var program = new WebGLProgram(material3js, shader);
+    return program;
 
-    /**
-    *
-    *
-    */
-    ShaderUtils.processShader3js = function (material3js, shader) {
-        var program = new WebGLProgram(material3js, shader);
-        return program;
+}
 
-    }
-
-    if (typeof THREE=='undefined') {
-         
-        return ShaderUtils; 
-    }
+if (typeof THREE != 'undefined') {
+ 
     var shaderIDs = {
         MeshDepthMaterial: 'depth',
         MeshNormalMaterial: 'normal',
@@ -39,16 +35,16 @@
     };
 
     var parameterNames = [
-		"precision", "supportsVertexTextures", "map", "mapEncoding", "envMap", "envMapMode", "envMapEncoding",
-		"lightMap", "aoMap", "emissiveMap", "emissiveMapEncoding", "bumpMap", "normalMap", "displacementMap", "specularMap",
-		"roughnessMap", "metalnessMap", "gradientMap",
-		"alphaMap", "combine", "vertexColors", "fog", "useFog", "fogExp",
-		"flatShading", "sizeAttenuation", "logarithmicDepthBuffer", "skinning",
-		"maxBones", "useVertexTexture", "morphTargets", "morphNormals",
-		"maxMorphTargets", "maxMorphNormals", "premultipliedAlpha",
-		"numDirLights", "numPointLights", "numSpotLights", "numHemiLights", "numRectAreaLights",
-		"shadowMapEnabled", "shadowMapType", "toneMapping", 'physicallyCorrectLights',
-		"alphaTest", "doubleSided", "flipSided", "numClippingPlanes", "numClipIntersection", "depthPacking"
+        "precision", "supportsVertexTextures", "map", "mapEncoding", "envMap", "envMapMode", "envMapEncoding",
+        "lightMap", "aoMap", "emissiveMap", "emissiveMapEncoding", "bumpMap", "normalMap", "displacementMap", "specularMap",
+        "roughnessMap", "metalnessMap", "gradientMap",
+        "alphaMap", "combine", "vertexColors", "fog", "useFog", "fogExp",
+        "flatShading", "sizeAttenuation", "logarithmicDepthBuffer", "skinning",
+        "maxBones", "useVertexTexture", "morphTargets", "morphNormals",
+        "maxMorphTargets", "maxMorphNormals", "premultipliedAlpha",
+        "numDirLights", "numPointLights", "numSpotLights", "numHemiLights", "numRectAreaLights",
+        "shadowMapEnabled", "shadowMapType", "toneMapping", 'physicallyCorrectLights',
+        "alphaTest", "doubleSided", "flipSided", "numClippingPlanes", "numClipIntersection", "depthPacking"
     ];
     var ShaderChunk = THREE.ShaderChunk;
     var ShaderLib = THREE.ShaderLib;
@@ -59,32 +55,28 @@
         CubeUVReflectionMapping = THREE.CubeUVReflectionMapping,
         GammaEncoding = THREE.GammaEncoding,
         LinearEncoding = THREE.LinearEncoding,
-    NoToneMapping = THREE.NoToneMapping,
-    AddOperation = THREE.AddOperation,
-    MixOperation = THREE.MixOperation,
-    MultiplyOperation = THREE.MultiplyOperation,
-    EquirectangularRefractionMapping = THREE.EquirectangularRefractionMapping,
-    CubeRefractionMapping = THREE.CubeRefractionMapping,
-    SphericalReflectionMapping = THREE.SphericalReflectionMapping,
-    EquirectangularReflectionMapping = THREE.EquirectangularReflectionMapping,
-    CubeReflectionMapping = THREE.CubeReflectionMapping,
-    PCFSoftShadowMap = THREE.PCFSoftShadowMap,
-    PCFShadowMap = THREE.PCFShadowMap,
-    CineonToneMapping = THREE.CineonToneMapping,
-    Uncharted2ToneMapping = THREE.Uncharted2ToneMapping,
-    ReinhardToneMapping = THREE.ReinhardToneMapping,
-    LinearToneMapping = THREE.LinearToneMapping,
-    GammaEncoding = THREE.GammaEncoding,
-    RGBDEncoding = THREE.RGBDEncoding,
-    RGBM16Encoding = THREE.RGBM16Encoding,
-    RGBM7Encoding = THREE.RGBM7Encoding,
-    RGBEEncoding = THREE.RGBEEncoding,
-    sRGBEncoding = THREE.sRGBEncoding;
+        NoToneMapping = THREE.NoToneMapping,
+        AddOperation = THREE.AddOperation,
+        MixOperation = THREE.MixOperation,
+        MultiplyOperation = THREE.MultiplyOperation,
+        EquirectangularRefractionMapping = THREE.EquirectangularRefractionMapping,
+        CubeRefractionMapping = THREE.CubeRefractionMapping,
+        SphericalReflectionMapping = THREE.SphericalReflectionMapping,
+        EquirectangularReflectionMapping = THREE.EquirectangularReflectionMapping,
+        CubeReflectionMapping = THREE.CubeReflectionMapping,
+        PCFSoftShadowMap = THREE.PCFSoftShadowMap,
+        PCFShadowMap = THREE.PCFShadowMap,
+        CineonToneMapping = THREE.CineonToneMapping,
+        Uncharted2ToneMapping = THREE.Uncharted2ToneMapping,
+        ReinhardToneMapping = THREE.ReinhardToneMapping,
+        LinearToneMapping = THREE.LinearToneMapping,
+        GammaEncoding = THREE.GammaEncoding,
+        RGBDEncoding = THREE.RGBDEncoding,
+        RGBM16Encoding = THREE.RGBM16Encoding,
+        RGBM7Encoding = THREE.RGBM7Encoding,
+        RGBEEncoding = THREE.RGBEEncoding,
+        sRGBEncoding = THREE.sRGBEncoding;
 
-
-   
-
-   
     function getTextureEncodingFromMap(map, gammaOverrideLinear) {
 
         var encoding;
@@ -218,8 +210,8 @@
     };
 
     /**
-	 * @author mrdoob / http://mrdoob.com/
-	 */
+     * @author mrdoob / http://mrdoob.com/
+     */
 
     var programIdCount = 0;
 
@@ -298,10 +290,10 @@
         extensions = extensions || {};
 
         var chunks = [
-			(extensions.derivatives || parameters.envMapCubeUV || parameters.bumpMap || parameters.normalMap || parameters.flatShading) ? '#extension GL_OES_standard_derivatives : enable' : '',
-			(extensions.fragDepth || parameters.logarithmicDepthBuffer) && rendererExtensions.get('EXT_frag_depth') ? '#extension GL_EXT_frag_depth : enable' : '',
-			(extensions.drawBuffers) && rendererExtensions.get('WEBGL_draw_buffers') ? '#extension GL_EXT_draw_buffers : require' : '',
-			(extensions.shaderTextureLOD || parameters.envMap) && rendererExtensions.get('EXT_shader_texture_lod') ? '#extension GL_EXT_shader_texture_lod : enable' : ''
+            (extensions.derivatives || parameters.envMapCubeUV || parameters.bumpMap || parameters.normalMap || parameters.flatShading) ? '#extension GL_OES_standard_derivatives : enable' : '',
+            (extensions.fragDepth || parameters.logarithmicDepthBuffer) && rendererExtensions.get('EXT_frag_depth') ? '#extension GL_EXT_frag_depth : enable' : '',
+            (extensions.drawBuffers) && rendererExtensions.get('WEBGL_draw_buffers') ? '#extension GL_EXT_draw_buffers : require' : '',
+            (extensions.shaderTextureLOD || parameters.envMap) && rendererExtensions.get('EXT_shader_texture_lod') ? '#extension GL_EXT_shader_texture_lod : enable' : ''
         ];
 
         return chunks.filter(filterEmptyLine).join('\n');
@@ -335,11 +327,11 @@
     function replaceLightNums(string, parameters) {
 
         return string
-			.replace(/NUM_DIR_LIGHTS/g, parameters.numDirLights)
-			.replace(/NUM_SPOT_LIGHTS/g, parameters.numSpotLights)
-			.replace(/NUM_RECT_AREA_LIGHTS/g, parameters.numRectAreaLights)
-			.replace(/NUM_POINT_LIGHTS/g, parameters.numPointLights)
-			.replace(/NUM_HEMI_LIGHTS/g, parameters.numHemiLights);
+            .replace(/NUM_DIR_LIGHTS/g, parameters.numDirLights)
+            .replace(/NUM_SPOT_LIGHTS/g, parameters.numSpotLights)
+            .replace(/NUM_RECT_AREA_LIGHTS/g, parameters.numRectAreaLights)
+            .replace(/NUM_POINT_LIGHTS/g, parameters.numPointLights)
+            .replace(/NUM_HEMI_LIGHTS/g, parameters.numHemiLights);
 
     }
 
@@ -373,7 +365,7 @@
 
             var unroll = '';
 
-            for (var i = parseInt(start) ; i < parseInt(end) ; i++) {
+            for (var i = parseInt(start); i < parseInt(end); i++) {
 
                 unroll += snippet.replace(/\[ i \]/g, '[ ' + i + ' ]');
 
@@ -480,18 +472,18 @@
 
             prefixVertex = [
 
-				customDefines,
+                customDefines,
 
-				'\n'
+                '\n'
 
             ].filter(filterEmptyLine).join('\n');
 
             prefixFragment = [
 
-				//customExtensions,
-				customDefines,
+                //customExtensions,
+                customDefines,
 
-				'\n'
+                '\n'
 
             ].filter(filterEmptyLine).join('\n');
 
@@ -499,183 +491,183 @@
 
             prefixVertex = [
 
-				//'precision ' + parameters.precision + ' float;',
-				//'precision ' + parameters.precision + ' int;',
+                //'precision ' + parameters.precision + ' float;',
+                //'precision ' + parameters.precision + ' int;',
 
-				'#define SHADER_NAME ' + shader.name,
+                '#define SHADER_NAME ' + shader.name,
 
-				//customDefines,
+                //customDefines,
 
-				parameters.supportsVertexTextures ? '#define VERTEX_TEXTURES' : '',
+                parameters.supportsVertexTextures ? '#define VERTEX_TEXTURES' : '',
 
-				'#define GAMMA_FACTOR ' + gammaFactorDefine,
+                '#define GAMMA_FACTOR ' + gammaFactorDefine,
 
-				'#define MAX_BONES ' + parameters.maxBones,
-				//(parameters.useFog && parameters.fog) ? '#define USE_FOG' : '',
-				//(parameters.useFog && parameters.fogExp) ? '#define FOG_EXP2' : '',
+                '#define MAX_BONES ' + parameters.maxBones,
+                //(parameters.useFog && parameters.fog) ? '#define USE_FOG' : '',
+                //(parameters.useFog && parameters.fogExp) ? '#define FOG_EXP2' : '',
 
-				parameters.map ? '#define USE_MAP' : '',
-				parameters.envMap ? '#define USE_ENVMAP' : '',
-				parameters.envMap ? '#define ' + envMapModeDefine : '',
-				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
-				parameters.aoMap ? '#define USE_AOMAP' : '',
-				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
-				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
-				parameters.normalMap ? '#define USE_NORMALMAP' : '',
-				parameters.displacementMap && parameters.supportsVertexTextures ? '#define USE_DISPLACEMENTMAP' : '',
-				parameters.specularMap ? '#define USE_SPECULARMAP' : '',
-				parameters.roughnessMap ? '#define USE_ROUGHNESSMAP' : '',
-				parameters.metalnessMap ? '#define USE_METALNESSMAP' : '',
-				parameters.alphaMap ? '#define USE_ALPHAMAP' : '',
-				parameters.vertexColors ? '#define USE_COLOR' : '',
+                parameters.map ? '#define USE_MAP' : '',
+                parameters.envMap ? '#define USE_ENVMAP' : '',
+                parameters.envMap ? '#define ' + envMapModeDefine : '',
+                parameters.lightMap ? '#define USE_LIGHTMAP' : '',
+                parameters.aoMap ? '#define USE_AOMAP' : '',
+                parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
+                parameters.bumpMap ? '#define USE_BUMPMAP' : '',
+                parameters.normalMap ? '#define USE_NORMALMAP' : '',
+                parameters.displacementMap && parameters.supportsVertexTextures ? '#define USE_DISPLACEMENTMAP' : '',
+                parameters.specularMap ? '#define USE_SPECULARMAP' : '',
+                parameters.roughnessMap ? '#define USE_ROUGHNESSMAP' : '',
+                parameters.metalnessMap ? '#define USE_METALNESSMAP' : '',
+                parameters.alphaMap ? '#define USE_ALPHAMAP' : '',
+                parameters.vertexColors ? '#define USE_COLOR' : '',
 
-				parameters.flatShading ? '#define FLAT_SHADED' : '',
+                parameters.flatShading ? '#define FLAT_SHADED' : '',
 
-				parameters.skinning ? '#define USE_SKINNING' : '',
-				parameters.useVertexTexture ? '#define BONE_TEXTURE' : '',
+                parameters.skinning ? '#define USE_SKINNING' : '',
+                parameters.useVertexTexture ? '#define BONE_TEXTURE' : '',
 
-				parameters.morphTargets ? '#define USE_MORPHTARGETS' : '',
-				parameters.morphNormals && parameters.flatShading === false ? '#define USE_MORPHNORMALS' : '',
-				parameters.doubleSided ? '#define DOUBLE_SIDED' : '',
-				parameters.flipSided ? '#define FLIP_SIDED' : '',
+                parameters.morphTargets ? '#define USE_MORPHTARGETS' : '',
+                parameters.morphNormals && parameters.flatShading === false ? '#define USE_MORPHNORMALS' : '',
+                parameters.doubleSided ? '#define DOUBLE_SIDED' : '',
+                parameters.flipSided ? '#define FLIP_SIDED' : '',
 
-				'#define NUM_CLIPPING_PLANES ' + parameters.numClippingPlanes,
+                '#define NUM_CLIPPING_PLANES ' + parameters.numClippingPlanes,
 
-				parameters.shadowMapEnabled ? '#define USE_SHADOWMAP' : '',
-				parameters.shadowMapEnabled ? '#define ' + shadowMapTypeDefine : '',
+                parameters.shadowMapEnabled ? '#define USE_SHADOWMAP' : '',
+                parameters.shadowMapEnabled ? '#define ' + shadowMapTypeDefine : '',
 
-				parameters.sizeAttenuation ? '#define USE_SIZEATTENUATION' : '',
+                parameters.sizeAttenuation ? '#define USE_SIZEATTENUATION' : '',
 
-				parameters.logarithmicDepthBuffer ? '#define USE_LOGDEPTHBUF' : '',
-				//parameters.logarithmicDepthBuffer && renderer.extensions.get('EXT_frag_depth') ? '#define USE_LOGDEPTHBUF_EXT' : '',
+                parameters.logarithmicDepthBuffer ? '#define USE_LOGDEPTHBUF' : '',
+                //parameters.logarithmicDepthBuffer && renderer.extensions.get('EXT_frag_depth') ? '#define USE_LOGDEPTHBUF_EXT' : '',
 
-				//'uniform mat4 modelMatrix;',
-				//'uniform mat4 modelViewMatrix;',
-				//'uniform mat4 projectionMatrix;',
-				//'uniform mat4 viewMatrix;',
-				//'uniform mat3 normalMatrix;',
-				//'uniform vec3 cameraPosition;',
+                //'uniform mat4 modelMatrix;',
+                //'uniform mat4 modelViewMatrix;',
+                //'uniform mat4 projectionMatrix;',
+                //'uniform mat4 viewMatrix;',
+                //'uniform mat3 normalMatrix;',
+                //'uniform vec3 cameraPosition;',
 
-				//'attribute vec3 position;',
-				//'attribute vec3 normal;',
-				//'attribute vec2 uv;',
+                //'attribute vec3 position;',
+                //'attribute vec3 normal;',
+                //'attribute vec2 uv;',
 
-				'#ifdef USE_COLOR',
+                '#ifdef USE_COLOR',
 
-				'	attribute vec3 color;',
+                '	attribute vec3 color;',
 
-				'#endif',
+                '#endif',
 
-				'#ifdef USE_MORPHTARGETS',
+                '#ifdef USE_MORPHTARGETS',
 
-				'	attribute vec3 morphTarget0;',
-				'	attribute vec3 morphTarget1;',
-				'	attribute vec3 morphTarget2;',
-				'	attribute vec3 morphTarget3;',
+                '	attribute vec3 morphTarget0;',
+                '	attribute vec3 morphTarget1;',
+                '	attribute vec3 morphTarget2;',
+                '	attribute vec3 morphTarget3;',
 
-				'	#ifdef USE_MORPHNORMALS',
+                '	#ifdef USE_MORPHNORMALS',
 
-				'		attribute vec3 morphNormal0;',
-				'		attribute vec3 morphNormal1;',
-				'		attribute vec3 morphNormal2;',
-				'		attribute vec3 morphNormal3;',
+                '		attribute vec3 morphNormal0;',
+                '		attribute vec3 morphNormal1;',
+                '		attribute vec3 morphNormal2;',
+                '		attribute vec3 morphNormal3;',
 
-				'	#else',
+                '	#else',
 
-				'		attribute vec3 morphTarget4;',
-				'		attribute vec3 morphTarget5;',
-				'		attribute vec3 morphTarget6;',
-				'		attribute vec3 morphTarget7;',
+                '		attribute vec3 morphTarget4;',
+                '		attribute vec3 morphTarget5;',
+                '		attribute vec3 morphTarget6;',
+                '		attribute vec3 morphTarget7;',
 
-				'	#endif',
+                '	#endif',
 
-				'#endif',
+                '#endif',
 
-				'#ifdef USE_SKINNING',
+                '#ifdef USE_SKINNING',
 
-				'	attribute vec4 skinIndex;',
-				'	attribute vec4 skinWeight;',
+                '	attribute vec4 skinIndex;',
+                '	attribute vec4 skinWeight;',
 
-				'#endif',
+                '#endif',
 
-				'\n'
+                '\n'
 
             ].filter(filterEmptyLine).join('\n');
 
             prefixFragment = [
 
-				//customExtensions,
+                //customExtensions,
 
-				//'precision ' + parameters.precision + ' float;',
-				//'precision ' + parameters.precision + ' int;',
+                //'precision ' + parameters.precision + ' float;',
+                //'precision ' + parameters.precision + ' int;',
 
-				'#define SHADER_NAME ' + shader.name,
+                '#define SHADER_NAME ' + shader.name,
 
-				customDefines,
+                customDefines,
 
-				parameters.alphaTest ? '#define ALPHATEST ' + parameters.alphaTest : '',
+                parameters.alphaTest ? '#define ALPHATEST ' + parameters.alphaTest : '',
 
-				'#define GAMMA_FACTOR ' + gammaFactorDefine,
+                '#define GAMMA_FACTOR ' + gammaFactorDefine,
 
-				(parameters.useFog && parameters.fog) ? '#define USE_FOG' : '',
-				(parameters.useFog && parameters.fogExp) ? '#define FOG_EXP2' : '',
+                (parameters.useFog && parameters.fog) ? '#define USE_FOG' : '',
+                (parameters.useFog && parameters.fogExp) ? '#define FOG_EXP2' : '',
 
-				parameters.map ? '#define USE_MAP' : '',
-				parameters.envMap ? '#define USE_ENVMAP' : '',
-				parameters.envMap ? '#define ' + envMapTypeDefine : '',
-				parameters.envMap ? '#define ' + envMapModeDefine : '',
-				parameters.envMap ? '#define ' + envMapBlendingDefine : '',
-				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
-				parameters.aoMap ? '#define USE_AOMAP' : '',
-				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
-				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
-				parameters.normalMap ? '#define USE_NORMALMAP' : '',
-				parameters.specularMap ? '#define USE_SPECULARMAP' : '',
-				parameters.roughnessMap ? '#define USE_ROUGHNESSMAP' : '',
-				parameters.metalnessMap ? '#define USE_METALNESSMAP' : '',
-				parameters.alphaMap ? '#define USE_ALPHAMAP' : '',
-				parameters.vertexColors ? '#define USE_COLOR' : '',
+                parameters.map ? '#define USE_MAP' : '',
+                parameters.envMap ? '#define USE_ENVMAP' : '',
+                parameters.envMap ? '#define ' + envMapTypeDefine : '',
+                parameters.envMap ? '#define ' + envMapModeDefine : '',
+                parameters.envMap ? '#define ' + envMapBlendingDefine : '',
+                parameters.lightMap ? '#define USE_LIGHTMAP' : '',
+                parameters.aoMap ? '#define USE_AOMAP' : '',
+                parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
+                parameters.bumpMap ? '#define USE_BUMPMAP' : '',
+                parameters.normalMap ? '#define USE_NORMALMAP' : '',
+                parameters.specularMap ? '#define USE_SPECULARMAP' : '',
+                parameters.roughnessMap ? '#define USE_ROUGHNESSMAP' : '',
+                parameters.metalnessMap ? '#define USE_METALNESSMAP' : '',
+                parameters.alphaMap ? '#define USE_ALPHAMAP' : '',
+                parameters.vertexColors ? '#define USE_COLOR' : '',
 
-				parameters.gradientMap ? '#define USE_GRADIENTMAP' : '',
+                parameters.gradientMap ? '#define USE_GRADIENTMAP' : '',
 
-				parameters.flatShading ? '#define FLAT_SHADED' : '',
+                parameters.flatShading ? '#define FLAT_SHADED' : '',
 
-				parameters.doubleSided ? '#define DOUBLE_SIDED' : '',
-				parameters.flipSided ? '#define FLIP_SIDED' : '',
+                parameters.doubleSided ? '#define DOUBLE_SIDED' : '',
+                parameters.flipSided ? '#define FLIP_SIDED' : '',
 
-				'#define NUM_CLIPPING_PLANES ' + parameters.numClippingPlanes,
-				'#define UNION_CLIPPING_PLANES ' + (parameters.numClippingPlanes - parameters.numClipIntersection),
+                '#define NUM_CLIPPING_PLANES ' + parameters.numClippingPlanes,
+                '#define UNION_CLIPPING_PLANES ' + (parameters.numClippingPlanes - parameters.numClipIntersection),
 
-				parameters.shadowMapEnabled ? '#define USE_SHADOWMAP' : '',
-				parameters.shadowMapEnabled ? '#define ' + shadowMapTypeDefine : '',
+                parameters.shadowMapEnabled ? '#define USE_SHADOWMAP' : '',
+                parameters.shadowMapEnabled ? '#define ' + shadowMapTypeDefine : '',
 
-				parameters.premultipliedAlpha ? "#define PREMULTIPLIED_ALPHA" : '',
+                parameters.premultipliedAlpha ? "#define PREMULTIPLIED_ALPHA" : '',
 
-				parameters.physicallyCorrectLights ? "#define PHYSICALLY_CORRECT_LIGHTS" : '',
+                parameters.physicallyCorrectLights ? "#define PHYSICALLY_CORRECT_LIGHTS" : '',
 
-				parameters.logarithmicDepthBuffer ? '#define USE_LOGDEPTHBUF' : '',
-				//parameters.logarithmicDepthBuffer && renderer.extensions.get('EXT_frag_depth') ? '#define USE_LOGDEPTHBUF_EXT' : '',
+                parameters.logarithmicDepthBuffer ? '#define USE_LOGDEPTHBUF' : '',
+                //parameters.logarithmicDepthBuffer && renderer.extensions.get('EXT_frag_depth') ? '#define USE_LOGDEPTHBUF_EXT' : '',
 
-				//parameters.envMap && renderer.extensions.get('EXT_shader_texture_lod') ? '#define TEXTURE_LOD_EXT' : '',
+                //parameters.envMap && renderer.extensions.get('EXT_shader_texture_lod') ? '#define TEXTURE_LOD_EXT' : '',
 
-				'uniform mat4 viewMatrix;',
-				'uniform vec3 cameraPosition;',
+                'uniform mat4 viewMatrix;',
+                'uniform vec3 cameraPosition;',
 
-				//(parameters.toneMapping !== THREE.NoToneMapping) ? "#define TONE_MAPPING" : '',
-				//(parameters.toneMapping !== THREE.NoToneMapping) ? ShaderChunk['tonemapping_pars_fragment'] : '',  // this code is required here because it is used by the toneMapping() function defined below
-				//(parameters.toneMapping !== THREE.NoToneMapping) ? getToneMappingFunction("toneMapping", parameters.toneMapping) : '',
+                //(parameters.toneMapping !== THREE.NoToneMapping) ? "#define TONE_MAPPING" : '',
+                //(parameters.toneMapping !== THREE.NoToneMapping) ? ShaderChunk['tonemapping_pars_fragment'] : '',  // this code is required here because it is used by the toneMapping() function defined below
+                //(parameters.toneMapping !== THREE.NoToneMapping) ? getToneMappingFunction("toneMapping", parameters.toneMapping) : '',
 
-				parameters.dithering ? '#define DITHERING' : '',
+                parameters.dithering ? '#define DITHERING' : '',
 
-				(parameters.outputEncoding || parameters.mapEncoding || parameters.envMapEncoding || parameters.emissiveMapEncoding) ? ShaderChunk['encodings_pars_fragment'] : '', // this code is required here because it is used by the various encoding/decoding function defined below
-				parameters.mapEncoding ? getTexelDecodingFunction('mapTexelToLinear', parameters.mapEncoding) : '',
-				parameters.envMapEncoding ? getTexelDecodingFunction('envMapTexelToLinear', parameters.envMapEncoding) : '',
-				parameters.emissiveMapEncoding ? getTexelDecodingFunction('emissiveMapTexelToLinear', parameters.emissiveMapEncoding) : '',
-				parameters.outputEncoding ? getTexelEncodingFunction("linearToOutputTexel", parameters.outputEncoding) : '',
+                (parameters.outputEncoding || parameters.mapEncoding || parameters.envMapEncoding || parameters.emissiveMapEncoding) ? ShaderChunk['encodings_pars_fragment'] : '', // this code is required here because it is used by the various encoding/decoding function defined below
+                parameters.mapEncoding ? getTexelDecodingFunction('mapTexelToLinear', parameters.mapEncoding) : '',
+                parameters.envMapEncoding ? getTexelDecodingFunction('envMapTexelToLinear', parameters.envMapEncoding) : '',
+                parameters.emissiveMapEncoding ? getTexelDecodingFunction('emissiveMapTexelToLinear', parameters.emissiveMapEncoding) : '',
+                parameters.outputEncoding ? getTexelEncodingFunction("linearToOutputTexel", parameters.outputEncoding) : '',
 
-				parameters.depthPacking ? "#define DEPTH_PACKING " + material.depthPacking : '',
+                parameters.depthPacking ? "#define DEPTH_PACKING " + material.depthPacking : '',
 
-				'\n'
+                '\n'
 
             ].filter(filterEmptyLine).join('\n');
 
@@ -707,6 +699,5 @@
 
     }
 
-
-    return ShaderUtils;
-});
+}
+export default ShaderUtils;

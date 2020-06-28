@@ -1,5 +1,4 @@
-//define(function () {
-
+ 
 /**
 *@class
 *@memberof Cesium
@@ -53,14 +52,5 @@ Path.Combine = function (dir, fname) {
 Path.ChangeExtension = function (fname, newExt) {
     return fname.replace(Path.GetExtension(fname), newExt);
 }
-//    return Path;
-//});
-
-if (typeof module === "undefined") {
-    this.Path = Path;
-} else {
-    module.exports = Path;
-}
-if (typeof define === "function") {
-    define(function () { return Path; });
-}
+ 
+export default Path;

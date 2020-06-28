@@ -1,0 +1,56 @@
+{
+  "_from": "csg",
+  "_id": "csg@1.0.1",
+  "_inBundle": false,
+  "_integrity": "sha1-L8FViDIr6xKZKZ/6QBkGT4Fu1U8=",
+  "_location": "/csg",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "csg",
+    "name": "csg",
+    "escapedName": "csg",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/csg/-/csg-1.0.1.tgz",
+  "_shasum": "2fc15588322beb1299299ffa4019064f816ed54f",
+  "_spec": "csg",
+  "_where": "/Users/xiuyongwei/Projects/opensource/CesiumMeshVisualizer",
+  "author": {
+    "name": "evanw"
+  },
+  "bugs": {
+    "url": "https://github.com/thibauts/csg.js/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {},
+  "deprecated": false,
+  "description": "Constructive solid geometry on meshes using BSP trees in JavaScript",
+  "homepage": "https://github.com/thibauts/csg.js#readme",
+  "keywords": [
+    "csg",
+    "solid",
+    "meshes",
+    "union",
+    "intersect",
+    "subtract"
+  ],
+  "license": "MIT",
+  "main": "csg.js",
+  "name": "csg",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/thibauts/csg.js.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "1.0.1"
+}

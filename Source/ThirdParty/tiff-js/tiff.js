@@ -708,11 +708,12 @@ TIFFParser.prototype = {
 		return this.canvas;
 	},
 }
-if (typeof module === "undefined") {
-    this.TIFFParser = TIFFParser;
-} else {
-    module.exports = TIFFParser;
-}
-if (typeof define === "function") {
-    define(function () { return TIFFParser; });
-}
+// if (typeof module === "undefined") {
+//     this.TIFFParser = TIFFParser;
+// } else {
+//     module.exports = TIFFParser;
+// }
+// if (typeof define === "function") {
+//     define(function () { return TIFFParser; });
+// }
+export default TIFFParser;
