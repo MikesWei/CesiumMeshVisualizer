@@ -273,7 +273,7 @@ import CesiumMeshVisualizer from './Source/Main.js'
 <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/customImageryLayer/index.html">
      <img src="http://os.mesh-3d.com/meshvis/App/demo/customImageryLayer/screenshot.jpg" /> 
    </a><br />
- <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/instance/index.html">CustomImageryLayer+FramebufferTexture</a><br />
+ <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/customImageryLayer/index.html">CustomImageryLayer+FramebufferTexture</a><br />
 
 # 当初的想法，啰嗦几句
 携源码示例和文档，诚意奉献，https://github.com/MikesWei/CesiumMeshVisualizer ， 名字不重要。 <br/>
