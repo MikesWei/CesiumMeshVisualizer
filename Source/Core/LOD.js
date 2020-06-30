@@ -338,11 +338,11 @@ Object.defineProperties(LOD.prototype, {
             return this._parent;
         },
         set: function (val) {
-            if (val && ((val._children && Cesium.isArray(val._children)) || (val.children && Cesium.isArray(val.children)))) {
+            if (val && ((val._children && Array.isArray(val._children)) || (val.children && Array.isArray(val.children)))) {
 
                 if (this._parent && this._parent != val) {
                     var children = this._parent._children ? this._parent._children : this._parent.children;
-                    if (Cesium.isArray(children)) {
+                    if (Array.isArray(children)) {
                         removeByValue(children, this);
                     }
                 }

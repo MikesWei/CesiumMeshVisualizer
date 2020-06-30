@@ -1427,11 +1427,11 @@ Object.defineProperties(LOD.prototype, {
             return this._parent;
         },
         set: function set(val) {
-            if (val && (val._children && Cesium.isArray(val._children) || val.children && Cesium.isArray(val.children))) {
+            if (val && (val._children && Array.isArray(val._children) || val.children && Array.isArray(val.children))) {
 
                 if (this._parent && this._parent != val) {
                     var children = this._parent._children ? this._parent._children : this._parent.children;
-                    if (Cesium.isArray(children)) {
+                    if (Array.isArray(children)) {
                         removeByValue(children, this);
                     }
                 }
@@ -5050,7 +5050,7 @@ PlaneGeometry.createGeometry = function (planeGeometry) {
     var positions = planeGeometry.positions;
 
     var positionsVal;
-    if (Cesium.isArray(positions)) {
+    if (Array.isArray(positions)) {
         if (positions[0] instanceof Cesium.Cartesian3) {
             positionsVal = new Float32Array(12);
             for (var i = 0; i < positions.length; i++) {
@@ -5224,11 +5224,11 @@ Object.defineProperties(ReferenceMesh.prototype, {
             return this._parent;
         },
         set: function set(val) {
-            if (val && (val._children && Cesium.isArray(val._children) || val.children && Cesium.isArray(val.children))) {
+            if (val && (val._children && Array.isArray(val._children) || val.children && Array.isArray(val.children))) {
 
                 if (this._parent && this._parent != val) {
                     var children = this._parent._children ? this._parent._children : this._parent.children;
-                    if (Cesium.isArray(children)) {
+                    if (Array.isArray(children)) {
                         removeByValue(children, this);
                     }
                 }
@@ -5350,7 +5350,7 @@ function RendererUtils() {}
 *@param {Cesium.Texture}[outputDepthTexture] 可选，输出的深度纹理
 */
 RendererUtils.renderToTexture = function (drawCommand, frameState, outputTexture, outputDepthTexture) {
-    var drawCommands = Cesium.isArray(drawCommand) ? drawCommand : [drawCommand];
+    var drawCommands = Array.isArray(drawCommand) ? drawCommand : [drawCommand];
     var context = frameState.context;
 
     var framebuffer = null,
@@ -5405,7 +5405,7 @@ RendererUtils.renderToTexture = function (drawCommand, frameState, outputTexture
 *@return {Array.<Number>}outputPixels  输出的像素
 */
 RendererUtils.renderToPixels = function (drawCommand, frameState, outputTexture, options, pixels) {
-    var drawCommands = Cesium.isArray(drawCommand) ? drawCommand : [drawCommand];
+    var drawCommands = Array.isArray(drawCommand) ? drawCommand : [drawCommand];
     var context = frameState.context;
 
     var framebuffer = null,

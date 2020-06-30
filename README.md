@@ -269,6 +269,12 @@ import CesiumMeshVisualizer from './Source/Main.js'
 
  <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/module/index.html">module</a><br />
 
+
+<a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/customImageryLayer/index.html">
+     <img src="http://os.mesh-3d.com/meshvis/App/demo/customImageryLayer/screenshot.jpg" /> 
+   </a><br />
+ <a target="_blank" href="http://os.mesh-3d.com/meshvis/App/demo/instance/index.html">CustomImageryLayer+FramebufferTexture</a><br />
+
 # 当初的想法，啰嗦几句
 携源码示例和文档，诚意奉献，https://github.com/MikesWei/CesiumMeshVisualizer ， 名字不重要。 <br/>
     个人觉得Threejs里的Mesh、Geometry、Material极好，尤其是各个属性可以独立地、动态地编辑的特点，是目前在Cesium的Primitive中没有充分体现的。比如

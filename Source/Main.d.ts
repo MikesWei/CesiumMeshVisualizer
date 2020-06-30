@@ -1,7 +1,9 @@
  
 export = CesiumMeshVisualizer;
 export as namespace CesiumMeshVisualizer;
-
+/**
+ * Make you can use three.js geometry in Cesium,and use mesh,geometry,material like three.js to manage renderable object in Cesium.
+ */
 declare namespace CesiumMeshVisualizer {
     /**
      *  Constructive Solid Geometry (CSG) is a modeling technique that uses Boolean

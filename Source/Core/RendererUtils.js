@@ -16,7 +16,7 @@ function RendererUtils() { }
 *@param {Cesium.Texture}[outputDepthTexture] 可选，输出的深度纹理
 */
 RendererUtils.renderToTexture = function (drawCommand, frameState, outputTexture, outputDepthTexture) {
-    var drawCommands = Cesium.isArray(drawCommand) ? drawCommand : [drawCommand];
+    var drawCommands = Array.isArray(drawCommand) ? drawCommand : [drawCommand];
     var context = frameState.context;
 
     var framebuffer = null, destroy = false;
@@ -73,7 +73,7 @@ RendererUtils.renderToTexture = function (drawCommand, frameState, outputTexture
 *@return {Array.<Number>}outputPixels  输出的像素
 */
 RendererUtils.renderToPixels = function (drawCommand, frameState, outputTexture, options, pixels) {
-    var drawCommands = Cesium.isArray(drawCommand) ? drawCommand : [drawCommand];
+    var drawCommands = Array.isArray(drawCommand) ? drawCommand : [drawCommand];
     var context = frameState.context;
 
     var framebuffer = null, destroy = false;

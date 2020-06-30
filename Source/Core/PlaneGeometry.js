@@ -37,7 +37,7 @@ PlaneGeometry.createGeometry = function (planeGeometry) {
     var positions = planeGeometry.positions;
 
     var positionsVal;
-    if (Cesium.isArray(positions)) {
+    if (Array.isArray(positions)) {
         if (positions[0] instanceof Cesium.Cartesian3) {
             positionsVal = new Float32Array(12);
             for (var i = 0; i < positions.length; i++) {
