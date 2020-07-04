@@ -91,9 +91,50 @@
     var meshSecondPass = new Mesh(boxGeometry, materialSecondPass);
     meshVisualizer.add(meshSecondPass);
 */
-function FramebufferTexture(mesh, renderTarget) {
+function FramebufferTexture(mesh, renderTarget, depthTexture) {
     this.mesh = mesh;
+
     this.texture = renderTarget;
+    this.depthTexture = depthTexture;
+    this.framebuffer = null;
+    this.ready = false;
+    this.readyPromise = Cesium.when.defer();
+    if (renderTarget && renderTarget instanceof Cesium.Framebuffer) {
+        this.framebuffer = renderTarget;
+        this.texture = this.framebuffer._colorTextures[0];
+        this.depthTexture = this.framebuffer._depthTexture;
+        this.ready = true;
+        this.readyPromise.resolve(true);
+
+    } else {
+        this.destroyAttachments = true;
+    }
+}
+/**
+ * 
+ */
+FramebufferTexture.prototype.destroy = function () {
+    if (this.destroyAttachments) {
+        if (this.texture) {
+            this.texture.destroy();
+            delete this.texture;
+        }
+        if (this.depthTexture) {
+            this.depthTexture.destroy();
+            delete this.depthTexture;
+        }
+
+        if (this.framebuffer) {
+            this.framebuffer.destroy();
+            delete this.framebuffer;
+        }
+
+        if (this.mesh) {
+            this.mesh.destroy();
+            delete this.mesh;
+        }
+    }
+
 }
 
 export default FramebufferTexture;

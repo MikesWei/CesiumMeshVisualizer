@@ -1,7 +1,9 @@
- 
+
 export = CesiumMeshVisualizer;
 export as namespace CesiumMeshVisualizer;
-
+/**
+ * Make you can use three.js geometry in Cesium,and use mesh,geometry,material like three.js to manage renderable object in Cesium.
+ */
 declare namespace CesiumMeshVisualizer {
     /**
      *  Constructive Solid Geometry (CSG) is a modeling technique that uses Boolean
@@ -614,6 +616,7 @@ declare namespace CesiumMeshVisualizer {
     *
     *@property {Cesium.Mesh}mesh 
     *@property {Cesium.Texture}texture 
+    *@property {Cesium.Texture}[depthTexture] 
     *
     *@constructor
     *@memberof Cesium
@@ -705,12 +708,17 @@ declare namespace CesiumMeshVisualizer {
          * @param mesh 
          * @param renderTarget - Cesium.Texture
          */
-        constructor(mesh: Mesh, renderTarget: Cesium.Texture)
+        constructor(mesh: Mesh, renderTarget: Cesium.Texture, depthTexture: Cesium.Texture)
         mesh: Mesh
         /**
          * @type {Cesium.Texture}
          */
         texture: Cesium.Texture
+        depthTexture: Cesium.Texture
+        framebuffer: Cesium.Framebuffer
+        ready: boolean
+        readyPromise: Promise<FramebufferTexture>
+        destroy:()=>void
     }
 
 
@@ -719,14 +727,14 @@ declare namespace CesiumMeshVisualizer {
         *使用帧缓冲技术，执行渲染命令，渲染到纹理  
         *@param {Cesium.DrawCommand|Array<Cesium.DrawCommand>}drawCommand - type:Cesium.DrawCommand|Array<Cesium.DrawCommand> 渲染命令（集合）
         *@param {Cesium.FrameState}frameState - type:Cesium.FrameState 帧状态对象，可以从Cesium.Scene中获取
-        *@param {Cesium.Texture}outpuTexture - type:Cesium.Texture 将渲染到的目标纹理对象
+        *@param {Cesium.Texture|Cesium.Framebuffer}outpuTexture - type:Cesium.Texture 将渲染到的目标纹理对象
         *@param {Cesium.Texture}[outputDepthTexture] - type:Cesium.Texture 可选，输出的深度纹理
         */
         static renderToTexture: (
             drawCommand: Cesium.DrawCommand | Cesium.DrawCommand[],
             frameState: Cesium.FrameState,
-            outputTexture: Cesium.Texture,
-            outputDepthTexture: Cesium.Texture
+            outputTexture: Cesium.Texture|Cesium.Framebuffer,
+            outputDepthTexture?: Cesium.Texture
         ) => void
 
 
@@ -1001,7 +1009,7 @@ declare namespace CesiumMeshVisualizer {
         /**
          * @type {Cesium.Event}
          */
-        beforeUpdate:Cesium.Event
+        beforeUpdate: Cesium.Event
         children: (Mesh | LOD)[]
 
         /**

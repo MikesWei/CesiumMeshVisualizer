@@ -257,6 +257,8 @@ GeometryUtils.mergeGeometries = function (geometries) {
     if (lengthChanged) {
         throw new Error("待合并的几何体中属性数量和和名称不完全一致");
     }
+    return mergeGeometries(geometries);
+
     var newAttrs = {};
     var attrNames = geometriesAttrs[0];
     for (var i = 0; i < attrNames.length; i++) {
@@ -293,12 +295,102 @@ GeometryUtils.mergeGeometries = function (geometries) {
     var bs = Cesium.BoundingSphere.fromVertices(newAttrs.position.values);
     var geo = new Cesium.Geometry({
         attributes: newAttrs,
-        indices: new Int32Array(indices),
+        indices: new Uint32Array(indices),
         primitiveType: geometries[0].primitiveType,
         boundingSphere: bs
     });
     return geo;
 }
+
+function mergeGeometries(geometries) {
+    if (geometries.length == 1) return geometries[0];
+    var attrNames = [];
+    var valueArrs = [];
+    var valueTypes = [];
+    var valueConstructors = [];
+    var valueComponents = [];
+    var valueNormalizes = [];
+    var valueOffsets = [];
+    var indices = [];
+    var primitiveType;
+    var indexOffst = 0;
+
+    var componentCounts = [];
+
+    var geometry = geometries[0];
+    primitiveType = geometry.primitiveType;
+    for (const attrName in geometry.attributes) {
+        if (geometry.attributes.hasOwnProperty(attrName) && geometry.attributes[attrName]) {
+            const attr = geometry.attributes[attrName];
+            attrNames.push(attrName);
+
+            // valueArrs.push([]);
+
+            valueComponents.push(attr.componentsPerAttribute);
+            valueTypes.push(attr.componentDatatype);
+            valueConstructors.push(attr.values.constructor);
+            valueNormalizes.push(attr.normalize);
+
+            componentCounts.push(0);
+            valueOffsets.push(0);
+        }
+    }
+    for (let i = 0; i < geometries.length; i++) {
+        const geometry = geometries[i];
+        for (let j = 0; j < attrNames.length; j++) {
+            const attrName = attrNames[j];
+            componentCounts[j] += geometry.attributes[attrName].values.length
+        }
+    }
+
+    for (let j = 0; j < attrNames.length; j++) {
+        valueArrs.push(new valueConstructors[j](componentCounts[j]));
+    }
+
+    for (let i = 0; i < geometries.length; i++) {
+        const geometry = geometries[i];
+        for (let ai = 0; ai < attrNames.length; ai++) {
+            var attrName = attrNames[ai];
+            var valueArr = valueArrs[ai];
+            var attrValues = geometry.attributes[attrName].values;
+            valueArr.set(attrValues, valueOffsets[ai]);
+            valueOffsets[ai] += attrValues.length;
+        }
+
+        for (let j = 0; j < geometry.indices.length; j++) {
+            const index = geometry.indices[j];
+            indices.push(index + indexOffst);
+        }
+
+        indexOffst += geometry.attributes.position.values.length / 3;
+    }
+
+    var attributes = {};
+    for (let i = 0; i < attrNames.length; i++) {
+        const attrName = attrNames[i];
+        attributes[attrName] = {
+            values: valueArrs[i],
+            componentsPerAttribute: valueComponents[i],
+            componentDatatype: valueTypes[i],
+            normalize: valueNormalizes[i]
+        }
+    }
+
+    var vertexCount = valueArrs[0] / valueComponents[0];
+    if (vertexCount < 65535) {
+        indices = new Uint16Array(indices);
+    } else {
+        indices = new Uint32Array(indices);
+    }
+
+    geometry = new Cesium.Geometry({
+        attributes: attributes,
+        indices: indices,
+        primitiveType: primitiveType
+    })
+    return geometry;
+}
+
 /**
 *
 *@param {Cesium.Geometry}geometry
@@ -501,7 +593,7 @@ GeometryUtils.toGeometry3js = function (geometry) {
 }
 
 /**
-*@param {Cesium.Geometry|THREE.Geometry}
+*@param {Cesium.Geometry|THREE.Geometry}geometry
 *@param {Cesium.Cartesian3}[offset]
 *@return {CSG}
 */

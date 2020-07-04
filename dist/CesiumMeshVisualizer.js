@@ -377,10 +377,49 @@ Object.defineProperty(exports, "__esModule", {
     var meshSecondPass = new Mesh(boxGeometry, materialSecondPass);
     meshVisualizer.add(meshSecondPass);
 */
-function FramebufferTexture(mesh, renderTarget) {
+function FramebufferTexture(mesh, renderTarget, depthTexture) {
     this.mesh = mesh;
+
     this.texture = renderTarget;
+    this.depthTexture = depthTexture;
+    this.framebuffer = null;
+    this.ready = false;
+    this.readyPromise = Cesium.when.defer();
+    if (renderTarget && renderTarget instanceof Cesium.Framebuffer) {
+        this.framebuffer = renderTarget;
+        this.texture = this.framebuffer._colorTextures[0];
+        this.depthTexture = this.framebuffer._depthTexture;
+        this.ready = true;
+        this.readyPromise.resolve(true);
+    } else {
+        this.destroyAttachments = true;
+    }
 }
+/**
+ * 
+ */
+FramebufferTexture.prototype.destroy = function () {
+    if (this.destroyAttachments) {
+        if (this.texture) {
+            this.texture.destroy();
+            delete this.texture;
+        }
+        if (this.depthTexture) {
+            this.depthTexture.destroy();
+            delete this.depthTexture;
+        }
+
+        if (this.framebuffer) {
+            this.framebuffer.destroy();
+            delete this.framebuffer;
+        }
+
+        if (this.mesh) {
+            this.mesh.destroy();
+            delete this.mesh;
+        }
+    }
+};
 
 exports.default = FramebufferTexture;
 
@@ -644,6 +683,8 @@ GeometryUtils.mergeGeometries = function (geometries) {
     if (lengthChanged) {
         throw new Error("待合并的几何体中属性数量和和名称不完全一致");
     }
+    return mergeGeometries(geometries);
+
     var newAttrs = {};
     var attrNames = geometriesAttrs[0];
     for (var i = 0; i < attrNames.length; i++) {
@@ -680,12 +721,102 @@ GeometryUtils.mergeGeometries = function (geometries) {
     var bs = Cesium.BoundingSphere.fromVertices(newAttrs.position.values);
     var geo = new Cesium.Geometry({
         attributes: newAttrs,
-        indices: new Int32Array(indices),
+        indices: new Uint32Array(indices),
         primitiveType: geometries[0].primitiveType,
         boundingSphere: bs
     });
     return geo;
 };
+
+function mergeGeometries(geometries) {
+    if (geometries.length == 1) return geometries[0];
+    var attrNames = [];
+    var valueArrs = [];
+    var valueTypes = [];
+    var valueConstructors = [];
+    var valueComponents = [];
+    var valueNormalizes = [];
+    var valueOffsets = [];
+    var indices = [];
+    var primitiveType;
+    var indexOffst = 0;
+
+    var componentCounts = [];
+
+    var geometry = geometries[0];
+    primitiveType = geometry.primitiveType;
+    for (var _attrName in geometry.attributes) {
+        if (geometry.attributes.hasOwnProperty(_attrName) && geometry.attributes[_attrName]) {
+            var attr = geometry.attributes[_attrName];
+            attrNames.push(_attrName);
+
+            // valueArrs.push([]);
+
+            valueComponents.push(attr.componentsPerAttribute);
+            valueTypes.push(attr.componentDatatype);
+            valueConstructors.push(attr.values.constructor);
+            valueNormalizes.push(attr.normalize);
+
+            componentCounts.push(0);
+            valueOffsets.push(0);
+        }
+    }
+    for (var i = 0; i < geometries.length; i++) {
+        var _geometry = geometries[i];
+        for (var j = 0; j < attrNames.length; j++) {
+            var _attrName2 = attrNames[j];
+            componentCounts[j] += _geometry.attributes[_attrName2].values.length;
+        }
+    }
+
+    for (var _j = 0; _j < attrNames.length; _j++) {
+        valueArrs.push(new valueConstructors[_j](componentCounts[_j]));
+    }
+
+    for (var _i = 0; _i < geometries.length; _i++) {
+        var _geometry2 = geometries[_i];
+        for (var ai = 0; ai < attrNames.length; ai++) {
+            var attrName = attrNames[ai];
+            var valueArr = valueArrs[ai];
+            var attrValues = _geometry2.attributes[attrName].values;
+            valueArr.set(attrValues, valueOffsets[ai]);
+            valueOffsets[ai] += attrValues.length;
+        }
+
+        for (var _j2 = 0; _j2 < _geometry2.indices.length; _j2++) {
+            var index = _geometry2.indices[_j2];
+            indices.push(index + indexOffst);
+        }
+
+        indexOffst += _geometry2.attributes.position.values.length / 3;
+    }
+
+    var attributes = {};
+    for (var _i2 = 0; _i2 < attrNames.length; _i2++) {
+        var _attrName3 = attrNames[_i2];
+        attributes[_attrName3] = {
+            values: valueArrs[_i2],
+            componentsPerAttribute: valueComponents[_i2],
+            componentDatatype: valueTypes[_i2],
+            normalize: valueNormalizes[_i2]
+        };
+    }
+
+    var vertexCount = valueArrs[0] / valueComponents[0];
+    if (vertexCount < 65535) {
+        indices = new Uint16Array(indices);
+    } else {
+        indices = new Uint32Array(indices);
+    }
+
+    geometry = new Cesium.Geometry({
+        attributes: attributes,
+        indices: indices,
+        primitiveType: primitiveType
+    });
+    return geometry;
+}
+
 /**
 *
 *@param {Cesium.Geometry}geometry
@@ -871,7 +1002,7 @@ GeometryUtils.toGeometry3js = function (geometry) {
 };
 
 /**
-*@param {Cesium.Geometry|THREE.Geometry}
+*@param {Cesium.Geometry|THREE.Geometry}geometry
 *@param {Cesium.Cartesian3}[offset]
 *@return {CSG}
 */
@@ -3194,6 +3325,7 @@ function createPickIds(collection, context) {
 */
 function MeshVisualizer(options) {
     initConstants();
+    options = options || {};
     this._modelMatrix = defaultValue(options.modelMatrix, Matrix4.IDENTITY);
     this._actualModelMatrix = Matrix4.clone(this._modelMatrix);
     this._ready = true;
@@ -3556,6 +3688,11 @@ MeshVisualizer.prototype = {
 
             vertexArrayAttributes: vertexArrayAttributes
         });
+        if (vertexArrayAttributes && vertexArrayAttributes.length) {
+            command._cacehVertexArrayAttributes = vertexArrayAttributes.map(function (a) {
+                return a;
+            });
+        }
         command.vertexArray._attributeLocations = attributeLocations;
 
         var pickColor = pickId.color;
@@ -4130,7 +4267,7 @@ MeshVisualizer.prototype = {
                         }
                     }
 
-                    if (item.value instanceof Cesium.Cartesian2 || item.value instanceof Cesium.Cartesian3 || item.value instanceof Cesium.Cartesian4 || item.value instanceof Cesium.Color || item.value instanceof Cesium.Matrix4 || item.value instanceof Cesium.Matrix3 || item.value instanceof Cesium.Matrix2 || item.value instanceof Cesium.Texture || typeof item.value === "number" || isCssColorString || item.isColor || item.isCartesian2 || item.isCartesian3 || item.isCartesian4 || item.value instanceof Cesium.Texture || item.value instanceof Array && (typeof item.value[0] === 'number' || item.value[0] instanceof Cesium.Cartesian2 || item.value[0] instanceof Cesium.Cartesian3 || item.value[0] instanceof Cesium.Cartesian4)) {
+                    if (item.value instanceof Cesium.Cartesian2 || item.value instanceof Cesium.Cartesian3 || item.value instanceof Cesium.Cartesian4 || item.value instanceof Cesium.Color || item.value instanceof Cesium.Matrix4 || item.value instanceof Cesium.Matrix3 || item.value instanceof Cesium.Matrix2 || item.value instanceof Cesium.Texture || typeof item.value === "number" || typeof item.value === "boolean" || isCssColorString || item.isColor || item.isCartesian2 || item.isCartesian3 || item.isCartesian4 || item.value instanceof Cesium.Texture || item.value instanceof Array && (typeof item.value[0] === 'number' || item.value[0] instanceof Cesium.Cartesian2 || item.value[0] instanceof Cesium.Cartesian3 || item.value[0] instanceof Cesium.Cartesian4)) {
                         if (!that._uniformValueCache) {
                             that._uniformValueCache = {};
                         }
@@ -4375,8 +4512,7 @@ MeshVisualizer.prototype.update = function (frameState) {
             if (needsUpdate) {
                 mesh._actualMesh = _MeshUtils2.default.fromMesh3js(mesh);
                 mesh.modelMatrixNeedsUpdate = true;
-            }
-            if (!needsUpdate) {
+            } else {
                 for (var pn in mesh.geometry.attributes) {
                     if (mesh.geometry.attributes.hasOwnProperty(pn)) {
                         mesh._actualMesh.geometry.attributes[pn].needsUpdate = mesh.geometry.attributes[pn].needsUpdate;
@@ -4412,6 +4548,7 @@ MeshVisualizer.prototype.update = function (frameState) {
                     that.restoreFromWireframe(mesh.geometry);
                 }
 
+                if (mesh._drawCommand) mesh._drawCommand.destroy();
                 mesh._drawCommand = that.createDrawCommand(mesh, frameState);
 
                 mesh.needsUpdate = false;
@@ -4439,7 +4576,13 @@ MeshVisualizer.prototype.update = function (frameState) {
                 //更新索引缓冲区
                 if (mesh.geometry.indexNeedsUpdate) {
                     var vb = mesh._drawCommand.vertexArray.indexBuffer;
-                    vb.copyFromArrayView(mesh.geometry.indices, 0);
+                    var gl = vb._gl;
+                    var target = vb._bufferTarget;
+                    gl.bindBuffer(target, vb._buffer);
+                    gl.bufferData(target, mesh.geometry.indices, BufferUsage.STATIC_DRAW);
+                    gl.bindBuffer(target, null);
+                    mesh.geometry.indexNeedsUpdate = false;
+                    // vb.copyFromArrayView(mesh.geometry.indices, 0);
                 }
 
                 if (mesh._instances && mesh._instances.length) {
@@ -4498,10 +4641,14 @@ MeshVisualizer.prototype.update = function (frameState) {
 
 ///////2020.04.20  --start
 
+
 /**
-*
+*单独渲染frameBufferTexture中的mesh，最终更新frameBufferTexture中的texture
+*@param {Cesium.FrameState}frameState
+*@param {Cesium.FramebufferTexture}frameBufferTexture
+@param {{x:number,y:number,width:number,height:number}}viewport
 */
-MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, frameBufferTexture, viewport) {
+MeshVisualizer.prototype.initFrameBufferTexture = function (frameState, frameBufferTexture, viewport) {
     var that = this;
 
     var item = frameBufferTexture;
@@ -4550,6 +4697,7 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
             } else {
                 //在不需要重新构建绘图命令时，检查各个属性和索引是否需要更新，需要则将更新相应的缓冲区
 
+                var vaNeedsUpdate = false;
                 //更新属性缓冲区
                 for (var name in mesh.geometry.attributes) {
                     if (mesh.geometry.attributes.hasOwnProperty(name) && mesh.geometry.attributes[name]) {
@@ -4557,14 +4705,74 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
                         if (mesh.geometry.attributes[name] && mesh.geometry.attributes[name].needsUpdate) {
                             var attrLocation = mesh._textureCommand.vertexArray._attributeLocations[name];
                             var vb = mesh._textureCommand.vertexArray._attributes[attrLocation].vertexBuffer;
-                            vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
+                            var arrayView = mesh.geometry.attributes[name].values;
+                            var gl = vb._gl;
+                            if (vb._sizeInBytes == arrayView * arrayView.constructor.BYTES_PER_ELEMENT) {
+                                var target = vb._bufferTarget;
+                                gl.bindBuffer(target, vb._buffer);
+                                gl.bufferData(target, arrayView, BufferUsage.STATIC_DRAW);
+                                gl.bindBuffer(target, null);
+                            } else {
+                                vaNeedsUpdate = true;
+                                break;
+                            }
+
+                            //vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
                         }
                     }
                 }
+
                 //更新索引缓冲区
-                if (mesh.geometry.indexNeedsUpdate) {
+                if (!vaNeedsUpdate && mesh.geometry.indexNeedsUpdate) {
+
+                    var arrayBufferView = mesh.geometry.indices;
+
                     var vb = mesh._textureCommand.vertexArray.indexBuffer;
-                    vb.copyFromArrayView(mesh.geometry.indices, 0);
+                    if (vb._sizeInBytes != arrayBufferView.length * arrayBufferView.constructor.BYTES_PER_ELEMENT) {
+                        vb.destroy();
+                        var buffer = Buffer.createIndexBuffer({
+                            context: frameState.context,
+                            typedArray: arrayBufferView,
+                            usage: BufferUsage.STATIC_DRAW,
+                            indexDatatype: arrayBufferView instanceof Uint16Array ? Cesium.IndexDatatype.UNSIGNED_SHORT : Cesium.IndexDatatype.UNSIGNED_INT
+                        });
+                        mesh._textureCommand.vertexArray._indexBuffer = buffer;
+                    } else {
+                        var gl = vb._gl;
+                        var target = vb._bufferTarget;
+                        gl.bindBuffer(target, vb._buffer);
+                        gl.bufferData(target, arrayBufferView, BufferUsage.STATIC_DRAW);
+                        gl.bindBuffer(target, null);
+                    }
+
+                    mesh.geometry.indexNeedsUpdate = false;
+                }
+
+                if (vaNeedsUpdate) {
+                    var command = mesh._textureCommand;
+                    var attributeLocations = command.vertexArray._attributeLocations;
+                    var vertexArrayAttributes = command._cacehVertexArrayAttributes;
+                    command.vertexArray.destroy();
+                    command.vertexArray = VertexArray.fromGeometry({
+                        context: frameState.context,
+                        geometry: mesh.geometry,
+                        attributeLocations: attributeLocations,
+                        bufferUsage: BufferUsage.STATIC_DRAW,
+
+                        vertexArrayAttributes: vertexArrayAttributes
+                    });
+                    if (vertexArrayAttributes && vertexArrayAttributes.length) {
+                        command._cacehVertexArrayAttributes = vertexArrayAttributes.map(function (a) {
+                            return a;
+                        });
+                    }
+                    command.vertexArray._attributeLocations = attributeLocations;
+
+                    for (var name in mesh.geometry.attributes) {
+                        if (mesh.geometry.attributes.hasOwnProperty(name) && mesh.geometry.attributes[name]) {
+                            mesh.geometry.attributes[name].needsUpdate = false;
+                        }
+                    }
                 }
             }
 
@@ -4573,6 +4781,8 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
             var context = frameState.context;
             var drawingBufferWidth = context.drawingBufferWidth;
             var drawingBufferHeight = context.drawingBufferHeight;
+            var fbNeedsUpdate = false;
+
             if (!item.texture || item.texture.width != drawingBufferWidth || item.texture.height != drawingBufferHeight) {
                 var notFullScreen = item._notFullScreen || Cesium.defined(item.texture);
                 if (!notFullScreen) {
@@ -4583,8 +4793,27 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
                         pixelFormat: PixelFormat.RGBA
                         // ,pixelDatatype:PixelDatatype.FLOAT
                     });
+                    fbNeedsUpdate = true;
                 }
                 item._notFullScreen = notFullScreen;
+            }
+            if (!item.depthTexture || item.depthTexture.width != item.texture.width || item.depthTexture.height != item.texture.height) {
+                item.depthTexture = new Cesium.Texture({
+                    context: context,
+                    width: item.texture.width,
+                    height: item.texture.height,
+                    pixelFormat: Cesium.PixelFormat.DEPTH_COMPONENT,
+                    pixelDatatype: Cesium.PixelDatatype.UNSIGNED_SHORT
+                });
+                fbNeedsUpdate = true;
+            }
+            if (!item.framebuffer || fbNeedsUpdate) {
+                item.framebuffer = new Cesium.Framebuffer({
+                    context: context,
+                    colorTextures: [item.texture],
+                    destroyAttachments: false,
+                    depthTexture: item.depthTexture
+                });
             }
 
             mesh.material._renderStateOptions.depthTest.enabled = mesh.material.depthTest;
@@ -4598,21 +4827,29 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
         }, true);
     }
 };
+
 /**
 *单独渲染frameBufferTexture中的mesh，最终更新frameBufferTexture中的texture
 *@param {Cesium.FrameState}frameState
-*@param {MeteoLib.Render.FramebufferTexture}frameBufferTexture
+*@param {Cesium.FramebufferTexture}frameBufferTexture
+@param {{x:number,y:number,width:number,height:number}}viewport
 */
 MeshVisualizer.prototype.updateFrameBufferTexture = function (frameState, frameBufferTexture, viewport) {
-    this._prepareFrameBufferTexture(frameState, frameBufferTexture, viewport);
+    this.initFrameBufferTexture(frameState, frameBufferTexture, viewport);
     var item = frameBufferTexture;
     if (item.drawCommands && item.drawCommands.length > 0) {
-        item.depthTexture = _RendererUtils2.default.renderToTexture(item.drawCommands, frameState, item.texture, item.depthTexture);
+        // item.depthTexture = RendererUtils.renderToTexture(item.drawCommands, frameState, item.texture, item.depthTexture);
+        _RendererUtils2.default.renderToTexture(item.drawCommands, frameState, item.framebuffer);
+
         for (var i = 0; i < item.drawCommands.length; i++) {
 
             item.drawCommands[i]._renderStateOptions.viewport = void 0;
             item.drawCommands[i].renderState = RenderState.fromCache(item.drawCommands[i]._renderStateOptions);
         }
+    }
+    if (!frameBufferTexture.ready) {
+        frameBufferTexture.ready = true;
+        frameBufferTexture.readyPromise.resolve(frameBufferTexture);
     }
 };
 
@@ -4646,7 +4883,7 @@ MeshVisualizer.prototype.getPixels = function (frameState, frameBufferTexture, v
         viewport.height = frameState.context._canvas.height;
     }
 
-    this._prepareFrameBufferTexture(frameState, frameBufferTexture, viewport);
+    this.initFrameBufferTexture(frameState, frameBufferTexture, viewport);
     var item = frameBufferTexture;
     if (item.drawCommands && item.drawCommands.length > 0) {
         if (!item._computeTexture || item._computeTexture && (item._computeTexture.width != viewport.width || item._computeTexture.height != viewport.height)) {
@@ -4907,6 +5144,17 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 /**
 *
+* :
+*
+*                       -----width----+(width/2,height/2)
+*                       |             |
+*                       |    (0,0)    |
+*                       |      +    height
+*                       |             |
+*                       |             |
+*                        +----width-----
+*        (-width/2,-height/2)
+*    
 *@param {Number}width
 *@param {Number}height
 *@param {Number}widthSegments
@@ -5012,16 +5260,16 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 /**
+*:
 *
- <pre><code>  
-   p1++++++++++++p4
-   +          +  +
-   +       +     +
-   +     +       +
-   +   +         +
-   + +           +
-   p2++++++++++++p3
-   </code> </pre>
+*       p1------------p4
+*       |          +  |
+*       |       +     |
+*       |     +       |
+*       |   +         |
+*       | +           |
+*       p2------------p3
+*    
 *@param {Object}options 
 *@param {Array<Number|Cesium.Cartesian3>}options.positions [p1,p2,p3,p4]或者[p1.x,p1.y,p1.z,p2.x,...,p4.z] 
 *
@@ -7481,12 +7729,12 @@ void main(void) \n\
 exports.default = texture_vert;
 
 },{}],31:[function(require,module,exports){
-(function (global){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+exports.defineProperty = exports.ShaderUtils = exports.MaterialUtils = exports.MeshPhongMaterial = exports.CSG = exports.PlaneBufferGeometry = exports.BasicGeometry = exports.BasicMeshMaterial = exports.ReferenceMesh = exports.Rotation = exports.PlaneGeometry = exports.LOD = exports.GeometryUtils = exports.FramebufferTexture = exports.MeshVisualizer = exports.ShaderLib = exports.ShaderChunk = exports.MeshMaterial = exports.Mesh = exports.RendererUtils = undefined;
 
 var _RendererUtils = require('./Core/RendererUtils.js');
 
@@ -7564,41 +7812,70 @@ var _ShaderUtils = require('./Core/ShaderUtils.js');
 
 var _ShaderUtils2 = _interopRequireDefault(_ShaderUtils);
 
+var _defineProperty = require('./Util/defineProperty.js');
+
+var _defineProperty2 = _interopRequireDefault(_defineProperty);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var g = typeof window != 'undefined' ? window : typeof global != 'undefined' ? global : globalThis;
-if (typeof Cesium === 'undefined') {
-    g.Cesium = {};
+// var g = typeof window != 'undefined' ? window : (typeof global != 'undefined' ? global : globalThis);
+var CesiumMeshVisualizer = {};
+if (typeof Cesium !== 'undefined') {
+    //     g.Cesium = {};
+    // } else {
+    CesiumMeshVisualizer = Cesium;
 }
-Cesium.RendererUtils = _RendererUtils2.default;
-Cesium.Mesh = _Mesh2.default;
-Cesium.MeshMaterial = _MeshMaterial2.default;
-Cesium.ShaderChunk = _ShaderChunk2.default;
-Cesium.ShaderLib = _ShaderLib2.default;
-Cesium.MeshVisualizer = _MeshVisualizer2.default;
-Cesium.FramebufferTexture = _FramebufferTexture2.default;
-Cesium.GeometryUtils = _GeometryUtils2.default;
-Cesium.LOD = _LOD2.default;
-Cesium.PlaneGeometry = _PlaneGeometry2.default;
-Cesium.Rotation = _Rotation2.default;
-Cesium.ReferenceMesh = _ReferenceMesh2.default;
-Cesium.BasicMeshMaterial = _BasicMeshMaterial2.default;
-Cesium.BasicGeometry = _BasicGeometry2.default;
-Cesium.PlaneBufferGeometry = _PlaneBufferGeometry2.default;
-Cesium.CSG = _CSG2.default;
-Cesium.MeshPhongMaterial = _MeshPhongMaterial2.default;
-Cesium.MaterialUtils = _MaterialUtils2.default;
-Cesium.ShaderUtils = _ShaderUtils2.default;
-Cesium.MeshVisualizerVERSION = '1.0.1';
-exports.default = Cesium;
+
+CesiumMeshVisualizer.defineProperty = _defineProperty2.default;
+CesiumMeshVisualizer.RendererUtils = _RendererUtils2.default;
+CesiumMeshVisualizer.MaterialUtils = _MaterialUtils2.default;
+CesiumMeshVisualizer.ShaderUtils = _ShaderUtils2.default;
+CesiumMeshVisualizer.GeometryUtils = _GeometryUtils2.default;
+
+CesiumMeshVisualizer.Mesh = _Mesh2.default;
+CesiumMeshVisualizer.MeshMaterial = _MeshMaterial2.default;
+CesiumMeshVisualizer.ShaderChunk = _ShaderChunk2.default;
+CesiumMeshVisualizer.ShaderLib = _ShaderLib2.default;
+CesiumMeshVisualizer.MeshVisualizer = _MeshVisualizer2.default;
+CesiumMeshVisualizer.FramebufferTexture = _FramebufferTexture2.default;
+CesiumMeshVisualizer.LOD = _LOD2.default;
+CesiumMeshVisualizer.PlaneGeometry = _PlaneGeometry2.default;
+CesiumMeshVisualizer.Rotation = _Rotation2.default;
+CesiumMeshVisualizer.ReferenceMesh = _ReferenceMesh2.default;
+CesiumMeshVisualizer.BasicMeshMaterial = _BasicMeshMaterial2.default;
+CesiumMeshVisualizer.BasicGeometry = _BasicGeometry2.default;
+CesiumMeshVisualizer.PlaneBufferGeometry = _PlaneBufferGeometry2.default;
+CesiumMeshVisualizer.CSG = _CSG2.default;
+CesiumMeshVisualizer.MeshPhongMaterial = _MeshPhongMaterial2.default;
+CesiumMeshVisualizer.MeshVisualizerVERSION = '1.0.1';
+
+exports.RendererUtils = _RendererUtils2.default;
+exports.Mesh = _Mesh2.default;
+exports.MeshMaterial = _MeshMaterial2.default;
+exports.ShaderChunk = _ShaderChunk2.default;
+exports.ShaderLib = _ShaderLib2.default;
+exports.MeshVisualizer = _MeshVisualizer2.default;
+exports.FramebufferTexture = _FramebufferTexture2.default;
+exports.GeometryUtils = _GeometryUtils2.default;
+exports.LOD = _LOD2.default;
+exports.PlaneGeometry = _PlaneGeometry2.default;
+exports.Rotation = _Rotation2.default;
+exports.ReferenceMesh = _ReferenceMesh2.default;
+exports.BasicMeshMaterial = _BasicMeshMaterial2.default;
+exports.BasicGeometry = _BasicGeometry2.default;
+exports.PlaneBufferGeometry = _PlaneBufferGeometry2.default;
+exports.CSG = _CSG2.default;
+exports.MeshPhongMaterial = _MeshPhongMaterial2.default;
+exports.MaterialUtils = _MaterialUtils2.default;
+exports.ShaderUtils = _ShaderUtils2.default;
+exports.defineProperty = _defineProperty2.default;
+exports.default = CesiumMeshVisualizer;
 
 if (typeof module != 'undefined') {
-    module.exports = Cesium;
+    module.exports = CesiumMeshVisualizer;
 }
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-
-},{"./Core/BasicGeometry.js":2,"./Core/BasicMeshMaterial.js":3,"./Core/FramebufferTexture.js":4,"./Core/GeometryUtils.js":5,"./Core/LOD.js":6,"./Core/MaterialUtils.js":7,"./Core/Mesh.js":8,"./Core/MeshMaterial.js":9,"./Core/MeshPhongMaterial.js":10,"./Core/MeshVisualizer.js":12,"./Core/PlaneBufferGeometry.js":13,"./Core/PlaneGeometry.js":14,"./Core/ReferenceMesh.js":15,"./Core/RendererUtils.js":16,"./Core/Rotation.js":17,"./Core/ShaderUtils.js":18,"./Core/Shaders/ShaderChunk.js":19,"./Core/Shaders/ShaderLib.js":20,"./Util/CSG.js":34}],32:[function(require,module,exports){
+},{"./Core/BasicGeometry.js":2,"./Core/BasicMeshMaterial.js":3,"./Core/FramebufferTexture.js":4,"./Core/GeometryUtils.js":5,"./Core/LOD.js":6,"./Core/MaterialUtils.js":7,"./Core/Mesh.js":8,"./Core/MeshMaterial.js":9,"./Core/MeshPhongMaterial.js":10,"./Core/MeshVisualizer.js":12,"./Core/PlaneBufferGeometry.js":13,"./Core/PlaneGeometry.js":14,"./Core/ReferenceMesh.js":15,"./Core/RendererUtils.js":16,"./Core/Rotation.js":17,"./Core/ShaderUtils.js":18,"./Core/Shaders/ShaderChunk.js":19,"./Core/Shaders/ShaderLib.js":20,"./Util/CSG.js":34,"./Util/defineProperty.js":36}],32:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -9143,7 +9420,9 @@ Object.defineProperty(exports, "__esModule", {
 *@param {Object}owner
 *@param {String}name
 *@param {Any}defaultVal
-*@param {Function}onChanged
+*@param {(
+        changed: string, owner: object, newVal: *, oldVal: *
+        ) => void}onChanged
 *@memberof Cesium
 */
 function defineProperty(owner, name, defaultVal, onChanged) {
@@ -9157,9 +9436,10 @@ function defineProperty(owner, name, defaultVal, onChanged) {
             if (this["_" + name] && this["_" + name].equals && val) {
                 changed = this["_" + name].equals(val);
             }
+            var oldVal = this["_" + name];
             this["_" + name] = val;
             if (typeof onChanged == 'function' && changed) {
-                onChanged(changed, owner);
+                onChanged(changed, owner, val, oldVal);
             }
         }
     };

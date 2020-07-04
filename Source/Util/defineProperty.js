@@ -4,7 +4,9 @@
 *@param {Object}owner
 *@param {String}name
 *@param {Any}defaultVal
-*@param {Function}onChanged
+*@param {(
+        changed: string, owner: object, newVal: *, oldVal: *
+        ) => void}onChanged
 *@memberof Cesium
 */
 function defineProperty(owner, name, defaultVal, onChanged) {
@@ -18,9 +20,10 @@ function defineProperty(owner, name, defaultVal, onChanged) {
             if (this["_" + name] && this["_" + name].equals && val) {
                 changed = this["_" + name].equals(val);
             }
+            var oldVal = this["_" + name];
             this["_" + name] = val;
             if (typeof onChanged == 'function' && changed) {
-                onChanged(changed, owner);
+                onChanged(changed, owner, val, oldVal);
             }
         }
     };

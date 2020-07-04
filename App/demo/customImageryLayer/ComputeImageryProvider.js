@@ -1,3 +1,48 @@
+export class IComputeImageryProviderOptions {
+    constructor() {
+        this.minimumLevel = 0
+        this.maximumLevel = 6
+        this.tileWidth = 256
+        this.tileHeight = 256
+        /**
+         * @type {Cesium.Rectangle}
+         */
+        this.rectangle = Cesium.Rectangle.MAX_VALUE
+        /**
+         * @type {Cesium.GeographicTilingScheme}
+         */
+        this.tilingScheme = new Cesium.GeographicTilingScheme()
+        this.hasAlphaChannel = true
+    }
+    /**
+     * @return {Promise<boolean>|undefined}
+     */
+    init() {
+        return new Promise((resolve, reject) => {
+            resolve(true);
+        });
+    }
+    /**
+     * @return {Promise<boolean>|undefined}
+     */
+    prepareData(x, y, level, request) {
+        return new Promise((resolve, reject) => {
+            resolve(true);
+        });
+    }
+    /**
+     * 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} level 
+     * @param {Cesium.FrameState} frameState 
+     * @param {Cesium.Texture} outputTexture 
+     * @return {Cesium.Texture} outputTexture:Cesium.Texture
+     */
+    compute(x, y, level, frameState, outputTexture) {
+        return;
+    }
+}
 
 /**
  *  
@@ -17,6 +62,8 @@
  * @extends Cesium.ImageryProvider
  */
 function ComputeImageryProvider(options) {
+
+    options = options || {};
 
     this._minimumLevel = Cesium.defaultValue(options.minimumLevel, 0);
     this._maximumLevel = Cesium.defaultValue(options.maximumLevel, 6);
@@ -41,7 +88,11 @@ function ComputeImageryProvider(options) {
     if (typeof options.prepareData == 'function') {
         this.prepareData = options.prepareData;
     }
-    this._init();
+
+    Cesium.requestAnimationFrame(() => {
+        this._init();
+    })
+
 }
 
 Object.defineProperties(ComputeImageryProvider.prototype, {
@@ -79,6 +130,12 @@ Object.defineProperties(ComputeImageryProvider.prototype, {
     rectangle: {
         get: function () {
             return this._rectangle;
+        },
+        set: function (val) {
+            this._rectangle = val;
+            if (this._imageryLayer) {
+                this._imageryLayer.rectangle = this._rectangle;
+            }
         }
     },
 
@@ -347,5 +404,12 @@ ComputeImageryProvider.prototype.compute = function (
     outputTexture) {
     return;
 }
-
+/**
+ * 
+ * @param {number} x 
+ * @param {number} y 
+ * @param {number} level 
+ */
+ComputeImageryProvider.prototype.onTileDestroyed = function (x, y, level) {
+}
 export default ComputeImageryProvider;

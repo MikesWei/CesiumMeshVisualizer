@@ -1,10 +1,103 @@
- 
+
 export = CesiumMeshVisualizer;
 export as namespace CesiumMeshVisualizer;
+import Cesium from 'cesium';
+import geojson from './geojson.js';
+
 /**
  * Make you can use three.js geometry in Cesium,and use mesh,geometry,material like three.js to manage renderable object in Cesium.
  */
 declare namespace CesiumMeshVisualizer {
+
+    /**
+    *定义属性，并监听属性变化事件,属性值的数据类型可以实现equals接口用于进行更进一步的比较
+    *@param {Object}owner
+    *@param {String}name
+    *@param {Any}defaultVal
+    *@param {(
+        changed: string, owner: object, newVal: *, oldVal: *
+        ) => void}onChanged
+    *@memberof Cesium
+    */
+    export function defineProperty(owner: object, name: string, defaultVal: *, onChanged: (
+        changed: string, owner: object, newVal: *, oldVal: *
+    ) => void): void
+
+    export class GeometryUtils {
+
+        /**
+        *绕x轴旋转，修改顶点坐标
+        *@param {Cesium.Geometry}geometry
+        *@param {Number}angle 弧度
+        */
+        static rotateX: (geometry: Cesium.Geometry, angle: number) => Cesium.Geometry
+
+        /**
+        *绕y轴旋转，修改顶点坐标
+        *@param {Cesium.Geometry}geometry
+        *@param {Number}angle 弧度
+        */
+        static rotateY: (geometry: Cesium.Geometry, angle: number) => Cesium.Geometry
+
+        /**
+        *绕z轴旋转，修改顶点坐标
+        *@param {Cesium.Geometry}geometry
+        *@param {Number}angle 弧度
+        */
+        static rotateZ: (geometry: Cesium.Geometry, angle: number) => Cesium.Geometry
+
+        /**
+        *
+        *@param {Cesium.Geometry}geometry
+        *@returns {Cesium.Geometry}
+        */
+        static computeVertexNormals: (geometry) => Cesium.Geometry
+
+
+        /**
+        *合并两个或两个以上图形类型（primitiveType），属性数量、名称以及属性值的类型（GeometryAttribute的componentDatatype、componentsPerAttribute等）都一致的几何体
+        *@param {Array<Cesium.Geometry>}geometries 
+        *@return {Cesium.Geometry}
+        */
+        static mergeGeometries: (geometries: Cesium.Geometry[]) => Cesium.Geometry
+
+        /**
+          *
+          *@param {Cesium.Geometry}geometry
+          *@param {Cesium.Cartesian3}offset
+          */
+        static translate: (geometry: Cesium.Geometry, offset: number) => Cesium.Geometry
+
+
+        /**
+        *
+        *@param {THREE.Geometry}geometry3js type:THREE.Geometry
+        *@return {Cesium.Geometry} 
+        */
+        static fromGeometry3js: (geometry3js: THREE.Geometry) => Cesium.Geometry
+
+        /**
+        *
+        *@param {Cesium.Geometry}geometry
+        *@return {THREE.Geometry} 
+        */
+        static toGeometry3js: (geometry: Cesium.Geometry) => THREE.Geometry
+
+
+        /**
+        *@param {Cesium.Geometry|THREE.Geometry}geometry
+        *@param {Cesium.Cartesian3}[offset]
+        *@return {CSG}
+        */
+        static toCSG: (geometry: Cesium.Geometry | THREE.Geometry, offset) => CSG
+
+        /**
+        *@param {CSG}csg_model
+        *@param {Boolean}[toGeometry3js=false]
+        *@return {Cesium.Geometry|THREE.Geometry}
+        */
+        static fromCSG: (csg_model: CSG, toGeometry3js: boolean) => Cesium.Geometry | THREE.Geometry
+    }
     /**
      *  Constructive Solid Geometry (CSG) is a modeling technique that uses Boolean
         operations like union and intersection to combine 3D solids. This library
@@ -211,23 +304,23 @@ declare namespace CesiumMeshVisualizer {
 
     /**
     *
-      <pre><code>  
-              +            ——
-            +   +           |
-          +       +     headLength
-        +           +       |
-      ++++headWidth++++   ——
-            +  +            |
-            +  +            |
-            +  +            |
-            +  +          length
-            +  +            |
-            +  +            |
-            +  +            |
-            ++++           ——
-            width
-    
-        </code> </pre>
+       :
+
+                  +            ——
+                +   +           |
+              +       +     headLength
+            +           +       |
+          ++++headWidth++++   ——
+                +  +            |
+                +  +            |
+                +  +            |
+                +  +          length
+                +  +            |
+                +  +            |
+                +  +            |
+                ++++           ——
+                width
+         
     *@param {Object}[options] 
     *@param {Number}[options.length=50000]   
     *@param {Number}[options.width=250]   
@@ -261,6 +354,60 @@ declare namespace CesiumMeshVisualizer {
         static createGeometry: (arrowGeometry: ArrowGeometry) => Cesium.Geometry
     }
 
+
+    /**
+    *
+    * :
+    *
+    *                       -----width----+(width/2,height/2)
+    *                       |             |
+    *                       |    (0,0)    |
+    *                       |      +    height
+    *                       |             |
+    *                       |             |
+    *                        +----width-----
+    *        (-width/2,-height/2)
+    *    
+    *@param {Number}width
+    *@param {Number}height
+    *@param {Number}widthSegments
+    *@param {Number}heightSegments
+    *@constructor
+    *@memberof Cesium
+    */
+    export class PlaneBufferGeometry {
+        constructor(width: number, height: number, widthSegments: number, heightSegments: number)
+        width: number
+        height: number
+        widthSegments: number
+        heightSegments: number
+        createGeometry: () => Cesium.Geometry
+    }
+    /**
+     *:
+     *
+    *       p1------------p4
+    *       |          +  |
+    *       |       +     |
+    *       |     +       |
+    *       |   +         |
+    *       | +           |
+    *       p2------------p3
+    *    
+    *@param {Object}options 
+    *@param {Array<Number|Cesium.Cartesian3>}options.positions [p1,p2,p3,p4]或者[p1.x,p1.y,p1.z,p2.x,...,p4.z] 
+    *
+    *@property {Array<Number|Cesium.Cartesian3>}positions 
+    *
+    *@constructor
+    *@memberof Cesium
+    */
+    export class PlaneGeometry {
+        constructor(options: {
+            positions: Array<Number | Cesium.Cartesian3>
+        })
+        createGeometry: () => Cesium.Geometry
+    }
     /**
     *
     *@param {Cesium.Cartesian3}axis - type:Cesium.Cartesian3 旋转轴
@@ -292,6 +439,29 @@ declare namespace CesiumMeshVisualizer {
         angle: number
     }
 
+    export interface MashMaterialOptions {
+        vertexShader: string
+        fragmentShader: string
+        pickColorQualifier: string
+        uniforms: object
+        uniformStateUsed: object
+        translucent: boolean
+        wireframe: boolean
+        /**
+         * FRONT: 3,
+         * BACK: 1,
+         * DOUBLE: 2
+         */
+        side: number
+        /**
+         * @type {Cesium.Color|string}
+         */
+        defaultColor: Cesium.Color | string
+        depthTest: boolean
+        depthMask: boolean
+        blending: boolean
+        allowPick: boolean
+    }
     /**
     *
     *@param {Object}options
@@ -459,6 +629,13 @@ declare namespace CesiumMeshVisualizer {
         *@param {(node: Cesium.Mesh | Cesium.LOD) => void}callback
         */
         static traverse: (node: Mesh | LOD, callback: (node: Cesium.Mesh | Cesium.LOD) => void) => void
+
+
+        /**
+        *@oaram {Cesium.Mesh|Cesium.LOD}child
+        */
+        add: (mesh: Cesium.Mesh | Cesium.LOD) => void
+
     }
 
 
@@ -616,6 +793,7 @@ declare namespace CesiumMeshVisualizer {
     *
     *@property {Cesium.Mesh}mesh 
     *@property {Cesium.Texture}texture 
+    *@property {Cesium.Texture}[depthTexture] 
     *
     *@constructor
     *@memberof Cesium
@@ -707,12 +885,17 @@ declare namespace CesiumMeshVisualizer {
          * @param mesh 
          * @param renderTarget - Cesium.Texture
          */
-        constructor(mesh: Mesh, renderTarget: Cesium.Texture)
+        constructor(mesh: Mesh, renderTarget: Cesium.Texture, depthTexture: Cesium.Texture)
         mesh: Mesh
         /**
          * @type {Cesium.Texture}
          */
         texture: Cesium.Texture
+        depthTexture: Cesium.Texture
+        framebuffer: Cesium.Framebuffer
+        ready: boolean
+        readyPromise: Promise<FramebufferTexture>
+        destroy: () => void
     }
 
 
@@ -721,14 +904,14 @@ declare namespace CesiumMeshVisualizer {
         *使用帧缓冲技术，执行渲染命令，渲染到纹理  
         *@param {Cesium.DrawCommand|Array<Cesium.DrawCommand>}drawCommand - type:Cesium.DrawCommand|Array<Cesium.DrawCommand> 渲染命令（集合）
         *@param {Cesium.FrameState}frameState - type:Cesium.FrameState 帧状态对象，可以从Cesium.Scene中获取
-        *@param {Cesium.Texture}outpuTexture - type:Cesium.Texture 将渲染到的目标纹理对象
+        *@param {Cesium.Texture|Cesium.Framebuffer}outpuTexture - type:Cesium.Texture 将渲染到的目标纹理对象
         *@param {Cesium.Texture}[outputDepthTexture] - type:Cesium.Texture 可选，输出的深度纹理
         */
         static renderToTexture: (
             drawCommand: Cesium.DrawCommand | Cesium.DrawCommand[],
             frameState: Cesium.FrameState,
-            outputTexture: Cesium.Texture,
-            outputDepthTexture: Cesium.Texture
+            outputTexture: Cesium.Texture | Cesium.Framebuffer,
+            outputDepthTexture?: Cesium.Texture
         ) => void
 
 
@@ -1003,7 +1186,7 @@ declare namespace CesiumMeshVisualizer {
         /**
          * @type {Cesium.Event}
          */
-        beforeUpdate:Cesium.Event
+        beforeUpdate: Cesium.Event
         children: (Mesh | LOD)[]
 
         /**
@@ -1111,6 +1294,19 @@ declare namespace CesiumMeshVisualizer {
 
 
         /**
+        *单独渲染frameBufferTexture中的mesh，最终更新frameBufferTexture中的texture
+        *@param {Cesium.FrameState}frameState
+        *@param {Cesium.FramebufferTexture}frameBufferTexture
+        */
+        updateFrameBufferTexture: (frameState: Cesium.FrameState, frameBufferTexture: FramebufferTexture, viewport: {
+            x: number,
+            y: number,
+            width: number,
+            height: number
+        }) => void
+
+
+        /**
         *单独渲染frameBufferTexture中的mesh，最终更新frameBufferTexture中的texture，并读取缓冲区的像素,可以用于实现并行计算(参看MeshVisualizer.prototype.compute)
         *@param {Cesium.FrameState}frameState
         *@param {Cesium.FramebufferTexture}frameBufferTexture
@@ -1172,4 +1368,4 @@ declare namespace CesiumMeshVisualizer {
 
     }
 
-}
+} 

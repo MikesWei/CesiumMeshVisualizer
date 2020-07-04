@@ -3,6 +3,17 @@ import BasicGeometry from './BasicGeometry.js';
 
 /**
 *
+* :
+*
+*                       -----width----+(width/2,height/2)
+*                       |             |
+*                       |    (0,0)    |
+*                       |      +    height
+*                       |             |
+*                       |             |
+*                        +----width-----
+*        (-width/2,-height/2)
+*    
 *@param {Number}width
 *@param {Number}height
 *@param {Number}widthSegments

@@ -1,18 +1,4 @@
-/// <reference path="../../../Source/ThirdParty/ammo.js-master/builds/ammo.js" />
 
-/// <reference path="../common.js" />
-
-//requirejs([
-//       "../../../requirejs.config.js",
-//       "../../../appconfig.js",
-//       '../../../Source/Main',
-//       '../common.js'
-//], function (
-//       config,
-//       appconfig,
-//       Cesium,
-//       common
-//       ) {
 MeshVisualizer = Cesium.MeshVisualizer;
 Mesh = Cesium.Mesh;
 MeshMaterial = Cesium.MeshMaterial;
@@ -383,5 +369,3 @@ Ammo().then(function () {
         }
     }, 1000 * 3);
 });
-
-//});

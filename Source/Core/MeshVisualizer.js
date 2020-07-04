@@ -530,6 +530,7 @@ function createPickIds(collection, context) {
 */
 function MeshVisualizer(options) {
     initConstants();
+    options = options || {};
     this._modelMatrix = defaultValue(options.modelMatrix, Matrix4.IDENTITY);
     this._actualModelMatrix = Matrix4.clone(this._modelMatrix);
     this._ready = true;
@@ -900,6 +901,11 @@ MeshVisualizer.prototype = {
 
             vertexArrayAttributes: vertexArrayAttributes
         });
+        if (vertexArrayAttributes && vertexArrayAttributes.length) {
+            command._cacehVertexArrayAttributes = vertexArrayAttributes.map(function (a) {
+                return a;
+            })
+        }
         command.vertexArray._attributeLocations = attributeLocations;
 
         var pickColor = pickId.color;
@@ -1145,7 +1151,7 @@ MeshVisualizer.prototype = {
             depthMask: material.depthMask
         }
         renderStateOpts.cull.enabled = true;
-         
+
         // renderStateOpts.blending.color = {
         //     red: 0.0,
         //     green: 0.0,
@@ -1320,8 +1326,7 @@ MeshVisualizer.prototype = {
             }
             return callback;
         }
-
-
+ 
         function createTexture(texture, context) {
 
             var TextureMinificationFilter = Cesium.TextureMinificationFilter;
@@ -1537,8 +1542,9 @@ MeshVisualizer.prototype = {
                         || item.value instanceof Cesium.Matrix2
                         || item.value instanceof Cesium.Texture
                         || typeof item.value === "number"
+                        || typeof item.value === "boolean"
                         || isCssColorString
-                        || item.isColor 
+                        || item.isColor
                         || item.isCartesian2
                         || item.isCartesian3
                         || item.isCartesian4
@@ -1837,7 +1843,7 @@ MeshVisualizer.prototype.update = function (frameState) {
                 mesh._actualMesh = MeshUtils.fromMesh3js(mesh);
                 mesh.modelMatrixNeedsUpdate = true;
             }
-            if (!needsUpdate) {
+            else {
                 for (var pn in mesh.geometry.attributes) {
                     if (mesh.geometry.attributes.hasOwnProperty(pn)) {
                         mesh._actualMesh.geometry.attributes[pn].needsUpdate = mesh.geometry.attributes[pn].needsUpdate;
@@ -1876,6 +1882,7 @@ MeshVisualizer.prototype.update = function (frameState) {
                     that.restoreFromWireframe(mesh.geometry);
                 }
 
+                if (mesh._drawCommand) mesh._drawCommand.destroy();
                 mesh._drawCommand = that.createDrawCommand(mesh, frameState);
 
                 mesh.needsUpdate = false;
@@ -1902,7 +1909,13 @@ MeshVisualizer.prototype.update = function (frameState) {
                 //更新索引缓冲区
                 if (mesh.geometry.indexNeedsUpdate) {
                     var vb = mesh._drawCommand.vertexArray.indexBuffer;
-                    vb.copyFromArrayView(mesh.geometry.indices, 0);
+                    var gl = vb._gl;
+                    var target = vb._bufferTarget;
+                    gl.bindBuffer(target, vb._buffer);
+                    gl.bufferData(target, mesh.geometry.indices, BufferUsage.STATIC_DRAW);
+                    gl.bindBuffer(target, null);
+                    mesh.geometry.indexNeedsUpdate = false;
+                    // vb.copyFromArrayView(mesh.geometry.indices, 0);
                 }
 
                 if (mesh._instances && mesh._instances.length) {
@@ -1966,10 +1979,14 @@ MeshVisualizer.prototype.update = function (frameState) {
 
 ///////2020.04.20  --start
 
+
 /**
-*
+*单独渲染frameBufferTexture中的mesh，最终更新frameBufferTexture中的texture
+*@param {Cesium.FrameState}frameState
+*@param {Cesium.FramebufferTexture}frameBufferTexture
+@param {{x:number,y:number,width:number,height:number}}viewport
 */
-MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, frameBufferTexture, viewport) {
+MeshVisualizer.prototype.initFrameBufferTexture = function (frameState, frameBufferTexture, viewport) {
     var that = this;
 
     var item = frameBufferTexture;
@@ -2023,6 +2040,7 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
 
             } else {//在不需要重新构建绘图命令时，检查各个属性和索引是否需要更新，需要则将更新相应的缓冲区
 
+                var vaNeedsUpdate = false
                 //更新属性缓冲区
                 for (var name in mesh.geometry.attributes) {
                     if (mesh.geometry.attributes.hasOwnProperty(name)
@@ -2031,14 +2049,75 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
                         if (mesh.geometry.attributes[name] && mesh.geometry.attributes[name].needsUpdate) {
                             var attrLocation = mesh._textureCommand.vertexArray._attributeLocations[name]
                             var vb = mesh._textureCommand.vertexArray._attributes[attrLocation].vertexBuffer;
-                            vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
+                            var arrayView = mesh.geometry.attributes[name].values;
+                            var gl = vb._gl;
+                            if (vb._sizeInBytes == arrayView * arrayView.constructor.BYTES_PER_ELEMENT) {
+                                var target = vb._bufferTarget;
+                                gl.bindBuffer(target, vb._buffer);
+                                gl.bufferData(target, arrayView, BufferUsage.STATIC_DRAW);
+                                gl.bindBuffer(target, null);
+                            } else {
+                                vaNeedsUpdate = true;
+                                break;
+                            }
+
+                            //vb.copyFromArrayView(mesh.geometry.attributes[name].values, 0);
                         }
                     }
                 }
+
                 //更新索引缓冲区
-                if (mesh.geometry.indexNeedsUpdate) {
+                if (!vaNeedsUpdate && mesh.geometry.indexNeedsUpdate) {
+
+                    var arrayBufferView = mesh.geometry.indices;
+
                     var vb = mesh._textureCommand.vertexArray.indexBuffer;
-                    vb.copyFromArrayView(mesh.geometry.indices, 0);
+                    if (vb._sizeInBytes != arrayBufferView.length * arrayBufferView.constructor.BYTES_PER_ELEMENT) {
+                        vb.destroy();
+                        var buffer = Buffer.createIndexBuffer({
+                            context: frameState.context,
+                            typedArray: arrayBufferView,
+                            usage: BufferUsage.STATIC_DRAW,
+                            indexDatatype: arrayBufferView instanceof Uint16Array ? Cesium.IndexDatatype.UNSIGNED_SHORT : Cesium.IndexDatatype.UNSIGNED_INT
+                        });
+                        mesh._textureCommand.vertexArray._indexBuffer = buffer;
+                    } else {
+                        var gl = vb._gl;
+                        var target = vb._bufferTarget;
+                        gl.bindBuffer(target, vb._buffer);
+                        gl.bufferData(target, arrayBufferView, BufferUsage.STATIC_DRAW);
+                        gl.bindBuffer(target, null);
+                    }
+
+                    mesh.geometry.indexNeedsUpdate = false;
+                }
+
+                if (vaNeedsUpdate) {
+                    var command = mesh._textureCommand
+                    var attributeLocations = command.vertexArray._attributeLocations
+                    var vertexArrayAttributes = command._cacehVertexArrayAttributes
+                    command.vertexArray.destroy();
+                    command.vertexArray = VertexArray.fromGeometry({
+                        context: frameState.context,
+                        geometry: mesh.geometry,
+                        attributeLocations: attributeLocations,
+                        bufferUsage: BufferUsage.STATIC_DRAW,
+
+                        vertexArrayAttributes: vertexArrayAttributes
+                    });
+                    if (vertexArrayAttributes && vertexArrayAttributes.length) {
+                        command._cacehVertexArrayAttributes = vertexArrayAttributes.map(function (a) {
+                            return a;
+                        })
+                    }
+                    command.vertexArray._attributeLocations = attributeLocations;
+
+                    for (var name in mesh.geometry.attributes) {
+                        if (mesh.geometry.attributes.hasOwnProperty(name)
+                            && mesh.geometry.attributes[name]) {
+                            mesh.geometry.attributes[name].needsUpdate = false;
+                        }
+                    }
                 }
             }
 
@@ -2047,6 +2126,8 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
             var context = frameState.context;
             var drawingBufferWidth = context.drawingBufferWidth;
             var drawingBufferHeight = context.drawingBufferHeight;
+            var fbNeedsUpdate = false;
+
             if (!item.texture
                 || item.texture.width != drawingBufferWidth
                 || item.texture.height != drawingBufferHeight
@@ -2060,8 +2141,31 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
                         pixelFormat: PixelFormat.RGBA
                         // ,pixelDatatype:PixelDatatype.FLOAT
                     });
+                    fbNeedsUpdate = true;
                 }
                 item._notFullScreen = notFullScreen;
+
+            }
+            if (!item.depthTexture
+                || item.depthTexture.width != item.texture.width
+                || item.depthTexture.height != item.texture.height
+            ) {
+                item.depthTexture = new Cesium.Texture({
+                    context: context,
+                    width: item.texture.width,
+                    height: item.texture.height,
+                    pixelFormat: Cesium.PixelFormat.DEPTH_COMPONENT,
+                    pixelDatatype: Cesium.PixelDatatype.UNSIGNED_SHORT
+                });
+                fbNeedsUpdate = true;
+            }
+            if (!item.framebuffer || fbNeedsUpdate) {
+                item.framebuffer = new Cesium.Framebuffer({
+                    context: context,
+                    colorTextures: [item.texture],
+                    destroyAttachments: false,
+                    depthTexture: item.depthTexture
+                });
             }
 
             mesh.material._renderStateOptions.depthTest.enabled = mesh.material.depthTest;
@@ -2075,25 +2179,32 @@ MeshVisualizer.prototype._prepareFrameBufferTexture = function (frameState, fram
 
         }, true);
 
-
     }
 }
+
 /**
 *单独渲染frameBufferTexture中的mesh，最终更新frameBufferTexture中的texture
 *@param {Cesium.FrameState}frameState
-*@param {MeteoLib.Render.FramebufferTexture}frameBufferTexture
+*@param {Cesium.FramebufferTexture}frameBufferTexture
+@param {{x:number,y:number,width:number,height:number}}viewport
 */
 MeshVisualizer.prototype.updateFrameBufferTexture = function (frameState, frameBufferTexture, viewport) {
-    this._prepareFrameBufferTexture(frameState, frameBufferTexture, viewport);
+    this.initFrameBufferTexture(frameState, frameBufferTexture, viewport);
     var item = frameBufferTexture;
     if (item.drawCommands && item.drawCommands.length > 0) {
-        item.depthTexture = RendererUtils.renderToTexture(item.drawCommands, frameState, item.texture, item.depthTexture);
+        // item.depthTexture = RendererUtils.renderToTexture(item.drawCommands, frameState, item.texture, item.depthTexture);
+        RendererUtils.renderToTexture(item.drawCommands, frameState, item.framebuffer);
+
         for (var i = 0; i < item.drawCommands.length; i++) {
 
             item.drawCommands[i]._renderStateOptions.viewport = void (0);
             item.drawCommands[i].renderState = RenderState.fromCache(item.drawCommands[i]._renderStateOptions);
 
         }
+    }
+    if (!frameBufferTexture.ready) {
+        frameBufferTexture.ready = true;
+        frameBufferTexture.readyPromise.resolve(frameBufferTexture);
     }
 }
 
@@ -2128,7 +2239,7 @@ MeshVisualizer.prototype.getPixels = function (frameState, frameBufferTexture, v
         viewport.height = frameState.context._canvas.height;
     }
 
-    this._prepareFrameBufferTexture(frameState, frameBufferTexture, viewport)
+    this.initFrameBufferTexture(frameState, frameBufferTexture, viewport)
     var item = frameBufferTexture;
     if (item.drawCommands && item.drawCommands.length > 0) {
         if (!item._computeTexture

@@ -42,6 +42,7 @@ ComputeImagery.prototype.releaseReference = function () {
             else {
                 this.texture.referenceCount = this.texture.referenceCount - 1;
             }
+            delete this.texture;
         }
 
         if (
@@ -50,6 +51,9 @@ ComputeImagery.prototype.releaseReference = function () {
         ) {
             this.textureWebMercator.destroy();
         }
+
+        if (this.imageryLayer.onImageryDestroyed)
+            this.imageryLayer.onImageryDestroyed(this.x, this.y, this.level);
 
         Cesium.destroyObject(this);
 

@@ -1,16 +1,4 @@
-/// <reference path="../common.js" />
 
-//requirejs([
-//       "../../../requirejs.config.js",
-//       "../../../appconfig.js",
-//       '../../../Source/Main',
-//       '../common.js'
-//], function (
-//       config,
-//       appconfig,
-//       Cesium,
-//       common
-//       ) {
 MeshVisualizer = Cesium.MeshVisualizer;
 Mesh = Cesium.Mesh;
 MeshMaterial = Cesium.MeshMaterial;
@@ -117,4 +105,3 @@ function continueAddLod() {
     console.log(currCount);
 }
 continueAddLod();
-//});

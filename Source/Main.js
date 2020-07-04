@@ -18,32 +18,48 @@ import CSG from './Util/CSG.js';
 import MeshPhongMaterial from './Core/MeshPhongMaterial.js';
 import MaterialUtils from './Core/MaterialUtils.js';
 import ShaderUtils from './Core/ShaderUtils.js';
+import defineProperty from './Util/defineProperty.js';
 
-var g = typeof window != 'undefined' ? window : (typeof global != 'undefined' ? global : globalThis);
-if (typeof Cesium === 'undefined') {
-    g.Cesium = {};
+// var g = typeof window != 'undefined' ? window : (typeof global != 'undefined' ? global : globalThis);
+var CesiumMeshVisualizer = {};
+if (typeof Cesium !== 'undefined') {
+    //     g.Cesium = {};
+    // } else {
+    CesiumMeshVisualizer = Cesium;
 }
-Cesium.RendererUtils = RendererUtils;
-Cesium.Mesh = Mesh;
-Cesium.MeshMaterial = MeshMaterial;
-Cesium.ShaderChunk = ShaderChunk;
-Cesium.ShaderLib = ShaderLib;
-Cesium.MeshVisualizer = MeshVisualizer;
-Cesium.FramebufferTexture = FramebufferTexture;
-Cesium.GeometryUtils = GeometryUtils;
-Cesium.LOD = LOD;
-Cesium.PlaneGeometry = PlaneGeometry;
-Cesium.Rotation = Rotation;
-Cesium.ReferenceMesh = ReferenceMesh;
-Cesium.BasicMeshMaterial = BasicMeshMaterial;
-Cesium.BasicGeometry = BasicGeometry;
-Cesium.PlaneBufferGeometry = PlaneBufferGeometry;
-Cesium.CSG = CSG;
-Cesium.MeshPhongMaterial = MeshPhongMaterial;
-Cesium.MaterialUtils = MaterialUtils;
-Cesium.ShaderUtils = ShaderUtils;
-Cesium.MeshVisualizerVERSION = '1.0.1';
-export default Cesium;
+
+CesiumMeshVisualizer.defineProperty = defineProperty;
+CesiumMeshVisualizer.RendererUtils = RendererUtils;
+CesiumMeshVisualizer.MaterialUtils = MaterialUtils;
+CesiumMeshVisualizer.ShaderUtils = ShaderUtils;
+CesiumMeshVisualizer.GeometryUtils = GeometryUtils;
+
+CesiumMeshVisualizer.Mesh = Mesh;
+CesiumMeshVisualizer.MeshMaterial = MeshMaterial;
+CesiumMeshVisualizer.ShaderChunk = ShaderChunk;
+CesiumMeshVisualizer.ShaderLib = ShaderLib;
+CesiumMeshVisualizer.MeshVisualizer = MeshVisualizer;
+CesiumMeshVisualizer.FramebufferTexture = FramebufferTexture;
+CesiumMeshVisualizer.LOD = LOD;
+CesiumMeshVisualizer.PlaneGeometry = PlaneGeometry;
+CesiumMeshVisualizer.Rotation = Rotation;
+CesiumMeshVisualizer.ReferenceMesh = ReferenceMesh;
+CesiumMeshVisualizer.BasicMeshMaterial = BasicMeshMaterial;
+CesiumMeshVisualizer.BasicGeometry = BasicGeometry;
+CesiumMeshVisualizer.PlaneBufferGeometry = PlaneBufferGeometry;
+CesiumMeshVisualizer.CSG = CSG;
+CesiumMeshVisualizer.MeshPhongMaterial = MeshPhongMaterial;
+CesiumMeshVisualizer.MeshVisualizerVERSION = '1.0.1';
+
+
+export {
+    RendererUtils, Mesh, MeshMaterial, ShaderChunk, ShaderLib, MeshVisualizer,
+    FramebufferTexture, GeometryUtils, LOD, PlaneGeometry, Rotation, ReferenceMesh,
+    BasicMeshMaterial, BasicGeometry, PlaneBufferGeometry, CSG,
+    MeshPhongMaterial, MaterialUtils, ShaderUtils,defineProperty
+}
+
+export default CesiumMeshVisualizer;
 if (typeof module != 'undefined') {
-    module.exports = Cesium;
+    module.exports = CesiumMeshVisualizer;
 }

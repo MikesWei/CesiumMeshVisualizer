@@ -1,14 +1,14 @@
 ﻿/**
-*
-  <pre><code>  
-    p1++++++++++++p4
-    +          +  +
-    +       +     +
-    +     +       +
-    +   +         +
-    + +           +
-    p2++++++++++++p3
-    </code> </pre>
+ *:
+ *
+*       p1------------p4
+*       |          +  |
+*       |       +     |
+*       |     +       |
+*       |   +         |
+*       | +           |
+*       p2------------p3
+*    
 *@param {Object}options 
 *@param {Array<Number|Cesium.Cartesian3>}options.positions [p1,p2,p3,p4]或者[p1.x,p1.y,p1.z,p2.x,...,p4.z] 
 *

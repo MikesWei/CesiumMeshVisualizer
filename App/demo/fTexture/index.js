@@ -1,16 +1,4 @@
-﻿/// <reference path="../common.js" />
-
-//requirejs([
-//       "../../../requirejs.config.js",
-//       "../../../appconfig.js",
-//       '../../../Source/Main',
-//       '../common.js'
-//], function (
-//       config,
-//       appconfig,
-//       Cesium,
-//       common
-//       ) {
+﻿ 
 MeshVisualizer = Cesium.MeshVisualizer;
 Mesh = Cesium.Mesh;
 MeshMaterial = Cesium.MeshMaterial;
@@ -132,5 +120,3 @@ var customMesh = new Mesh(geometry, new MeshMaterial({
 }));
 customMesh.position = new Cesium.Cartesian3(100000, 0, 0);
 meshVisualizer.add(customMesh);
-
-//});
