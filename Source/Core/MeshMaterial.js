@@ -203,7 +203,7 @@ MeshMaterial.prototype.removeReference = function () {
 MeshMaterial.prototype.destroy = function () {
     for (var key in this._uniforms) {
         if (this._uniforms.hasOwnProperty(key)) {
-            this._uniforms.destroy && this._uniforms.destroy()
+            this._uniforms[key].destroy && this._uniforms[key].destroy()
         }
     }
 }

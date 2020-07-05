@@ -302,8 +302,12 @@ Mesh.prototype.add = function (mesh) {
 }
 
 Mesh.prototype.destroy = function () {
-    if (material && material.removeReference) {
-        material.removeReference();
+    if (this.material && this.material.removeReference) {
+        this.material.removeReference();
+    }
+    if (this.geometry) {
+        Cesium.destroyObject(this.geometry);
+        delete this.geometry;
     }
 }
 

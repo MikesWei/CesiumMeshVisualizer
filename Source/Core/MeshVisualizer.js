@@ -567,6 +567,7 @@ function MeshVisualizer(options) {
 
 MeshVisualizer.prototype = {
     /**
+     * 移除mesh，释放由MeshVisualizer创建的内部资源
     *@param {Cesium.Mesh}mesh
     */
     remove: function (mesh) {
@@ -577,26 +578,30 @@ MeshVisualizer.prototype = {
                 this._chidren.splice(i, 1);
             }
         }
-        MeshVisualizer.traverse(mesh, function () {
-            if (mesh._drawCommand) {
-                mesh._drawCommand.destroy && mesh._drawCommand.destroy();
-                // var material = mesh.material;
-                // if (material && material.removeReference) {
-                //     material.removeReference();
-                // }
-            }
-            if (mesh._actualMesh && mesh._actualMesh._drawCommand) {
-                // var material = mesh._actualMesh.material
-                // if (material && material.removeReference) {
-                //     material.removeReference();
-                // }
-                var actualMesh = mesh._actualMesh;
-                actualMesh && actualMesh.destroy();
 
-                Cesium.destroyObject(actualMesh._drawCommand);
+        function freeDrawCommand(cmd) {
+            if (!cmd) return;
+            cmd.vertexArray = cmd.vertexArray.destroy();
+            cmd.shaderProgram = cmd.shaderProgram.destroy();
+            Cesium.destroyObject(cmd);
+        }
+
+        function freeMesh(mesh) {
+            mesh._drawCommand = freeDrawCommand(mesh._drawCommand);
+            mesh._pickCommand = freeDrawCommand(mesh._pickCommand);
+            mesh._textureCommand = freeDrawCommand(mesh._textureCommand);
+        }
+
+        MeshVisualizer.traverse(mesh, function () {
+            freeMesh(mesh);
+
+            if (mesh._actualMesh && mesh._actualMesh._drawCommand) {
+
+                var actualMesh = mesh._actualMesh;
+                freeMesh(actualMesh);
                 Cesium.destroyObject(actualMesh.geometry);
+                mesh._actualMesh = actualMesh && actualMesh.destroy();
                 Cesium.destroyObject(actualMesh);
-                // Cesium.destroyObject(mesh);
             }
         }, false);
     },
@@ -892,7 +897,6 @@ MeshVisualizer.prototype = {
                 strideInBytes: 0,
                 instanceDivisor: 1
             };
-
 
             for (var location in instancedAttributes) {
                 if (instancedAttributes.hasOwnProperty(location)) {
@@ -1195,13 +1199,20 @@ MeshVisualizer.prototype = {
     *@private
     */
     getUniformMap: function (material, frameState) {
-        if (this._uniformMaps[material.uuid] && !material.needsUpdate) {
-            return this._uniformMaps[material.uuid];
+        var uniformMaps = this._uniformMaps;
+        if (uniformMaps[material.uuid] && !material.needsUpdate) {
+            return uniformMaps[material.uuid];
 
         }
         var uniformMap = {};
-        this._uniformMaps[material.uuid] = uniformMap;
+        uniformMaps[material.uuid] = uniformMap;
 
+        if (material.onDispose) {
+            material.onDispose(function () {
+                delete uniformMaps[material.uuid];
+            })
+        }
+        
         material.needsUpdate = false;
 
         uniformMap.cameraPosition = function () {
