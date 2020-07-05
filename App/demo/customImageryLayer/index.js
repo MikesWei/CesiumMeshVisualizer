@@ -93,23 +93,23 @@ meshVisualizer.beforeUpdate.addEventListener(function (frameState) {
     // }
 });
 
-var worldLayer = new ComputeImageryLayer(new Vector2RasterImageryProvider({
-    source: './world.geojson',
-    maximumLevel: 16,
-    style: {
-        line: true,
-        lineWidth: 1,
-        lineColor: Cesium.Color.WHITE,
-        shadowColor: Cesium.Color.WHITE,//Cesium.Color.fromAlpha( Cesium.Color.WHITE,0.5),
-        shadowSize: 1,
-        shadows: true,
-        outline: true,
-        outlineColor: Cesium.Color.fromAlpha(Cesium.Color.WHITE, 0.5),
-        outlineWidth: 0
-    }
-}));
-window.worldLayer = worldLayer;
-viewer.imageryLayers.add(worldLayer);
+// var worldLayer = new ComputeImageryLayer(new Vector2RasterImageryProvider({
+//     source: './world.geojson',
+//     maximumLevel: 16,
+//     style: {
+//         line: true,
+//         lineWidth: 1,
+//         lineColor: Cesium.Color.WHITE,
+//         shadowColor: Cesium.Color.WHITE,//Cesium.Color.fromAlpha( Cesium.Color.WHITE,0.5),
+//         shadowSize: 1,
+//         shadows: true,
+//         outline: true,
+//         outlineColor: Cesium.Color.fromAlpha(Cesium.Color.WHITE, 0.5),
+//         outlineWidth: 0
+//     }
+// }));
+// window.worldLayer = worldLayer;
+// viewer.imageryLayers.add(worldLayer);
 
 var bjLayer = new ComputeImageryLayer(new Vector2RasterImageryProvider({
     source: './bj.json',
@@ -136,39 +136,39 @@ window.bjLayer = bjLayer;
 viewer.imageryLayers.add(bjLayer);
 
 
-var provLayer = new ComputeImageryLayer(new Vector2RasterImageryProvider({
-    source: './china_province.geojson',
-    maximumLevel: 16,
-    filter: function (feature) {
-        if (feature.properties) {
-            var name = feature.properties.NAME
-            if (name && (name.indexOf('北京') >= 0 
-            || name.indexOf('河北') >= 0
-            // || name.indexOf('天津') >= 0
-            )) {
-                return false;
-            }
-        }
-        return true;
-    },
-    style: {
-        line: true,
-        lineWidth: 2,
-        lineColor: Cesium.Color.WHITE,
-        shadowColor: Cesium.Color.RED,//Cesium.Color.fromAlpha( Cesium.Color.WHITE,0.5),
-        shadowSize: 2,
-        shadows: false,
-        outline: true,
-        outlineColor: Cesium.Color.fromAlpha(Cesium.Color.RED, 0.95),
-        outlineWidth: 1
-    }
-}));
-window.provLayer = provLayer;
-viewer.imageryLayers.add(provLayer);
+// var provLayer = new ComputeImageryLayer(new Vector2RasterImageryProvider({
+//     source: './china_province.geojson',
+//     maximumLevel: 16,
+//     filter: function (feature) {
+//         if (feature.properties) {
+//             var name = feature.properties.NAME
+//             if (name && (name.indexOf('北京') >= 0 
+//             || name.indexOf('河北') >= 0
+//             // || name.indexOf('天津') >= 0
+//             )) {
+//                 return false;
+//             }
+//         }
+//         return true;
+//     },
+//     style: {
+//         line: true,
+//         lineWidth: 2,
+//         lineColor: Cesium.Color.WHITE,
+//         shadowColor: Cesium.Color.RED,//Cesium.Color.fromAlpha( Cesium.Color.WHITE,0.5),
+//         shadowSize: 2,
+//         shadows: false,
+//         outline: true,
+//         outlineColor: Cesium.Color.fromAlpha(Cesium.Color.RED, 0.95),
+//         outlineWidth: 1
+//     }
+// }));
+// window.provLayer = provLayer;
+// viewer.imageryLayers.add(provLayer);
 
 Cesium.when.all([
-    worldLayer.imageryProvider.readyPromise,
-    provLayer.imageryProvider.readyPromise,
+    // worldLayer.imageryProvider.readyPromise,
+    // provLayer.imageryProvider.readyPromise,
     bjLayer.imageryProvider.readyPromise
 ], function () {
     viewer.scene.camera.flyTo({

@@ -19,6 +19,7 @@ class VectorPolylineMaterial extends MeshMaterial {
         options = options || {};
         options.depthTest = Cesium.defaultValue(options.depthTest, false);
         options.blending = Cesium.defaultValue(options.blending, false);
+        options.allowPick = Cesium.defaultValue(options.allowPick, false);
         options.vertexShader = options.vertexShader || Vector2RasterVert;
         options.fragmentShader = options.fragmentShader || Vector2RasterFrag;
 

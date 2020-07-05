@@ -172,7 +172,7 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
         * @private
         */
         this._source = options.source;
-        this.filter=options.filter;
+        this.filter = options.filter;
 
         this.style = new VectorPolylineStyle(options.style);
         //样式发生改变时重新渲染各个瓦片
@@ -190,7 +190,7 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
         this._framebufferCache = {};
 
         this._meshVisualizer = new MeshVisualizer();
-        this._lineScale = 1.5;
+        this._lineScale = 2;
         this._viewport = {
             x: 0,
             y: 0,
@@ -209,17 +209,41 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
         }
     }
 
-    /**
-     * @readonly
+    /** 
      * @type {geojson.FeatureCollection<geojson.Shape|geojson.IPoint>|geojson.Feature<geojson.Shape|geojson.IPoint>}
      */
     get source() {
         return this._source;
     }
+    set source(newSource) {
+        if (!newSource) {
+            console.warn('newSource is required.');
+            return;
+        }
+        if (typeof (newSource) == 'string') {
+            this._sourceUrl = newSource;
+            return Cesium.Resource.fetchJson(newSource).then((geojson) => {
+                this.source = geojson;
+            });
+        } else {
+            try {
+
+
+                this.freeResource();
+                this._source = newSource;
+                this._setFromGeojson(newSource);
+                this._ready && this._reload && this._reload();
+            } catch (e) {
+console.error(e);
+
+            }
+        }
+    }
 
     _setFromGeojson(geojson) {
+
         console.time('prepare mesh');
-        var result = VectorPolylineGeometry.fromFeatures(geojson.features,this.filter);
+        var result = VectorPolylineGeometry.fromFeatures(geojson.features, this.filter);
 
         var bbox = result.bbox, geometry = result.geometry;
         this.bbox = bbox;
@@ -233,23 +257,22 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
         );
         this._rectangle = rectangle;
 
-        if (!this.mesh) {
-            var material = new VectorPolylineMaterial({
-                uniforms: {
-                    lineWidth: 2,
-                    lineScale: this._lineScale,
-                    resolution: new Cesium.Cartesian2(
-                        this._viewport.width, this._viewport.height)
-                }
-            });
+        // if (!this.mesh) {
+        var material = new VectorPolylineMaterial({
+            uniforms: {
+                lineWidth: 2,
+                lineScale: this._lineScale,
+                resolution: new Cesium.Cartesian2(
+                    this._viewport.width, this._viewport.height)
+            }
+        });
 
-            this.mesh = new Mesh(geometry, material);
-            this.material = material;
-        } else {
-
-            this.mesh.geometry = geometry;
-            this.mesh.geometry.needsUpdate = true;
-        }
+        this.mesh = new Mesh(geometry, material);
+        this.material = material;
+        // } else {
+        //     this.mesh.geometry = geometry;
+        //     this.mesh.geometry.needsUpdate = true;
+        // }
 
         delete result.geometry;
         delete result.bbox;
@@ -362,7 +385,6 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
             uniforms.lineSymbolSize.value.y = this.style.lineSymbol.height;
             uniforms.lineSymbol.value = this.style.lineSymbol;
         }
-
         uniforms.lineSymbolReverse.value = this.style.lineSymbolReverse;
         uniforms.useLineSymbol.value = this.style.useLineSymbol;
 
@@ -393,7 +415,7 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
             var uniforms = this.material.uniforms;
             uniforms.renderPass.value = VectorPolylineMaterial.RenderPass.LINE;
 
-            this.executeDraw(frameState.context, framebufferTex);
+            this._executeDraw(frameState.context, framebufferTex);
         }
     }
 
@@ -401,7 +423,7 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
         if (this.style.outline) {
             var uniforms = this.material.uniforms;
             uniforms.renderPass.value = VectorPolylineMaterial.RenderPass.OUTLINE;
-            this.executeDraw(frameState.context, framebufferTex);
+            this._executeDraw(frameState.context, framebufferTex);
         }
     }
 
@@ -410,11 +432,11 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
             var uniforms = this.material.uniforms;
 
             uniforms.renderPass.value = VectorPolylineMaterial.RenderPass.SHADOWS;
-            this.executeDraw(frameState.context, framebufferTex);
+            this._executeDraw(frameState.context, framebufferTex);
         }
     }
 
-    executeDraw(context, framebufferTex) {
+    _executeDraw(context, framebufferTex) {
         var drawCommands = framebufferTex.drawCommands
         for (let index = 0; index < drawCommands.length; index++) {
             const drawCommand = drawCommands[index];
@@ -458,17 +480,26 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
         }
     }
 
+    freeResource() {
+        if (this.mesh) {
+            this._meshVisualizer.remove(this.mesh);
+            this.mesh && this.mesh.destroy();
+            delete this.mesh;
+        }
+        if (this.material) {
+            this.material && this.material.destroy();
+            delete this.material;
+        }
+    }
+
     /**
      *  @override ImageryProvider.prototype.destroy
      */
     destroy() {
-        this.mesh && this.mesh.destroy();
-        delete this.mesh;
-        this.material && this.material.destroy();
-        delete this.material;
+        this.freeResource();
     }
-}
 
+}
 
 function getFrambufferCacheKey(x, y, level) {
     return JSON.stringify([x, y, level]);
