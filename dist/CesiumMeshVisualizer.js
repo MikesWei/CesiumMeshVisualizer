@@ -2300,6 +2300,10 @@ function Mesh(options) {
         Cesium.GeometryPipeline.computeNormal(this._geometry);
         //GeometryUtils.computeVertexNormals(this._geometry);
     }
+
+    if (this._material && this._material.addReference) {
+        this._material.addReference();
+    }
 }
 
 Mesh.isGeometrySupported = function (geometry) {
@@ -2477,6 +2481,13 @@ Mesh.prototype.add = function (mesh) {
     }
     this._children.push(mesh);
 };
+
+Mesh.prototype.destroy = function () {
+    if (material && material.removeReference) {
+        material.removeReference();
+    }
+};
+
 exports.default = Mesh;
 
 },{"../Util/CSG.js":34,"./GeometryUtils.js":5,"./MeshMaterial.js":9,"./MeshPhongMaterial.js":10,"./Rotation.js":17}],9:[function(require,module,exports){
@@ -2522,6 +2533,8 @@ function MeshMaterial(options) {
     options = Cesium.defaultValue(options, {});
     options.uniforms = Cesium.defaultValue(options.uniforms, {});
     var that = this;
+    this.referenceCount = 0;
+    this._disposeCallbacks = [];
 
     this._uuid = Cesium.createGuid();
 
@@ -2534,6 +2547,20 @@ function MeshMaterial(options) {
 
                 var val = {};
                 val.needsUpdate = true;
+                val._disposeCallbacks = [];
+                val.onDispose = function (disposeCallback) {
+                    if (this._disposeCallbacks.indexOf(disposeCallback) == -1) {
+                        this._disposeCallbacks.push(disposeCallback);
+                    }
+                };
+                val.destroy = function () {
+                    for (var i = 0; i < this._disposeCallbacks.length; i++) {
+                        var disposeCallback = this._disposeCallbacks[i];
+                        disposeCallback.call(this);
+                    }
+
+                    this._disposeCallbacks.splice(0);
+                };
 
                 if (Array.isArray(item) && item.length >= 3 && item.length <= 4 && typeof item[0] === 'number') {
                     srcUniforms[i] = new Cesium.Color(srcUniforms[i][0], srcUniforms[i][1], srcUniforms[i][2], srcUniforms[i][3]);
@@ -2648,6 +2675,37 @@ MeshMaterial.Sides = {
     FRONT: 3,
     BACK: 1,
     DOUBLE: 2
+};
+
+MeshMaterial.prototype.onDispose = function (disposeCallback) {
+    if (this._disposeCallbacks.indexOf(disposeCallback) == -1) {
+        this._disposeCallbacks.push(disposeCallback);
+    }
+};
+
+MeshMaterial.prototype.addReference = function () {
+    this.referenceCount++;
+};
+
+MeshMaterial.prototype.removeReference = function () {
+    this.referenceCount--;
+    if (this.referenceCount <= 0) {
+        for (var i = 0; i < this._disposeCallbacks.length; i++) {
+            var disposeCallback = this._disposeCallbacks[i];
+            disposeCallback.call(this);
+        }
+
+        this._disposeCallbacks.splice(0);
+        this.destroy();
+    }
+};
+
+MeshMaterial.prototype.destroy = function () {
+    for (var key in this._uniforms) {
+        if (this._uniforms.hasOwnProperty(key)) {
+            this._uniforms.destroy && this._uniforms.destroy();
+        }
+    }
 };
 exports.default = MeshMaterial;
 
@@ -3374,12 +3432,23 @@ MeshVisualizer.prototype = {
         MeshVisualizer.traverse(mesh, function () {
             if (mesh._drawCommand) {
                 mesh._drawCommand.destroy && mesh._drawCommand.destroy();
+                // var material = mesh.material;
+                // if (material && material.removeReference) {
+                //     material.removeReference();
+                // }
             }
             if (mesh._actualMesh && mesh._actualMesh._drawCommand) {
-                Cesium.destroyObject(mesh._actualMesh._drawCommand);
-                Cesium.destroyObject(mesh._actualMesh.geometry);
-                Cesium.destroyObject(mesh._actualMesh);
-                Cesium.destroyObject(mesh);
+                // var material = mesh._actualMesh.material
+                // if (material && material.removeReference) {
+                //     material.removeReference();
+                // }
+                var actualMesh = mesh._actualMesh;
+                actualMesh && actualMesh.destroy();
+
+                Cesium.destroyObject(actualMesh._drawCommand);
+                Cesium.destroyObject(actualMesh.geometry);
+                Cesium.destroyObject(actualMesh);
+                // Cesium.destroyObject(mesh);
             }
         }, false);
     },
@@ -4047,7 +4116,14 @@ MeshVisualizer.prototype = {
                                     negativeZ: images[5]
                                 }
                             });
-
+                            if (item.onDispose) {
+                                item.onDispose(function () {
+                                    if (that._textureCache[item.uuid]) {
+                                        that._textureCache[item.uuid].destroy();
+                                        delete that._textureCache[item.uuid];
+                                    }
+                                });
+                            }
                             callback.allLoaded = true;
                             callback.isLoading = false;
                         });
@@ -4180,13 +4256,35 @@ MeshVisualizer.prototype = {
 
             var callback = function callback() {
 
-                if (!that._textureCache[item.value] || item.needsUpdate) {
+                var cacheKey = typeof item.value == 'string' ? item.value : null;
+                if (!cacheKey) {
+                    if (item.value instanceof HTMLImageElement || item.value instanceof HTMLCanvasElement || item.value instanceof HTMLVideoElement) {
+                        if (!item.value.uuid) {
+                            item.value.uuid = item.uuid;
+                        }
+                        cacheKey = item.value.uuid;
+                    }
+                }
+
+                if (!that._textureCache[cacheKey] || item.needsUpdate) {
 
                     if (item.value instanceof HTMLImageElement || item.value instanceof HTMLCanvasElement || item.value instanceof HTMLVideoElement) {
                         var image = item.value;
-                        that._textureCache[item.value] = onTextureImageLoaded(image, item);
+                        if (!item.value.id) {
+                            item.value.id = item.uuid;
+                        }
+                        that._textureCache[cacheKey] = onTextureImageLoaded(image, item);
+
+                        if (item.onDispose) {
+                            item.onDispose(function () {
+                                if (that._textureCache[cacheKey]) {
+                                    that._textureCache[cacheKey].destroy();
+                                    delete that._textureCache[cacheKey];
+                                }
+                            });
+                        }
                         item.needsUpdate = false;
-                        return that._textureCache[item.value];
+                        return that._textureCache[cacheKey];
                     } else {
                         if (typeof item.value === "string" && !callback.isLoading) {
                             callback.isLoading = true;
@@ -4200,20 +4298,36 @@ MeshVisualizer.prototype = {
                                 loadArrayBuffer(url).then(function (imageArrayBuffer) {
                                     var tiffParser = new _tiff2.default();
                                     var tiffCanvas = tiffParser.parseTIFF(imageArrayBuffer);
-                                    if (that._textureCache[item.value]) {
-                                        that._textureCache[item.value].destroy && that._textureCache[item.value].destroy();
+                                    if (that._textureCache[cacheKey]) {
+                                        that._textureCache[cacheKey].destroy && that._textureCache[cacheKey].destroy();
                                     }
-                                    that._textureCache[item.value] = onTextureImageLoaded(tiffCanvas, item);
+                                    that._textureCache[cacheKey] = onTextureImageLoaded(tiffCanvas, item);
+                                    if (item.onDispose) {
+                                        item.onDispose(function () {
+                                            if (that._textureCache[cacheKey]) {
+                                                that._textureCache[cacheKey].destroy();
+                                                delete that._textureCache[cacheKey];
+                                            }
+                                        });
+                                    }
                                     callback.isLoading = false;
                                 }).otherwise(function (err) {
                                     console.log(err);
                                 });
                             } else {
                                 loadImage(item.value).then(function (image) {
-                                    if (that._textureCache[item.value]) {
-                                        that._textureCache[item.value].destroy && that._textureCache[item.value].destroy();
+                                    if (that._textureCache[cacheKey]) {
+                                        that._textureCache[cacheKey].destroy && that._textureCache[cacheKey].destroy();
                                     }
-                                    that._textureCache[item.value] = onTextureImageLoaded(image, item);
+                                    that._textureCache[cacheKey] = onTextureImageLoaded(image, item);
+                                    if (item.onDispose) {
+                                        item.onDispose(function () {
+                                            if (that._textureCache[cacheKey]) {
+                                                that._textureCache[cacheKey].destroy();
+                                                delete that._textureCache[cacheKey];
+                                            }
+                                        });
+                                    }
                                     callback.isLoading = false;
                                 }).otherwise(function (err) {
                                     console.log(err);
@@ -4236,7 +4350,7 @@ MeshVisualizer.prototype = {
                         return that.defaultTexture;
                     }
                 } else {
-                    return that._textureCache[item.value];
+                    return that._textureCache[cacheKey];
                 }
             };
 
@@ -4278,6 +4392,13 @@ MeshVisualizer.prototype = {
                         uniformMap[name] = function () {
                             return that._uniformValueCache[item.uuid].value;
                         };
+                        if (item.onDispose) {
+                            item.onDispose(function () {
+                                if (that._uniformValueCache[item.uuid]) {
+                                    delete that._uniformValueCache[item.uuid];
+                                }
+                            });
+                        }
                     } else if (item.value instanceof Array && item.value.length == 6) {
                         uniformMap[name] = getCubeTextureCallback(name, item);
                     } else if (isImageUrl || item.value instanceof HTMLImageElement || item.value instanceof HTMLCanvasElement || item.value instanceof HTMLVideoElement) {
