@@ -114,6 +114,10 @@ function Mesh(options) {
         Cesium.GeometryPipeline.computeNormal(this._geometry);
         //GeometryUtils.computeVertexNormals(this._geometry);
     }
+
+    if (this._material && this._material.addReference) {
+        this._material.addReference();
+    }
 }
 
 Mesh.isGeometrySupported = function (geometry) {
@@ -296,4 +300,11 @@ Mesh.prototype.add = function (mesh) {
     }
     this._children.push(mesh);
 }
+
+Mesh.prototype.destroy = function () {
+    if (material && material.removeReference) {
+        material.removeReference();
+    }
+}
+
 export default Mesh;

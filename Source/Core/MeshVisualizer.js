@@ -580,12 +580,23 @@ MeshVisualizer.prototype = {
         MeshVisualizer.traverse(mesh, function () {
             if (mesh._drawCommand) {
                 mesh._drawCommand.destroy && mesh._drawCommand.destroy();
+                // var material = mesh.material;
+                // if (material && material.removeReference) {
+                //     material.removeReference();
+                // }
             }
             if (mesh._actualMesh && mesh._actualMesh._drawCommand) {
-                Cesium.destroyObject(mesh._actualMesh._drawCommand);
-                Cesium.destroyObject(mesh._actualMesh.geometry);
-                Cesium.destroyObject(mesh._actualMesh);
-                Cesium.destroyObject(mesh);
+                // var material = mesh._actualMesh.material
+                // if (material && material.removeReference) {
+                //     material.removeReference();
+                // }
+                var actualMesh = mesh._actualMesh;
+                actualMesh && actualMesh.destroy();
+
+                Cesium.destroyObject(actualMesh._drawCommand);
+                Cesium.destroyObject(actualMesh.geometry);
+                Cesium.destroyObject(actualMesh);
+                // Cesium.destroyObject(mesh);
             }
         }, false);
     },
@@ -1287,7 +1298,14 @@ MeshVisualizer.prototype = {
                                     negativeZ: images[5]
                                 }
                             });
-
+                            if (item.onDispose) {
+                                item.onDispose(function () {
+                                    if (that._textureCache[item.uuid]) {
+                                        that._textureCache[item.uuid].destroy();
+                                        delete that._textureCache[item.uuid];
+                                    }
+                                })
+                            }
                             callback.allLoaded = true;
                             callback.isLoading = false;
                         });
@@ -1326,7 +1344,7 @@ MeshVisualizer.prototype = {
             }
             return callback;
         }
- 
+
         function createTexture(texture, context) {
 
             var TextureMinificationFilter = Cesium.TextureMinificationFilter;
@@ -1432,16 +1450,41 @@ MeshVisualizer.prototype = {
 
             var callback = function () {
 
-                if (!that._textureCache[item.value] || item.needsUpdate) {
+                var cacheKey = typeof item.value == 'string' ? item.value : null;
+                if (!cacheKey) {
+                    if (item.value instanceof HTMLImageElement
+                        || item.value instanceof HTMLCanvasElement
+                        || item.value instanceof HTMLVideoElement
+                    ) {
+                        if (!item.value.uuid) {
+                            item.value.uuid = item.uuid;
+                        }
+                        cacheKey = item.value.uuid;
+                    }
+                }
+
+                if (!that._textureCache[cacheKey] || item.needsUpdate) {
 
                     if (item.value instanceof HTMLImageElement
                         || item.value instanceof HTMLCanvasElement
                         || item.value instanceof HTMLVideoElement
                     ) {
                         var image = item.value;
-                        that._textureCache[item.value] = onTextureImageLoaded(image, item);
+                        if (!item.value.id) {
+                            item.value.id = item.uuid;
+                        }
+                        that._textureCache[cacheKey] = onTextureImageLoaded(image, item);
+
+                        if (item.onDispose) {
+                            item.onDispose(function () {
+                                if (that._textureCache[cacheKey]) {
+                                    that._textureCache[cacheKey].destroy();
+                                    delete that._textureCache[cacheKey];
+                                }
+                            })
+                        }
                         item.needsUpdate = false;
-                        return that._textureCache[item.value];
+                        return that._textureCache[cacheKey];
 
                     } else {
                         if (typeof item.value === "string" && !callback.isLoading) {
@@ -1455,10 +1498,18 @@ MeshVisualizer.prototype = {
                                 loadArrayBuffer(url).then(function (imageArrayBuffer) {
                                     var tiffParser = new TIFFParser();
                                     var tiffCanvas = tiffParser.parseTIFF(imageArrayBuffer);
-                                    if (that._textureCache[item.value]) {
-                                        that._textureCache[item.value].destroy && that._textureCache[item.value].destroy();
+                                    if (that._textureCache[cacheKey]) {
+                                        that._textureCache[cacheKey].destroy && that._textureCache[cacheKey].destroy();
                                     }
-                                    that._textureCache[item.value] = onTextureImageLoaded(tiffCanvas, item);
+                                    that._textureCache[cacheKey] = onTextureImageLoaded(tiffCanvas, item);
+                                    if (item.onDispose) {
+                                        item.onDispose(function () {
+                                            if (that._textureCache[cacheKey]) {
+                                                that._textureCache[cacheKey].destroy();
+                                                delete that._textureCache[cacheKey];
+                                            }
+                                        })
+                                    }
                                     callback.isLoading = false;
 
                                 }).otherwise(function (err) {
@@ -1467,10 +1518,18 @@ MeshVisualizer.prototype = {
 
                             } else {
                                 loadImage(item.value).then(function (image) {
-                                    if (that._textureCache[item.value]) {
-                                        that._textureCache[item.value].destroy && that._textureCache[item.value].destroy();
+                                    if (that._textureCache[cacheKey]) {
+                                        that._textureCache[cacheKey].destroy && that._textureCache[cacheKey].destroy();
                                     }
-                                    that._textureCache[item.value] = onTextureImageLoaded(image, item);
+                                    that._textureCache[cacheKey] = onTextureImageLoaded(image, item);
+                                    if (item.onDispose) {
+                                        item.onDispose(function () {
+                                            if (that._textureCache[cacheKey]) {
+                                                that._textureCache[cacheKey].destroy();
+                                                delete that._textureCache[cacheKey];
+                                            }
+                                        })
+                                    }
                                     callback.isLoading = false;
                                 }).otherwise(function (err) {
                                     console.log(err);
@@ -1494,7 +1553,7 @@ MeshVisualizer.prototype = {
                     }
 
                 } else {
-                    return that._textureCache[item.value];
+                    return that._textureCache[cacheKey];
                 }
 
             }
@@ -1563,6 +1622,13 @@ MeshVisualizer.prototype = {
                         }
                         uniformMap[name] = function () {
                             return that._uniformValueCache[item.uuid].value;
+                        }
+                        if (item.onDispose) {
+                            item.onDispose(function () {
+                                if (that._uniformValueCache[item.uuid]) {
+                                    delete that._uniformValueCache[item.uuid];
+                                }
+                            })
                         }
                     } else if (item.value instanceof Array && item.value.length == 6) {
                         uniformMap[name] = getCubeTextureCallback(name, item);

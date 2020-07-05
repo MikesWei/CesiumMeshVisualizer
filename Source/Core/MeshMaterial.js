@@ -31,6 +31,8 @@ function MeshMaterial(options) {
     options = Cesium.defaultValue(options, {});
     options.uniforms = Cesium.defaultValue(options.uniforms, {});
     var that = this;
+    this.referenceCount = 0;
+    this._disposeCallbacks = [];
 
     this._uuid = Cesium.createGuid();
 
@@ -43,6 +45,20 @@ function MeshMaterial(options) {
 
                 var val = {};
                 val.needsUpdate = true;
+                val._disposeCallbacks = [];
+                val.onDispose = function (disposeCallback) {
+                    if (this._disposeCallbacks.indexOf(disposeCallback) == -1) {
+                        this._disposeCallbacks.push(disposeCallback);
+                    }
+                }
+                val.destroy = function () {
+                    for (var i = 0; i < this._disposeCallbacks.length; i++) {
+                        var disposeCallback = this._disposeCallbacks[i];
+                        disposeCallback.call(this);
+                    }
+
+                    this._disposeCallbacks.splice(0);
+                }
 
                 if (Array.isArray(item) && item.length >= 3 && item.length <= 4 && typeof item[0] === 'number') {
                     srcUniforms[i] = new Cesium.Color(srcUniforms[i][0], srcUniforms[i][1], srcUniforms[i][2], srcUniforms[i][3]);
@@ -159,5 +175,36 @@ MeshMaterial.Sides = {
     FRONT: 3,
     BACK: 1,
     DOUBLE: 2
+}
+
+MeshMaterial.prototype.onDispose = function (disposeCallback) {
+    if (this._disposeCallbacks.indexOf(disposeCallback) == -1) {
+        this._disposeCallbacks.push(disposeCallback);
+    }
+}
+
+MeshMaterial.prototype.addReference = function () {
+    this.referenceCount++
+}
+
+MeshMaterial.prototype.removeReference = function () {
+    this.referenceCount--
+    if (this.referenceCount <= 0) {
+        for (var i = 0; i < this._disposeCallbacks.length; i++) {
+            var disposeCallback = this._disposeCallbacks[i];
+            disposeCallback.call(this);
+        }
+
+        this._disposeCallbacks.splice(0);
+        this.destroy();
+    }
+}
+
+MeshMaterial.prototype.destroy = function () {
+    for (var key in this._uniforms) {
+        if (this._uniforms.hasOwnProperty(key)) {
+            this._uniforms.destroy && this._uniforms.destroy()
+        }
+    }
 }
 export default MeshMaterial;
