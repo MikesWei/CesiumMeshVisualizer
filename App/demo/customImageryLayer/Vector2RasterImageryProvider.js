@@ -215,6 +215,7 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
     get source() {
         return this._source;
     }
+    //范围比较大的数据，不推荐更新此属性，建议新建图层，避免切换过程中由于cesium重构影像调度树而卡顿
     set source(newSource) {
         if (!newSource) {
             console.warn('newSource is required.');
@@ -226,17 +227,17 @@ class Vector2RasterImageryProvider extends ComputeImageryProvider {
                 this.source = geojson;
             });
         } else {
-            try {
 
-
-                this.freeResource();
-                this._source = newSource;
-                this._setFromGeojson(newSource);
-                this._ready && this._reload && this._reload();
-            } catch (e) {
-console.error(e);
-
+            this.freeResource();
+            this._source = newSource;
+            this._setFromGeojson(newSource);
+            if (this._frameState) {
+                var scene = this._frameState.camera._scene;
+                var layerIndex = this._imageryLayer._layerIndex;
+                scene.imageryLayers.remove(this._imageryLayer,false);
+                scene.imageryLayers.add(this._imageryLayer, layerIndex);
             }
+
         }
     }
 
