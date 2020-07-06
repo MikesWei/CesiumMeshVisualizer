@@ -1,14 +1,18 @@
 
 export = CesiumMeshVisualizer;
 export as namespace CesiumMeshVisualizer;
-import Cesium from 'cesium';
-import geojson from './geojson.js';
-
+import * as Cesium from './Cesium';
+import * as geojson from './geojson';
+ 
 /**
  * Make you can use three.js geometry in Cesium,and use mesh,geometry,material like three.js to manage renderable object in Cesium.
  */
 declare namespace CesiumMeshVisualizer {
-
+     
+    /**
+     * @returns {geojson.Feature}
+     */
+   export function f():geojson.FeatureCollection<geojson.Shape>
     /**
     *定义属性，并监听属性变化事件,属性值的数据类型可以实现equals接口用于进行更进一步的比较
     *@param {Object}owner
@@ -1368,4 +1372,5 @@ declare namespace CesiumMeshVisualizer {
 
     }
 
-} 
+}
+export  {geojson,CesiumMeshVisualizer}
