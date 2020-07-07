@@ -587,7 +587,7 @@ declare namespace CesiumMeshVisualizer {
             /**
              * @type {Cesium.Geometry|Cesium.CSG|THREE.Geometry|THREE.BufferGeometry}
              */
-            geometry: Cesium.Geometry | Cesium.CSG | THREE.Geometry | THREE.BufferGeometry
+            geometry: Cesium.Geometry | CSG | THREE.Geometry | THREE.BufferGeometry
             material: MeshMaterial
             show?: boolean
             position?: Cesium.Cartesian3
@@ -607,7 +607,7 @@ declare namespace CesiumMeshVisualizer {
             instancedAttributes?: { name: string, default: number | Cesium.Cartesian2 | Cesium.Cartesian3 | Cesium.Cartesian4 | Cesium.Color }[]
 
         )
-        geometry: Cesium.Geometry | Cesium.CSG | THREE.Geometry | THREE.BufferGeometry
+        geometry: Cesium.Geometry | CSG | THREE.Geometry | THREE.BufferGeometry
         material: MeshMaterial
         show: boolean
         position: Cesium.Cartesian3

@@ -1,3 +1,4 @@
+declare namespace THREE{
 // log handlers
 export function warn( message?: any, ...optionalParams: any[] ): void;
 export function error( message?: any, ...optionalParams: any[] ): void;
@@ -42295,5 +42296,6 @@ export namespace SceneUtils {
 
 
 
-
+}
+export =THREE;
 export as namespace THREE;
