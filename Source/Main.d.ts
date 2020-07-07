@@ -3,7 +3,8 @@ export = CesiumMeshVisualizer;
 export as namespace CesiumMeshVisualizer;
 import * as Cesium from './Cesium';
 import * as geojson from './geojson';
- 
+import THREE from './THREE'
+
 /**
  * Make you can use three.js geometry in Cesium,and use mesh,geometry,material like three.js to manage renderable object in Cesium.
  */
@@ -23,8 +24,8 @@ declare namespace CesiumMeshVisualizer {
         ) => void}onChanged
     *@memberof Cesium
     */
-    export function defineProperty(owner: object, name: string, defaultVal: *, onChanged: (
-        changed: string, owner: object, newVal: *, oldVal: *
+    export function defineProperty(owner: object, name: string, defaultVal: any, onChanged: (
+        changed: string, owner: object, newVal: any, oldVal: any
     ) => void): void
 
     export class GeometryUtils {
@@ -1373,4 +1374,3 @@ declare namespace CesiumMeshVisualizer {
     }
 
 }
-export  {geojson,CesiumMeshVisualizer}
