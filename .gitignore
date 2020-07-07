@@ -1,4 +1,4 @@
 node_modules/
 .DS_Store
 App/demo/.DS_Store
-ThirdParty/three.js
+ThirdParty/three.js/
